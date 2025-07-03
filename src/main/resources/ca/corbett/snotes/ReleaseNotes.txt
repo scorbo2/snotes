@@ -1,0 +1,40 @@
+Snotes Release Notes
+Author: Steve Corbett
+
+Version 2.0 [TODO] rewrite
+
+Version 1.0 [2023-04-06]
+  [SNOTES-1] - Skeletal project creation
+  [SNOTES-2] - Add install/uninstall and launcher scripts
+  [SNOTES-3] - Ensure default logging.properties logs to file
+  [SNOTES-4] - UI - Main window
+  [SNOTES-5] - UI - Preferences dialog
+  [SNOTES-6] - Migration script for to_import stuff
+  [SNOTES-7] - Model object creation
+  [SNOTES-8] - IO - Scanner class
+  [SNOTES-9] - IO - Writer class
+  [SNOTES-10] - IO - caching
+  [SNOTES-11] - UI: search dialog
+  [SNOTES-12] - UI - Snote view dialog
+  [SNOTES-13] - Make the JDesktopPane prettier
+  [SNOTES-14] - Do full cache population on initial startup
+  [SNOTES-15] - Viewer colours should be configurable
+  [SNOTES-16] - Snotes editor
+  [SNOTES-17] - Editor theme preview is sometimes wrong
+  [SNOTES-18] - Create snote templates
+  [SNOTES-19] - About dialog should show cache stats
+  [SNOTES-20] - Make search query a model object
+  [SNOTES-21] - Package some default templates and queries
+  [SNOTES-22] - Query panel should allow tag list, not just single tag
+  [SNOTES-23] - Create TagFrame
+  [SNOTES-24] - Handle template and query deletion
+  [SNOTES-25] - Handle snote deletion
+  [SNOTES-26] - Template options: context query editor should be readonly
+  [SNOTES-27] - Tag frame should show count of tags
+  [SNOTES-28] - Tag Frame should allow double click
+  [SNOTES-29] - Add a quick password lookup and save feature
+  [SNOTES-30] - Bug: UI lockup when creating new note
+  [SNOTES-31] - Bug: template context query is still not loading
+  [SNOTES-32] - The append/overwrite prompt is a bit broken
+  [SNOTES-33] - Tag search seems broken
+  [SNOTES-34] - New status entry window has wrong icon
