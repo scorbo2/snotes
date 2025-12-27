@@ -25,11 +25,11 @@ Version 1.0 [2023-04-06]
   [SNOTES-19] - About dialog should show cache stats
   [SNOTES-20] - Make search query a model object
   [SNOTES-21] - Package some default templates and queries
-  [SNOTES-22] - Query panel should allow tag list, not just single tag
+  [SNOTES-22] - Query panel should allow tag list
   [SNOTES-23] - Create TagFrame
   [SNOTES-24] - Handle template and query deletion
   [SNOTES-25] - Handle snote deletion
-  [SNOTES-26] - Template options: context query editor should be readonly
+  [SNOTES-26] - Context query editor should be read-only
   [SNOTES-27] - Tag frame should show count of tags
   [SNOTES-28] - Tag Frame should allow double click
   [SNOTES-29] - Add a quick password lookup and save feature

@@ -6,7 +6,6 @@ import ca.corbett.extras.image.ImageUtil;
 import ca.corbett.extras.progress.SimpleProgressWorker;
 import ca.corbett.extras.progress.SplashProgressWindow;
 import ca.corbett.snotes.ui.MainWindow;
-import com.formdev.flatlaf.FlatLightLaf;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
@@ -47,6 +46,10 @@ import java.util.logging.Logger;
  */
 public class Main {
 
+    public static URL logoIconUrl;
+    public static URL logoWideUrl;
+    public static BufferedImage logoWideImage;
+
     public static void main(String[] args) {
         // Before we do anything else, set up logging:
         configureLogging();
@@ -74,32 +77,20 @@ public class Main {
                    new Object[]{Version.INSTALL_DIR, Version.SETTINGS_DIR, Version.EXTENSIONS_DIR});
 
         // Prepare our splash screen:
-        URL url = Main.class.getResource("/ca/corbett/snotes/images/logo_wide.jpg");
-        if (url == null) {
+        logoWideUrl = Main.class.getResource("/ca/corbett/snotes/images/logo_wide.jpg");
+        logoIconUrl = Main.class.getResource("/ca/corbett/snotes/images/logo.png");
+        if (logoWideUrl == null || logoIconUrl == null) {
             logger.severe("Unable to load splash image - the jar was not packaged correctly.");
             System.exit(1); // No point in proceeding if basic resources are missing
             return; // to satisfy the compiler
         }
 
-        // Load all extra Look and Feels:
-        final MainWindow mainWindow = MainWindow.getInstance();
-        LookAndFeelManager.installExtraLafs();
-
-        // TODO wire up AppConfig... for now, just skip this step
-        //AppConfig.getInstance().loadWithoutUIReload();
-
-        // Get MainWindow ready but don't show it just yet:
-        SwingUtilities.invokeLater(() -> {
-            LookAndFeelManager.switchLaf(FlatLightLaf.class.getName());
-            mainWindow.processStartArgs(Arrays.asList(args));
-        });
-
-        // Show splash screen:
-        BufferedImage splashImage = null;
+        // Get the splash progress screen ready:
+        // (do this before MainWindow.getInstance() so our logo image is loaded):
         SplashProgressWindow splashWindow;
         try {
-            splashImage = ImageUtil.loadImage(url);
-            splashWindow = new SplashProgressWindow(Color.GRAY, Color.BLACK, splashImage);
+            logoWideImage = ImageUtil.loadImage(logoWideUrl);
+            splashWindow = new SplashProgressWindow(Color.GRAY, Color.BLACK, logoWideImage);
         }
         catch (IOException ioe) {
             logger.log(Level.SEVERE, "Unable to load logo image.", ioe);
@@ -107,9 +98,20 @@ public class Main {
             return; // to satisfy the compiler
         }
 
-        // TODO migrate AppPreferences to a newer AppConfig implementation
-        //MainWindow.setLogoImage(splashImage); // TODO wtf is this? old code from V1, is it still needed?
-        final MainWindow window = MainWindow.getInstance();
+        // Load all extra Look and Feels:
+        LookAndFeelManager.installExtraLafs();
+        final MainWindow mainWindow = MainWindow.getInstance();
+
+        // Load up our application configuration:
+        AppConfig.getInstance().load();
+
+        // Get MainWindow ready but don't show it just yet:
+        SwingUtilities.invokeLater(() -> {
+            LookAndFeelManager.switchLaf(AppConfig.getInstance().getLookAndFeelClassName());
+            mainWindow.processStartArgs(Arrays.asList(args));
+        });
+
+        // Show the splash progress screen, which will show the main window when done:
         splashWindow.runWorker(new StartupWorker(mainWindow));
     }
 

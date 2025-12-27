@@ -8,7 +8,7 @@ FORMAT="tarball"
 
 # Application name/version will also be used for the jar file name.
 APPLICATION="Snotes"
-VERSION="2.0"
+VERSION="2.0-SNAPSHOT"
 
 CATEGORY="TextEditor"
 
@@ -19,7 +19,7 @@ PROJECT_URL="https://github.com/scorbo2/snotes"
 JAVAMEM=
 
 # The application jar file:
-JAR="target/musicplayer-${VERSION}.jar"
+JAR="target/snotes-${VERSION}.jar"
 
 # Space-separated list of files and dirs to include:
 TO_COPY="target/lib"
