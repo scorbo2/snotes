@@ -10,6 +10,8 @@ FORMAT="tarball"
 APPLICATION="Snotes"
 VERSION="2.0"
 
+CATEGORY="TextEditor"
+
 # An optional project URL to put into a README:
 PROJECT_URL="https://github.com/scorbo2/snotes"
 
@@ -21,5 +23,6 @@ JAR="target/musicplayer-${VERSION}.jar"
 
 # Space-separated list of files and dirs to include:
 TO_COPY="target/lib"
+TO_COPY="${TO_COPY} update_sources.json"
 TO_COPY="${TO_COPY} src/main/resources/ca/corbett/snotes/ReleaseNotes.txt"
 TO_COPY="${TO_COPY} src/main/resources/ca/corbett/snotes/images/logo.png"
