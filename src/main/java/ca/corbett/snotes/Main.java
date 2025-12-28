@@ -2,7 +2,6 @@ package ca.corbett.snotes;
 
 import ca.corbett.extras.LookAndFeelManager;
 import ca.corbett.extras.SingleInstanceManager;
-import ca.corbett.extras.image.ImageUtil;
 import ca.corbett.extras.progress.SimpleProgressWorker;
 import ca.corbett.extras.progress.SplashProgressWindow;
 import ca.corbett.snotes.ui.MainWindow;
@@ -10,10 +9,8 @@ import ca.corbett.snotes.ui.MainWindow;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import java.awt.Color;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
@@ -46,10 +43,6 @@ import java.util.logging.Logger;
  */
 public class Main {
 
-    public static URL logoIconUrl;
-    public static URL logoWideUrl;
-    public static BufferedImage logoWideImage;
-
     public static void main(String[] args) {
         // Before we do anything else, set up logging:
         configureLogging();
@@ -76,24 +69,9 @@ public class Main {
                    Version.FULL_NAME + " starting up: installDir={0}, settingsDir={1}, extensionsDir={2}",
                    new Object[]{Version.INSTALL_DIR, Version.SETTINGS_DIR, Version.EXTENSIONS_DIR});
 
-        // Prepare our splash screen:
-        logoWideUrl = Main.class.getResource("/ca/corbett/snotes/images/logo_wide.jpg");
-        logoIconUrl = Main.class.getResource("/ca/corbett/snotes/images/logo.png");
-        if (logoWideUrl == null || logoIconUrl == null) {
-            logger.severe("Unable to load splash image - the jar was not packaged correctly.");
-            System.exit(1); // No point in proceeding if basic resources are missing
-            return; // to satisfy the compiler
-        }
-
-        // Get the splash progress screen ready:
-        // (do this before MainWindow.getInstance() so our logo image is loaded):
-        SplashProgressWindow splashWindow;
-        try {
-            logoWideImage = ImageUtil.loadImage(logoWideUrl);
-            splashWindow = new SplashProgressWindow(Color.GRAY, Color.BLACK, logoWideImage);
-        }
-        catch (IOException ioe) {
-            logger.log(Level.SEVERE, "Unable to load logo image.", ioe);
+        // Make sure our resources are present and loadable:
+        if (!Resources.loadAll()) {
+            logger.severe("Unable to load application resources - the jar was not packaged correctly.");
             System.exit(1); // No point in proceeding if basic resources are missing
             return; // to satisfy the compiler
         }
@@ -112,6 +90,7 @@ public class Main {
         });
 
         // Show the splash progress screen, which will show the main window when done:
+        SplashProgressWindow splashWindow = new SplashProgressWindow(Color.GRAY, Color.BLACK, Resources.getLogoWide());
         splashWindow.runWorker(new StartupWorker(mainWindow));
     }
 
