@@ -1,5 +1,8 @@
 package ca.corbett.snotes.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 import java.util.Objects;
 
 /**
@@ -35,6 +38,7 @@ public class Tag implements Comparable<Tag> {
      *
      * @param tag The String value for this Tag.
      */
+    @JsonCreator
     public Tag(String tag) {
         this.tag = validateTag(tag);
     }
@@ -45,6 +49,7 @@ public class Tag implements Comparable<Tag> {
      *
      * @return The Tag value.
      */
+    @JsonValue
     public String getTag() {
         return tag;
     }

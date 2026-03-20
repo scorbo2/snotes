@@ -2,6 +2,8 @@ package ca.corbett.snotes.model.filter;
 
 import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.model.YMDDate;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * This Filter can be used to filter Notes by their calendar date.
@@ -26,12 +28,22 @@ public class DateFilter extends Filter {
     private final YMDDate targetDate;
     private final FilterType filterType;
 
-    public DateFilter(YMDDate targetDate, FilterType filterType) {
+    @JsonCreator
+    public DateFilter(@JsonProperty("targetDate") YMDDate targetDate,
+                      @JsonProperty("filterType") FilterType filterType) {
         if (targetDate == null || filterType == null) {
             throw new IllegalArgumentException("targetDate and filterType cannot be null");
         }
         this.targetDate = targetDate;
         this.filterType = filterType;
+    }
+
+    public YMDDate getTargetDate() {
+        return targetDate;
+    }
+
+    public FilterType getFilterType() {
+        return filterType;
     }
 
     @Override

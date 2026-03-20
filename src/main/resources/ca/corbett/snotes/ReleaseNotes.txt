@@ -2,6 +2,8 @@ Snotes Release Notes
 Author: Steve Corbett
 
 Version 2.0 [TODO] rewrite
+  #12 - Query persistence
+  Port to GitHub, switch to Maven, upgrade to Java 17
 
 Version 1.0 [2023-04-06]
   [SNOTES-1] - Skeletal project creation

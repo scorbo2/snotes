@@ -2,6 +2,8 @@ package ca.corbett.snotes.model.filter;
 
 import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.model.Tag;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -26,7 +28,9 @@ public class TagFilter extends Filter {
     private final List<Tag> tagsToFilter;
     private final FilterType filterType;
 
-    public TagFilter(List<Tag> tagsToFilter, FilterType filterType) {
+    @JsonCreator
+    public TagFilter(@JsonProperty("tagsToFilter") List<Tag> tagsToFilter,
+                      @JsonProperty("filterType") FilterType filterType) {
         if (tagsToFilter == null || tagsToFilter.isEmpty()) {
             throw new IllegalArgumentException("tagsToFilter cannot be null or empty");
         }
@@ -35,6 +39,14 @@ public class TagFilter extends Filter {
         }
         this.tagsToFilter = new ArrayList<>(tagsToFilter); // Defensive copy to prevent external modification
         this.filterType = filterType;
+    }
+
+    public List<Tag> getTagsToFilter() {
+        return new ArrayList<>(tagsToFilter);
+    }
+
+    public FilterType getFilterType() {
+        return filterType;
     }
 
     @Override

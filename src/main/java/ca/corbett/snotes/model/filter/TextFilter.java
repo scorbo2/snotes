@@ -1,6 +1,8 @@
 package ca.corbett.snotes.model.filter;
 
 import ca.corbett.snotes.model.Note;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Locale;
 
@@ -13,7 +15,7 @@ import java.util.Locale;
 public class TextFilter extends Filter {
 
     private final String contains;
-    private final boolean isCaseSensitive;
+    private final boolean caseSensitive;
 
     public TextFilter(String contains) {
         this(contains, false);
@@ -27,9 +29,19 @@ public class TextFilter extends Filter {
      * three trailing spaces. A value of null will be treated the same as an empty string (no-op).
      * </p>
      */
-    public TextFilter(String contains, boolean isCaseSensitive) {
+    @JsonCreator
+    public TextFilter(@JsonProperty("contains") String contains,
+                      @JsonProperty("caseSensitive") boolean caseSensitive) {
         this.contains = contains == null ? "" : contains;
-        this.isCaseSensitive = isCaseSensitive;
+        this.caseSensitive = caseSensitive;
+    }
+
+    public String getContains() {
+        return contains;
+    }
+
+    public boolean isCaseSensitive() {
+        return caseSensitive;
     }
 
     @Override
@@ -53,7 +65,7 @@ public class TextFilter extends Filter {
         }
         String candidateText = noteText;
         String toFind = contains;
-        if (!isCaseSensitive) {
+        if (!caseSensitive) {
             candidateText = candidateText.toLowerCase(Locale.ROOT);
             toFind = toFind.toLowerCase(Locale.ROOT);
         }

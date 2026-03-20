@@ -1,5 +1,8 @@
 package ca.corbett.snotes.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -42,6 +45,7 @@ public class YMDDate implements Comparable<YMDDate> {
      * Attempts to construct a YMDDate from the given String in yyyy-MM-dd format.
      * If the String is badly formatted, a warning is logged, and today's date will be used instead.
      */
+    @JsonCreator
     public YMDDate(String ymdString) {
         LocalDate date;
         try {
@@ -147,6 +151,7 @@ public class YMDDate implements Comparable<YMDDate> {
     /**
      * Returns a yyyy-MM-dd formatted String representation of this date.
      */
+    @JsonValue
     @Override
     public String toString() {
         return date.format(FORMATTER);

@@ -1,6 +1,8 @@
 package ca.corbett.snotes.model.filter;
 
 import ca.corbett.snotes.model.Note;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.DayOfWeek;
 
@@ -26,12 +28,22 @@ public class DayOfWeekFilter extends Filter {
     private final DayOfWeek dayOfWeek;
     private final FilterType filterType;
 
-    public DayOfWeekFilter(DayOfWeek dayOfWeek, FilterType filterType) {
+    @JsonCreator
+    public DayOfWeekFilter(@JsonProperty("dayOfWeek") DayOfWeek dayOfWeek,
+                            @JsonProperty("filterType") FilterType filterType) {
         if (dayOfWeek == null || filterType == null) {
             throw new IllegalArgumentException("dayOfWeek and filterType cannot be null");
         }
         this.dayOfWeek = dayOfWeek;
         this.filterType = filterType;
+    }
+
+    public DayOfWeek getDayOfWeek() {
+        return dayOfWeek;
+    }
+
+    public FilterType getFilterType() {
+        return filterType;
     }
 
     @Override
