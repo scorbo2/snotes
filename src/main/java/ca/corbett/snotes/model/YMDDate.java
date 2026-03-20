@@ -44,8 +44,12 @@ public class YMDDate implements Comparable<YMDDate> {
     /**
      * Attempts to construct a YMDDate from the given String in yyyy-MM-dd format.
      * If the String is badly formatted, a warning is logged, and today's date will be used instead.
+     * <p>
+     * <b>Note:</b> this constructor is intentionally lenient and is meant for general programmatic use.
+     * JSON deserialization uses the strict {@link #fromJson(String)} factory method instead, which
+     * will throw an exception on bad input rather than silently falling back to today's date.
+     * </p>
      */
-    @JsonCreator
     public YMDDate(String ymdString) {
         LocalDate date;
         try {
@@ -56,6 +60,25 @@ public class YMDDate implements Comparable<YMDDate> {
             date = LocalDate.now();
         }
         this.date = date;
+    }
+
+    /**
+     * Strict JSON factory method used by Jackson during deserialization.
+     * Unlike the string constructor, this method throws {@link IllegalArgumentException}
+     * if the given string is null or does not conform to yyyy-MM-dd format.
+     * This ensures that malformed dates in saved query files surface as load errors rather than
+     * silently being replaced with today's date.
+     *
+     * @param ymdString A yyyy-MM-dd formatted date string.
+     * @return A valid YMDDate.
+     * @throws IllegalArgumentException if ymdString is null or not a valid yyyy-MM-dd date.
+     */
+    @JsonCreator
+    public static YMDDate fromJson(String ymdString) {
+        if (!isValidYMD(ymdString)) {
+            throw new IllegalArgumentException("Invalid or null date string for YMDDate: '" + ymdString + "'");
+        }
+        return new YMDDate(ymdString);
     }
 
     /**

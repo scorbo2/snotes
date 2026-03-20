@@ -14,12 +14,15 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.DayOfWeek;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -270,4 +273,24 @@ public class QueryTest extends FilterTest {
             fail("IOException thrown during save/load: " + ioe.getMessage());
         }
     }
+
+    @Test
+    public void load_withMalformedDate_shouldThrowIOException() throws IOException {
+        // GIVEN a Query saved with a valid DateFilter:
+        Query query = new Query();
+        query.setName("Malformed Date Test");
+        query.addFilter(new DateFilter(JAN_1_2020, DateFilter.FilterType.ON));
+        File savedFile = File.createTempFile("test-malformed", ".query", tempDir);
+        query.save(savedFile);
+
+        // WHEN we corrupt the saved file by replacing the valid date with a malformed one:
+        String content = Files.readString(savedFile.toPath(), StandardCharsets.UTF_8);
+        String corrupted = content.replace("2020-01-01", "not-a-real-date");
+        Files.writeString(savedFile.toPath(), corrupted, StandardCharsets.UTF_8);
+
+        // THEN Query.load() should throw an IOException rather than silently
+        // loading a filter with today's date substituted in:
+        assertThrows(IOException.class, () -> Query.load(savedFile));
+    }
 }
+
