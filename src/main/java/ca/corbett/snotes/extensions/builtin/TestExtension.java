@@ -2,6 +2,8 @@ package ca.corbett.snotes.extensions.builtin;
 
 import ca.corbett.extensions.AppExtensionInfo;
 import ca.corbett.extras.properties.AbstractProperty;
+import ca.corbett.extras.properties.BooleanProperty;
+import ca.corbett.extras.properties.LabelProperty;
 import ca.corbett.snotes.Resources;
 import ca.corbett.snotes.Version;
 import ca.corbett.snotes.extensions.SnotesExtension;
@@ -11,6 +13,8 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
+import java.awt.event.ActionEvent;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -22,6 +26,8 @@ import java.util.List;
  */
 public class TestExtension extends SnotesExtension {
     private final AppExtensionInfo extInfo;
+
+    private static final String TASK_PANE_NAME = "Test1";
 
     public TestExtension() {
         extInfo = new AppExtensionInfo.Builder("Test extension")
@@ -39,9 +45,18 @@ public class TestExtension extends SnotesExtension {
         return extInfo;
     }
 
+    /**
+     * We'll supply some config properties that don't actually do anything,
+     * just to test out extension integration with the application properties dialog.
+     */
     @Override
     protected List<AbstractProperty> createConfigProperties() {
-        return List.of(); // none yet
+        List<AbstractProperty> props = new ArrayList<>();
+        props.add(new BooleanProperty("TestExtension.Options.checkbox1", "Enable feature 1", false));
+        props.add(new BooleanProperty("TestExtension.Options.checkbox2", "Enable feature 2", true));
+        props.add(new LabelProperty("TestExtension.Note.label1",
+                                    "Testing properties integration - these properties do nothing."));
+        return props;
     }
 
     @Override
@@ -49,27 +64,72 @@ public class TestExtension extends SnotesExtension {
         // none
     }
 
+    /**
+     * We supply one extra task pane with some dummy actions in it.
+     */
     public List<String> getExtraTaskPaneNames() {
-        // We'll pretend we're supplying an extra task pane called "Test1":
-        return List.of("Test1");
+        return List.of(TASK_PANE_NAME);
     }
 
+    /**
+     * We supply an icon for our extra task pane.
+     */
     public ImageIcon getExtraTaskPaneIcon(String taskPaneName) {
         // Our icon should be used for our extra task pane, and it should be scaled to fit:
-        return "Test1".equals(taskPaneName) ? new ImageIcon(Resources.getLogoIcon()) : null;
+        return TASK_PANE_NAME.equals(taskPaneName) ? new ImageIcon(Resources.getLogoIcon()) : null;
     }
 
+    /**
+     * We supply a couple of dummy actions for our extra task pane,
+     * as well as some actions for the built-in task panes.
+     */
     public List<Action> getTaskPaneActions(String taskPaneName) {
         // Return some dummy action for our test task pane:
-        if ("Test1".equals(taskPaneName)) {
-            Action dummyAction = new AbstractAction("Say hello") {
-                @Override
-                public void actionPerformed(java.awt.event.ActionEvent e) {
-                    JOptionPane.showMessageDialog(MainWindow.getInstance(), "Hello!");
-                }
-            };
-            return List.of(dummyAction);
+        if (TASK_PANE_NAME.equals(taskPaneName)) {
+            return List.of(
+                new DummyAction("Say hello", "Hello from the test extension!"),
+                new DummyAction("Show version", "Snotes version: " + Version.VERSION)
+            );
         }
+
+        else if ("read".equalsIgnoreCase(taskPaneName)) {
+            return List.of(
+                new DummyAction("Read action", "This is a dummy action added to the Read task pane.")
+            );
+        }
+
+        else if ("write".equalsIgnoreCase(taskPaneName)) {
+            return List.of(
+                new DummyAction("Write action", "This is a dummy action added to the Write task pane.")
+            );
+        }
+
+        else if ("options".equalsIgnoreCase(taskPaneName)) {
+            return List.of(
+                new DummyAction("Options action", "This is a dummy action added to the Options task pane.")
+            );
+        }
+
         return List.of();
+    }
+
+    /**
+     * Invoked internally to attach a simple action to anything that might
+     * require an action. This action just shows a message dialog with
+     * a supplied message when invoked.
+     */
+    private static class DummyAction extends AbstractAction {
+
+        private final String message;
+
+        public DummyAction(String name, String message) {
+            super(name);
+            this.message = message;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            JOptionPane.showMessageDialog(MainWindow.getInstance(), message);
+        }
     }
 }

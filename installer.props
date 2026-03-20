@@ -14,6 +14,7 @@ CATEGORY="TextEditor"
 
 # An optional project URL to put into a README:
 PROJECT_URL="https://github.com/scorbo2/snotes"
+OUTPUT_DIR=target
 
 # Extra memory settings like Xmx and Xms can be specified here:
 JAVAMEM=

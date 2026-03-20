@@ -55,4 +55,14 @@ public abstract class SnotesExtension extends AppExtension {
     public List<Action> getTaskPaneActions(String taskPaneName) {
         return List.of();
     }
+
+    // TODO random thoughts for possible extension points (2.0 doesn't have to hit all of these):
+    // - loading/saving Snotes in custom formats (our IO classes need to allow for this)
+    // - custom tag types, or maybe different versions of existing tag types? custom date tag perhaps?
+    // - extension-supplied Actions that can be invoked when a Snote is created/edited/deleted
+    // - notify an extension when a Snote is loaded or saved (can't prevent the operation but can react to it)
+    // - hmm, actually... how about a pre-save hook? Like, spell-check before save, prompt to confirm if
+    //   snote is missing a certain tag, that sort of thing.
+    // - hooks in the edit window in general... let me add toolbar buttons, right click menu options, etc.
+    // - extensions should be allowed to provide queries and templates too.
 }

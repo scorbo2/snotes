@@ -34,11 +34,13 @@ public class SnotesExtensionManager extends ExtensionManager<SnotesExtension> {
     }
 
     protected SnotesExtensionManager() {
+        // Add our built-in extensions here:
+        if (isTestExtensionRequired()) {
+            addExtension(new TestExtension(), true);
+        }
+
         // Let's try to scan for dynamically loaded extensions:
         loadExtensions(Version.EXTENSIONS_DIR, SnotesExtension.class, Version.NAME, Version.VERSION);
-
-        // Add our built-in extensions here:
-        addExtension(new TestExtension(), true);
     }
 
     public static SnotesExtensionManager getInstance() {
@@ -89,5 +91,17 @@ public class SnotesExtensionManager extends ExtensionManager<SnotesExtension> {
             }
         }
         return null;
+    }
+
+    /**
+     * If our version contains "SNAPSHOT", or if the undocumented system property
+     * "snotes.enableTestExtension" is set to "true", we will install and
+     * enable the built-int "TestExtension", which exercises all of the
+     * abilities of a SnotesExtension.
+     */
+    private static boolean isTestExtensionRequired() {
+        // Deliberately not documented anywhere, but -Dsnotes.enableTestExtension will enable our test extension
+        String testExtProp = System.getProperty("snotes.enableTestExtension", null);
+        return Version.getAboutInfo().applicationVersion.contains("SNAPSHOT") || testExtProp != null;
     }
 }
