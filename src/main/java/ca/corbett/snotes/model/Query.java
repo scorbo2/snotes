@@ -189,9 +189,14 @@ public class Query {
 
         ObjectMapper mapper = new ObjectMapper();
         JsonNode rootNode = mapper.readTree(sourceFile);
+        if (rootNode == null) {
+            // This can happen with empty or blank files, and possibly other wonky scenarios as well:
+            throw new IOException("Failed to parse Query from file: " + sourceFile.getAbsolutePath());
+        }
 
-        Query query = new Query();
+        Query query = new Query(); // Gets DEFAULT_NAME and an empty filter list by default
 
+        // Set query name if present in the JSON:
         JsonNode nameNode = rootNode.get("name");
         if (nameNode != null && !nameNode.isNull() && nameNode.isTextual()) {
             String nameText = nameNode.asText();
@@ -200,6 +205,7 @@ public class Query {
             }
         }
 
+        // Load up filters if any are here:
         JsonNode filtersNode = rootNode.get("filters");
         if (filtersNode != null && filtersNode.isArray()) {
             for (JsonNode filterNode : filtersNode) {
