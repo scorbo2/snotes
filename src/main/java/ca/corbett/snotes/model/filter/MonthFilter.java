@@ -1,6 +1,8 @@
 package ca.corbett.snotes.model.filter;
 
 import ca.corbett.snotes.model.Note;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * This Filter can be used to filter Notes by their month, regardless of year.
@@ -24,7 +26,9 @@ public class MonthFilter extends Filter {
     private final int targetMonth;
     private final FilterType filterType;
 
-    public MonthFilter(int targetMonth, FilterType filterType) {
+    @JsonCreator
+    public MonthFilter(@JsonProperty("targetMonth") int targetMonth,
+                        @JsonProperty("filterType") FilterType filterType) {
         if (targetMonth < 1 || targetMonth > 12) {
             throw new IllegalArgumentException("targetMonth must be between 1 and 12");
         }
@@ -33,6 +37,14 @@ public class MonthFilter extends Filter {
         }
         this.targetMonth = targetMonth;
         this.filterType = filterType;
+    }
+
+    public int getTargetMonth() {
+        return targetMonth;
+    }
+
+    public FilterType getFilterType() {
+        return filterType;
     }
 
     @Override

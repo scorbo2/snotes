@@ -1,6 +1,8 @@
 package ca.corbett.snotes.model.filter;
 
 import ca.corbett.snotes.model.Note;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * This Filter can be used to filter Notes by the year of their calendar date.
@@ -30,12 +32,22 @@ public class YearFilter extends Filter {
      * We don't validate targetYear - any integer is technically a valid year, even negative integers.
      * Just don't be surprised if Integer.MAX_VALUE doesn't yield many matches.
      */
-    public YearFilter(int targetYear, FilterType filterType) {
+    @JsonCreator
+    public YearFilter(@JsonProperty("targetYear") int targetYear,
+                       @JsonProperty("filterType") FilterType filterType) {
         if (filterType == null) {
             throw new IllegalArgumentException("filterType cannot be null");
         }
         this.targetYear = targetYear;
         this.filterType = filterType;
+    }
+
+    public int getTargetYear() {
+        return targetYear;
+    }
+
+    public FilterType getFilterType() {
+        return filterType;
     }
 
     @Override

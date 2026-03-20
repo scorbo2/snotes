@@ -14,6 +14,7 @@ import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class YMDDateTest {
@@ -48,10 +49,10 @@ class YMDDateTest {
         logger.addHandler(handler);
 
         try {
-            // GIVEN a YMDDate with an invalid date string:
+            // GIVEN a YMDDate constructed directly with an invalid date string:
             YMDDate date = new YMDDate("invalid-date");
 
-            // THEN the date should default to today:
+            // THEN the date should default to today (lenient constructor behaviour):
             assertEquals(today.toString(), date.toString());
 
             // AND a warning should have been logged with "invalid date":
@@ -60,6 +61,30 @@ class YMDDateTest {
         finally {
             logger.removeHandler(handler);
         }
+    }
+
+    @Test
+    public void fromJson_withValidDate_shouldReturnCorrectDate() {
+        // GIVEN a valid date string:
+        YMDDate date = YMDDate.fromJson("1997-04-21");
+
+        // THEN the date should be parsed correctly:
+        assertEquals("1997-04-21", date.toString());
+    }
+
+    @Test
+    public void fromJson_withInvalidDate_shouldThrowException() {
+        // GIVEN an invalid date string, THEN fromJson should throw IllegalArgumentException
+        // rather than silently falling back to today's date:
+        assertThrows(IllegalArgumentException.class, () -> YMDDate.fromJson("not-a-date"));
+        assertThrows(IllegalArgumentException.class, () -> YMDDate.fromJson("2024-02-30"));
+        assertThrows(IllegalArgumentException.class, () -> YMDDate.fromJson("2024-13-01"));
+    }
+
+    @Test
+    public void fromJson_withNullDate_shouldThrowException() {
+        // GIVEN a null date string, THEN fromJson should throw IllegalArgumentException:
+        assertThrows(IllegalArgumentException.class, () -> YMDDate.fromJson(null));
     }
 
     @Test
