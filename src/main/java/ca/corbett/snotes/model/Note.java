@@ -1,0 +1,271 @@
+package ca.corbett.snotes.model;
+
+import java.io.File;
+import java.util.List;
+
+/**
+ * Represents a combination of some text and a list of tags that categorize that text.
+ *
+ * @author <a href="https://github.com/scorbo2">scorbo2</a>
+ * @since Snotes 1.0
+ */
+public final class Note {
+
+    private final TagList tagList;
+    private String text;
+    private File sourceFile;
+    private boolean isDirty;
+
+    /**
+     * Creates an empty, untagged Note.
+     */
+    public Note() {
+        tagList = new TagList();
+        text = "";
+        sourceFile = null;
+        isDirty = false;
+    }
+
+    /**
+     * The persistence file for this Note, or null if this Note has
+     * not yet been saved to disk.
+     *
+     * @param src The File from which this Note was loaded, if applicable.
+     */
+    public void setSourceFile(File src) {
+        sourceFile = src;
+        isDirty = true;
+    }
+
+    /**
+     * The persistence file for this Note, or null if this Note has
+     * not yet been saved to disk.
+     *
+     * @return The File from which this Note was loaded, or null if not applicable.
+     */
+    public File getSourceFile() {
+        return sourceFile;
+    }
+
+    /**
+     * Indicates whether this Note has a date tag associated with it or not.
+     *
+     * @return True if a date tag has been assigned to this Note.
+     */
+    public boolean hasDate() {
+        return tagList.hasDate();
+    }
+
+    /**
+     * Returns the YMDDate associated with this Note, if any.
+     *
+     * @return A YMDDate object, or null if this Note is not dated.
+     */
+    public YMDDate getDate() {
+        return tagList.hasDate() ? tagList.getDateTag().getDate() : null;
+    }
+
+    /**
+     * Sets the YMDDate for this Note, and replaces any previous date that was set.
+     * Passing null will convert this Note to an undated one.
+     *
+     * @param date The new YMDDate for this Note, or null for no date.
+     * @return This Note, for chaining.
+     */
+    public Note setDate(YMDDate date) {
+        tagList.setDate(date);
+        isDirty = true;
+        return this;
+    }
+
+    /**
+     * Replaces any existing text for this Note with the given text.
+     *
+     * @param newText The new text value for this Note.
+     * @return This Note, for chaining.
+     */
+    public Note setText(String newText) {
+        text = newText == null ? "" : newText;
+        isDirty = true;
+        return this;
+    }
+
+    /**
+     * Appends the given text to the existing text of this Note.
+     * Does not automatically add a newline - use newline() or embed
+     * newline characters in newText.
+     *
+     * @param newText The text to append to this Note.
+     * @return This Note, for chaining.
+     */
+    public Note append(String newText) {
+        text += newText;
+        isDirty = true;
+        return this;
+    }
+
+    /**
+     * Appends a System-specific newline character to this Note.
+     *
+     * @return This Note, for chaining.
+     */
+    public Note newline() {
+        text += System.lineSeparator();
+        isDirty = true;
+        return this;
+    }
+
+    /**
+     * Indicates whether any text has been set for this Note.
+     *
+     * @return True if any text exists here.
+     */
+    public boolean hasText() {
+        return text != null && !text.isBlank();
+    }
+
+    /**
+     * Returns the current text value of this Note. This does NOT include the
+     * tag line at the beginning - only the actual text content is returned.
+     * You may want getFullContent() instead.
+     *
+     * @return The text of this Note.
+     */
+    public String getText() {
+        return text;
+    }
+
+    /**
+     * Returns the human-presentable tag line for this Note.
+     *
+     * @return A human-readable tag line for this Note.
+     */
+    public String getHumanTagLine() {
+        return tagList.toString();
+    }
+
+    /**
+     * Returns the persistable tag line for this Note.
+     *
+     * @return A machine-readable tag line for this Note.
+     */
+    public String getPersistenceTagLine() {
+        return tagList.getPersistenceString();
+    }
+
+    /**
+     * Returns the full content of this Note - that is, the human-readable tag line, followed by a blank
+     * line, followed by the text content of this Note. This call is equivalent to
+     * the following:
+     * <p>
+     * getTagLine() + System.lineSeparator() + getText()
+     * </p>
+     *
+     * @return The full text content of this Note as described above.
+     */
+    public String getFullContent() {
+        return getHumanTagLine() + System.lineSeparator() + getText();
+    }
+
+    /**
+     * Adds the specified Tag to this Note, if not already present. Duplicates are ignored.
+     * If the given Tag is a DateTag, this is equivalent to calling setDate()
+     *
+     * @param tag The Tag to add.
+     * @return This Note, for chaining.
+     */
+    public Note tag(Tag tag) {
+        tagList.addTag(tag);
+        isDirty = true;
+        return this;
+    }
+
+    /**
+     * Adds the specified tag value to this Note, if not already present. Duplicate tags are ignored.
+     *
+     * @param tag The tag value to add.
+     * @return This Note, for chaining.
+     */
+    public Note tag(String tag) {
+        tagList.addTag(tag);
+        isDirty = true;
+        return this;
+    }
+
+    /**
+     * Removes the given tag from this Note, if present.
+     *
+     * @param tag The tag to remove.
+     * @return This Note, for chaining.
+     */
+    public Note untag(String tag) {
+        if (tagList.removeTag(tag)) {
+            isDirty = true;
+        }
+        return this;
+    }
+
+    /**
+     * Removes the given tag from this Note, if present.
+     *
+     * @param tag The tag to remove.
+     * @return This Note, for chaining.
+     */
+    public Note untag(Tag tag) {
+        if (tagList.removeTag(tag)) {
+            isDirty = true;
+        }
+        return this;
+    }
+
+    /**
+     * Indicates whether or not the given tag value exists for this Note.
+     *
+     * @param tag The tag value to look for.
+     * @return True if the given tag value exists here.
+     */
+    public boolean hasTag(String tag) {
+        return tagList.hasTag(tag);
+    }
+
+    /**
+     * Indicates whether or not the given tag exists for this Note.
+     *
+     * @param tag The Tag to look for.
+     * @return True if the given Tag exists here.
+     */
+    public boolean hasTag(Tag tag) {
+        return tagList.hasTag(tag);
+    }
+
+    /**
+     * Returns a copy of the list of tags for this Note. If you want to make
+     * modifications, use the tag() and untag() methods.
+     *
+     * @return A copy of the list of tags for this Note.
+     */
+    public List<Tag> getTags() {
+        return tagList.getTags();
+    }
+
+    /**
+     * Returns a list of all non-date tags for this Note.
+     */
+    public List<Tag> getNonDateTags() {
+        return tagList.getNonDateTags();
+    }
+
+    /**
+     * Returns true if this Note contains changes that have not been persisted to disk.
+     */
+    public boolean isDirty() {
+        return isDirty;
+    }
+
+    /**
+     * Marks this Note as clean, indicating that all changes have been persisted to disk.
+     */
+    public void markClean() {
+        isDirty = false;
+    }
+}
