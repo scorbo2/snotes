@@ -193,8 +193,11 @@ public class Query {
         Query query = new Query();
 
         JsonNode nameNode = rootNode.get("name");
-        if (nameNode != null) {
-            query.setName(nameNode.asText());
+        if (nameNode != null && !nameNode.isNull() && nameNode.isTextual()) {
+            String nameText = nameNode.asText();
+            if (nameText != null && !nameText.trim().isEmpty()) {
+                query.setName(nameText);
+            }
         }
 
         JsonNode filtersNode = rootNode.get("filters");
