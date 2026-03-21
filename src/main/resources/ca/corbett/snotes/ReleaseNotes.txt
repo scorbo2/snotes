@@ -2,6 +2,7 @@ Snotes Release Notes
 Author: Steve Corbett
 
 Version 2.0 [TODO] rewrite
+  #18 - Implement Template and basic persistence
   #16 - Implement KeyStrokeManager
   #14 - Implement ActionPanel (replaces JxTaskPane from V1)
   #12 - Query persistence
