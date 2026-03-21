@@ -51,7 +51,7 @@ public class Main {
         configureLogging();
 
         // Ensure only a single instance is running (if configured to do so):
-        boolean isSingleInstanceEnabled = Boolean.parseBoolean(AppConfig.peek("UI.General.singleInstance"));
+        boolean isSingleInstanceEnabled = Boolean.parseBoolean(AppConfig.peek(AppConfig.SINGLE_INSTANCE_PROP));
 
         if (isSingleInstanceEnabled) {
             SingleInstanceManager instanceManager = SingleInstanceManager.getInstance();

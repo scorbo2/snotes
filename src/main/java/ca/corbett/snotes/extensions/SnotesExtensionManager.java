@@ -40,19 +40,12 @@ public class SnotesExtensionManager extends ExtensionManager<SnotesExtension> {
     }
 
     /**
-     * Scans our EXTENSION_DIR looking for jar files containing classes that extend CryptTextExtension.
+     * Scans our EXTENSIONS_DIR looking for jar files containing classes that extend SnotesExtension.
      * All found classes will be instantiated and made available as extensions, enabled by default.
      */
     public void loadAll() {
         // Load our built-in extensions first:
         if (isTestExtensionRequired()) {
-            addExtension(new TestExtension(), true);
-        }
-
-        // TestExtension is a bit special... we won't show it at all unless you've gone
-        // out of your way to enable it. This is not intended for general users:
-        boolean enableTestExtension = System.getProperty("enableTestExtension", null) != null;
-        if (enableTestExtension) {
             addExtension(new TestExtension(), true);
         }
 
@@ -68,6 +61,7 @@ public class SnotesExtensionManager extends ExtensionManager<SnotesExtension> {
             // These are presented to the user on an "errors" tab that will be added automatically
             // to the ExtensionManagerDialog. For example, an extension may target an older version
             // of our application, or perhaps a malformed jar file was copied to our extensions dir.
+            // But, just in case, let's have additional logging here.
             logger.log(Level.SEVERE, "One or more extensions could not be loaded.", le);
         }
     }

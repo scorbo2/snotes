@@ -67,7 +67,11 @@ public class TestExtension extends SnotesExtension {
      */
     @Override
     public List<ActionGroup> getActionGroups() {
-        return List.of(new ActionGroup(TASK_PANE_NAME, null));
+        ActionGroup group = new ActionGroup(TASK_PANE_NAME, null);
+        for (EnhancedAction action : getExtraActions(TASK_PANE_NAME)) {
+            group.addAction(action);
+        }
+        return List.of(group);
     }
 
     /**

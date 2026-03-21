@@ -21,6 +21,8 @@ public abstract class SnotesExtension extends AppExtension {
     /**
      * Extensions can optionally supply a list of ActionGroups to be added
      * to the main ActionPanel on the main window. Returning null or an empty list is fine.
+     * The returned ActionGroups should be populated with whatever actions the
+     * extension wants to add to the UI.
      */
     public List<ActionGroup> getActionGroups() {
         return List.of();
@@ -30,8 +32,9 @@ public abstract class SnotesExtension extends AppExtension {
      * Extensions can supply actions to be added to the built-in ActionGroups.
      * The given group name will be one of ActionGroup.READ, ActionGroup.WRITE,
      * or ActionGroup.OPTIONS. Extensions that have actions that don't belong
-     * in one of the three built-in groups should consider supplying their
-     * own action group(s) via getActionGroups().
+     * in one of the three built-in groups must supply their
+     * own action group(s) via getActionGroups(). This method will ONLY
+     * be invoked for the application's built-in action groups.
      * <p>
      * Returning null or an empty list here is fine.
      * </p>
