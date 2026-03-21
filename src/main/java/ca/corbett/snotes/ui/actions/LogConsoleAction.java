@@ -1,8 +1,8 @@
 package ca.corbett.snotes.ui.actions;
 
+import ca.corbett.extras.EnhancedAction;
 import ca.corbett.extras.logging.LogConsole;
 
-import javax.swing.AbstractAction;
 import java.awt.event.ActionEvent;
 
 /**
@@ -11,7 +11,7 @@ import java.awt.event.ActionEvent;
  * @author <a href="https://github.com/scorbo2">scorbo2</a>
  * @since Snotes 2.0
  */
-public class LogConsoleAction extends AbstractAction {
+public class LogConsoleAction extends EnhancedAction {
 
     public LogConsoleAction() {
         super("Show Log Console");

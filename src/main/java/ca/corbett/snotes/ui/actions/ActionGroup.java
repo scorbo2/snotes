@@ -1,6 +1,7 @@
 package ca.corbett.snotes.ui.actions;
 
 import ca.corbett.extras.EnhancedAction;
+import ca.corbett.snotes.AppConfig;
 import ca.corbett.snotes.Resources;
 import ca.corbett.snotes.extensions.SnotesExtensionManager;
 
@@ -95,17 +96,18 @@ public class ActionGroup {
 
     public static ActionGroup buildWriteGroup() {
         List<EnhancedAction> writeActions = new ArrayList<>();
-        writeActions.add(new NewNoteAction());
+        writeActions.add(AppConfig.getInstance().getNewNoteAction());
         // TODO Template actions go here.
         return buildGroup(WRITE, Resources.getIconWrite(), writeActions);
     }
 
     public static ActionGroup buildOptionsGroup() {
         List<EnhancedAction> optionActions = new ArrayList<>();
-        optionActions.add(new SettingsAction());
-        optionActions.add(new ExtensionManagerAction());
+        optionActions.add(AppConfig.getInstance().getLogConsoleAction());
+        optionActions.add(AppConfig.getInstance().getPreferencesAction());
+        optionActions.add(AppConfig.getInstance().getExtensionManagerAction());
         ActionGroup group = buildGroup(OPTIONS, Resources.getIconOptions(), optionActions);
-        group.addAction(new AboutAction()); // This one always goes at the end
+        group.addAction(AppConfig.getInstance().getAboutAction()); // This one always goes at the end
         return group;
     }
 

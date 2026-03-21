@@ -2,6 +2,7 @@ package ca.corbett.snotes;
 
 import ca.corbett.extensions.AppProperties;
 import ca.corbett.extras.CustomizableDesktopPane;
+import ca.corbett.extras.EnhancedAction;
 import ca.corbett.extras.gradient.ColorSelectionType;
 import ca.corbett.extras.gradient.Gradient;
 import ca.corbett.extras.io.KeyStrokeManager;
@@ -21,7 +22,6 @@ import ca.corbett.snotes.ui.actions.NewNoteAction;
 import ca.corbett.snotes.ui.actions.PrefsAction;
 import com.formdev.flatlaf.FlatLightLaf;
 
-import javax.swing.Action;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -77,11 +77,11 @@ public class AppConfig extends AppProperties<SnotesExtension> {
 
     // We centralize these here so that KeyStrokeManager can handle updating
     // their keyboard accelerators when the user changes them in the properties dialog:
-    private Action aboutAction;
-    private Action extensionManagerAction;
-    private Action logConsoleAction;
-    private Action newNoteAction;
-    private Action preferencesAction;
+    private EnhancedAction aboutAction;
+    private EnhancedAction extensionManagerAction;
+    private EnhancedAction logConsoleAction;
+    private EnhancedAction newNoteAction;
+    private EnhancedAction preferencesAction;
 
     private BooleanProperty enableSingleInstance;
     private LookAndFeelProperty lookAndFeelProp;
@@ -136,23 +136,23 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         desktopLogoPlacementProp.setSelectedItem(placement);
     }
 
-    public Action getAboutAction() {
+    public EnhancedAction getAboutAction() {
         return aboutAction;
     }
 
-    public Action getExtensionManagerAction() {
+    public EnhancedAction getExtensionManagerAction() {
         return extensionManagerAction;
     }
 
-    public Action getLogConsoleAction() {
+    public EnhancedAction getLogConsoleAction() {
         return logConsoleAction;
     }
 
-    public Action getNewNoteAction() {
+    public EnhancedAction getNewNoteAction() {
         return newNoteAction;
     }
 
-    public Action getPreferencesAction() {
+    public EnhancedAction getPreferencesAction() {
         return preferencesAction;
     }
 
