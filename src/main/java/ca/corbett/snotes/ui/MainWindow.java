@@ -82,8 +82,11 @@ public class MainWindow extends JFrame implements UIReloadable {
                                                   AppConfig.getInstance().getDesktopLogoAlpha(),
                                                   AppConfig.getInstance().getDesktopGradient());
 
-        actionPanel.getColorOptions().setFromTheme(ColorTheme.DEFAULT);
+        // One-time customization of ActionPanel:
+        actionPanel.getColorOptions().setFromTheme(ColorTheme.DEFAULT); // TODO should be a config option; fine for now
         actionPanel.getActionGroupMargins().setAll(8).setInternalSpacing(12).setTop(12);
+        actionPanel.setHeaderIconSize(20);
+        actionPanel.getExpandCollapseOptions().setAllowHeaderDoubleClick(true);
 
         JSplitPane splitPane = new JSplitPane();
         splitPane.setOneTouchExpandable(false); // Sadly, this does not play well with some look and feels
@@ -130,12 +133,15 @@ public class MainWindow extends JFrame implements UIReloadable {
             groups.add(ActionGroup.buildReadGroup());
             groups.add(ActionGroup.buildWriteGroup());
             groups.addAll(SnotesExtensionManager.getInstance().getActionGroups());
+            groups.add(ActionGroup.buildOptionsGroup()); // Add Options group last for consistency
             for (ActionGroup group : groups) {
                 for (EnhancedAction action : group.getActions()) {
                     actionPanel.add(group.getName(), action);
                 }
+                if (group.getIcon() != null) {
+                    actionPanel.setGroupIcon(group.getName(), group.getIcon());
+                }
             }
-            groups.add(ActionGroup.buildOptionsGroup()); // Add Options group last for consistency
         }
         finally {
             // Re-enabling this triggers an automatic rebuild:

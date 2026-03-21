@@ -51,9 +51,9 @@ public class Resources {
         try {
             logoIcon = Toolkit.getDefaultToolkit().createImage(logoIconUrl);
             logoWide = ImageUtil.loadImage(logoWideUrl);
-            iconRead = new ImageIcon(iconReadUrl);
-            iconWrite = new ImageIcon(iconWriteUrl);
-            iconOptions = new ImageIcon(iconOptionsUrl);
+            iconRead = new ImageIcon(ImageUtil.loadImage(iconReadUrl));
+            iconWrite = new ImageIcon(ImageUtil.loadImage(iconWriteUrl));
+            iconOptions = new ImageIcon(ImageUtil.loadImage(iconOptionsUrl));
         }
         catch (Exception e) {
             logger.severe("Failed to load one or more resource images: " + e.getMessage());
