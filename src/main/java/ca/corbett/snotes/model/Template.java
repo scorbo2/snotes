@@ -1,5 +1,6 @@
 package ca.corbett.snotes.model;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -8,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * A Template is a way to create a new Note with some metadata already filled in.
@@ -29,6 +31,8 @@ import java.util.List;
  * @since Snotes 2.0
  */
 public class Template {
+
+    private static final Logger log = Logger.getLogger(Template.class.getName());
 
     public static final String DEFAULT_NAME = "Untitled Template";
     public static final int NAME_LENGTH_LIMIT = 25;
@@ -241,13 +245,75 @@ public class Template {
         }
 
         ObjectMapper mapper = new ObjectMapper();
-        ObjectNode rootNode = (ObjectNode)mapper.readTree(sourceFile);
-        Template template = new Template(rootNode.get("name").asText());
-        template.setDateOption(DateOption.valueOf(rootNode.get("dateOption").asText()));
-        template.setContext(Context.valueOf(rootNode.get("context").asText()));
-        ArrayNode tagsArray = (ArrayNode)rootNode.get("tags");
-        for (int i = 0; i < tagsArray.size(); i++) {
-            template.addTag(tagsArray.get(i).asText());
+        JsonNode parsedNode = mapper.readTree(sourceFile);
+        if (parsedNode == null || parsedNode.isNull() || parsedNode.isMissingNode() || !parsedNode.isObject()) {
+            // This can happen with empty/blank files, JSON arrays, bare scalars, or other non-object content:
+            throw new IOException("Source file does not contain a valid JSON object: " + sourceFile.getAbsolutePath());
+        }
+        ObjectNode rootNode = (ObjectNode)parsedNode;
+
+        // Set name if present:
+        String name = DEFAULT_NAME;
+        JsonNode nameNode = rootNode.get("name");
+        if (nameNode != null && !nameNode.isNull() && nameNode.isTextual()) {
+            name = nameNode.asText();
+            if (name.isBlank()) {
+                log.warning("Template name is blank in file: "
+                                + sourceFile.getAbsolutePath()
+                                + ". Setting to default name.");
+                name = DEFAULT_NAME;
+            }
+        }
+
+        // Try to parse out a date option:
+        DateOption dateOption = DateOption.NONE;
+        JsonNode dateNode = rootNode.get("dateOption");
+        if (dateNode != null && !dateNode.isNull() && dateNode.isTextual()) {
+            try {
+                dateOption = DateOption.valueOf(dateNode.asText());
+            }
+            catch (IllegalArgumentException iae) {
+                log.warning("Invalid date option \"" + dateNode.asText() + "\" in template file: "
+                                + sourceFile.getAbsolutePath()
+                                + ". Setting to default (no date).");
+            }
+        }
+
+        // Try to parse out a context option:
+        Context context = Context.NONE;
+        JsonNode contextNode = rootNode.get("context");
+        if (contextNode != null && !contextNode.isNull() && contextNode.isTextual()) {
+            try {
+                context = Context.valueOf(contextNode.asText());
+            }
+            catch (IllegalArgumentException iae) {
+                log.warning("Invalid context option \"" + contextNode.asText() + "\" in template file: "
+                                + sourceFile.getAbsolutePath()
+                                + ". Setting to default (no context).");
+            }
+        }
+
+        // Parse out tag list if present:
+        List<String> tagList = new ArrayList<>();
+        JsonNode tagsNode = rootNode.get("tags");
+        if (tagsNode != null && !tagsNode.isNull() && tagsNode.isArray()) {
+            for (JsonNode tagNode : tagsNode) {
+                if (tagNode.isTextual()) {
+                    tagList.add(tagNode.asText());
+                }
+                else {
+                    log.warning("Invalid tag value in template file: "
+                                    + sourceFile.getAbsolutePath()
+                                    + ". Skipping invalid tag.");
+                }
+            }
+        }
+
+        Template template = new Template(name);
+        template.setDateOption(dateOption);
+        template.setContext(context);
+        for (String tag : tagList) {
+            template.addTag(tag);
         }
         return template;
     }

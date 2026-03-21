@@ -5,6 +5,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -316,6 +317,202 @@ public class TemplateTest {
         // WHEN we try to load from it:
         // THEN it should throw an IOException:
         assertThrows(IOException.class, () -> Template.load(nonExistent));
+    }
+
+    // -----------------------------------------------------------------------
+    // load with malformed or edge-case content tests
+    // -----------------------------------------------------------------------
+
+    @Test
+    public void load_withEmptyFile_shouldThrowIOException() throws IOException {
+        // GIVEN a file that is completely empty (Jackson readTree returns null for empty input):
+        File emptyFile = File.createTempFile("empty", ".template", tempDir);
+
+        // WHEN we try to load from it:
+        // THEN it should throw an IOException:
+        assertThrows(IOException.class, () -> Template.load(emptyFile));
+    }
+
+    @Test
+    public void load_withMalformedJson_shouldThrowIOException() throws IOException {
+        // GIVEN a file containing invalid JSON syntax:
+        File malformedFile = File.createTempFile("malformed", ".template", tempDir);
+        Files.writeString(malformedFile.toPath(), "{this is not : valid [ json !!!");
+
+        // WHEN we try to load from it:
+        // THEN Jackson throws JsonParseException (an IOException subclass):
+        assertThrows(IOException.class, () -> Template.load(malformedFile));
+    }
+
+    @Test
+    public void load_withMissingNameField_shouldUseDefaultName() throws IOException {
+        // GIVEN a valid JSON file that has no "name" field at all:
+        File file = File.createTempFile("no-name", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"dateOption\":\"NONE\",\"context\":\"NONE\",\"tags\":[]}");
+
+        // WHEN we load it:
+        Template loaded = Template.load(file);
+
+        // THEN the name should fall back to DEFAULT_NAME:
+        assertEquals(Template.DEFAULT_NAME, loaded.getName());
+    }
+
+    @Test
+    public void load_withBlankName_shouldUseDefaultName() throws IOException {
+        // GIVEN a valid JSON file where the "name" value is blank whitespace:
+        File file = File.createTempFile("blank-name", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":\"   \",\"dateOption\":\"NONE\",\"context\":\"NONE\",\"tags\":[]}");
+
+        // WHEN we load it:
+        Template loaded = Template.load(file);
+
+        // THEN the name should fall back to DEFAULT_NAME:
+        assertEquals(Template.DEFAULT_NAME, loaded.getName());
+    }
+
+    @Test
+    public void load_withNullNameNode_shouldUseDefaultName() throws IOException {
+        // GIVEN a valid JSON file where "name" is explicitly JSON null:
+        File file = File.createTempFile("null-name", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":null,\"dateOption\":\"NONE\",\"context\":\"NONE\",\"tags\":[]}");
+
+        // WHEN we load it:
+        Template loaded = Template.load(file);
+
+        // THEN the name should fall back to DEFAULT_NAME:
+        assertEquals(Template.DEFAULT_NAME, loaded.getName());
+    }
+
+    @Test
+    public void load_withInvalidDateOption_shouldUseNoneDateOption() throws IOException {
+        // GIVEN a JSON file with an unrecognized "dateOption" string:
+        File file = File.createTempFile("bad-date", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":\"Test\",\"dateOption\":\"INVALID_OPTION\",\"context\":\"NONE\",\"tags\":[]}");
+
+        // WHEN we load it:
+        Template loaded = Template.load(file);
+
+        // THEN the dateOption should fall back to NONE:
+        assertEquals(Template.DateOption.NONE, loaded.getDateOption());
+    }
+
+    @Test
+    public void load_withMissingDateOptionField_shouldUseNoneDateOption() throws IOException {
+        // GIVEN a JSON file with no "dateOption" field:
+        File file = File.createTempFile("no-date", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":\"Test\",\"context\":\"NONE\",\"tags\":[]}");
+
+        // WHEN we load it:
+        Template loaded = Template.load(file);
+
+        // THEN the dateOption should fall back to NONE:
+        assertEquals(Template.DateOption.NONE, loaded.getDateOption());
+    }
+
+    @Test
+    public void load_withNullDateOptionNode_shouldUseNoneDateOption() throws IOException {
+        // GIVEN a JSON file where "dateOption" is explicitly JSON null:
+        File file = File.createTempFile("null-date", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":\"Test\",\"dateOption\":null,\"context\":\"NONE\",\"tags\":[]}");
+
+        // WHEN we load it:
+        Template loaded = Template.load(file);
+
+        // THEN the dateOption should fall back to NONE:
+        assertEquals(Template.DateOption.NONE, loaded.getDateOption());
+    }
+
+    @Test
+    public void load_withInvalidContext_shouldUseNoneContext() throws IOException {
+        // GIVEN a JSON file with an unrecognized "context" string:
+        File file = File.createTempFile("bad-ctx", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":\"Test\",\"dateOption\":\"NONE\",\"context\":\"INVALID_CONTEXT\",\"tags\":[]}");
+
+        // WHEN we load it:
+        Template loaded = Template.load(file);
+
+        // THEN the context should fall back to NONE:
+        assertEquals(Template.Context.NONE, loaded.getContext());
+    }
+
+    @Test
+    public void load_withMissingContextField_shouldUseNoneContext() throws IOException {
+        // GIVEN a JSON file with no "context" field:
+        File file = File.createTempFile("no-ctx", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":\"Test\",\"dateOption\":\"NONE\",\"tags\":[]}");
+
+        // WHEN we load it:
+        Template loaded = Template.load(file);
+
+        // THEN the context should fall back to NONE:
+        assertEquals(Template.Context.NONE, loaded.getContext());
+    }
+
+    @Test
+    public void load_withNullContextNode_shouldUseNoneContext() throws IOException {
+        // GIVEN a JSON file where "context" is explicitly JSON null:
+        File file = File.createTempFile("null-ctx", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":\"Test\",\"dateOption\":\"NONE\",\"context\":null,\"tags\":[]}");
+
+        // WHEN we load it:
+        Template loaded = Template.load(file);
+
+        // THEN the context should fall back to NONE:
+        assertEquals(Template.Context.NONE, loaded.getContext());
+    }
+
+    @Test
+    public void load_withNonTextualTagValues_shouldSkipInvalidTags() throws IOException {
+        // GIVEN a JSON file where the tags array contains a mix of valid strings and non-string values:
+        File file = File.createTempFile("bad-tags", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":\"Test\",\"dateOption\":\"NONE\",\"context\":\"NONE\"," +
+                          "\"tags\":[\"valid-tag\",42,null,true]}");
+
+        // WHEN we load it:
+        Template loaded = Template.load(file);
+
+        // THEN only the valid textual tag should be present; non-strings are silently skipped:
+        assertEquals(1, loaded.getTagList().size());
+        assertEquals("valid-tag", loaded.getTagList().get(0).getTag());
+    }
+
+    @Test
+    public void load_withTagsNotArray_shouldHaveNoTags() throws IOException {
+        // GIVEN a JSON file where "tags" is a plain string rather than an array:
+        File file = File.createTempFile("tags-not-array", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":\"Test\",\"dateOption\":\"NONE\",\"context\":\"NONE\"," +
+                          "\"tags\":\"not-an-array\"}");
+
+        // WHEN we load it:
+        Template loaded = Template.load(file);
+
+        // THEN the tag list should be empty (non-array tags field is silently ignored):
+        assertTrue(loaded.getTagList().isEmpty());
+    }
+
+    @Test
+    public void load_withMissingTagsField_shouldHaveNoTags() throws IOException {
+        // GIVEN a JSON file with no "tags" field at all:
+        File file = File.createTempFile("no-tags", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":\"Test\",\"dateOption\":\"NONE\",\"context\":\"NONE\"}");
+
+        // WHEN we load it:
+        Template loaded = Template.load(file);
+
+        // THEN the tag list should be empty:
+        assertTrue(loaded.getTagList().isEmpty());
     }
 
     // -----------------------------------------------------------------------

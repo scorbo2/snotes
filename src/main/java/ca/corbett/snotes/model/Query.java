@@ -189,8 +189,8 @@ public class Query {
 
         ObjectMapper mapper = new ObjectMapper();
         JsonNode rootNode = mapper.readTree(sourceFile);
-        if (rootNode == null) {
-            // This can happen with empty or blank files, and possibly other wonky scenarios as well:
+        if (rootNode == null || rootNode.isNull() || rootNode.isMissingNode() || !rootNode.isObject()) {
+            // This can happen with empty/blank files, JSON arrays, bare scalars, or other non-object content:
             throw new IOException("Failed to parse Query from file: " + sourceFile.getAbsolutePath());
         }
 
