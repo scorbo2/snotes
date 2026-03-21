@@ -16,6 +16,7 @@ import ca.corbett.extras.properties.LookAndFeelProperty;
 import ca.corbett.snotes.extensions.SnotesExtension;
 import ca.corbett.snotes.extensions.SnotesExtensionManager;
 import ca.corbett.snotes.ui.actions.AboutAction;
+import ca.corbett.snotes.ui.actions.ExitAction;
 import ca.corbett.snotes.ui.actions.ExtensionManagerAction;
 import ca.corbett.snotes.ui.actions.LogConsoleAction;
 import ca.corbett.snotes.ui.actions.NewNoteAction;
@@ -74,6 +75,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
     public static final String KEY_LOG_CONSOLE = KEYSTROKE_PREFIX + "General.logConsole";
     public static final String KEY_NEW_NOTE = KEYSTROKE_PREFIX + "General.newNote";
     public static final String KEY_PREFERENCES = KEYSTROKE_PREFIX + "General.preferences";
+    public static final String KEY_EXIT = KEYSTROKE_PREFIX + "General.exit";
 
     // We centralize these here so that KeyStrokeManager can handle updating
     // their keyboard accelerators when the user changes them in the properties dialog:
@@ -82,6 +84,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
     private EnhancedAction logConsoleAction;
     private EnhancedAction newNoteAction;
     private EnhancedAction preferencesAction;
+    private EnhancedAction exitAction;
 
     private BooleanProperty enableSingleInstance;
     private LookAndFeelProperty lookAndFeelProp;
@@ -156,6 +159,10 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         return preferencesAction;
     }
 
+    public EnhancedAction getExitAction() {
+        return exitAction;
+    }
+
     /**
      * Returns all KeyStrokeProperty instances defined in the application config,
      * or offered by any currently-enabled extension.
@@ -169,6 +176,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_LOG_CONSOLE));
         keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_NEW_NOTE));
         keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_PREFERENCES));
+        keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_EXIT));
 
         // And now ask our extension manager:
         keyProps.addAll(SnotesExtensionManager.getInstance().getKeyStrokeProperties());
@@ -213,6 +221,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         logConsoleAction = new LogConsoleAction();
         newNoteAction = new NewNoteAction();
         preferencesAction = new PrefsAction();
+        exitAction = new ExitAction();
 
         List<AbstractProperty> props = new ArrayList<>();
 
@@ -230,6 +239,9 @@ public class AppConfig extends AppProperties<SnotesExtension> {
                       .setAllowBlank(true));
         props.add(new KeyStrokeProperty(KEY_PREFERENCES, "Preferences:",
                                         KeyStrokeManager.parseKeyStroke("Ctrl+P"), preferencesAction)
+                      .setAllowBlank(true));
+        props.add(new KeyStrokeProperty(KEY_EXIT, "Exit:",
+                                        KeyStrokeManager.parseKeyStroke("Ctrl+Q"), exitAction)
                       .setAllowBlank(true));
 
         return props;
