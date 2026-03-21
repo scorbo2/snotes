@@ -4,16 +4,24 @@ import ca.corbett.extensions.AppProperties;
 import ca.corbett.extras.CustomizableDesktopPane;
 import ca.corbett.extras.gradient.ColorSelectionType;
 import ca.corbett.extras.gradient.Gradient;
+import ca.corbett.extras.io.KeyStrokeManager;
 import ca.corbett.extras.properties.AbstractProperty;
 import ca.corbett.extras.properties.BooleanProperty;
 import ca.corbett.extras.properties.ColorProperty;
 import ca.corbett.extras.properties.DecimalProperty;
 import ca.corbett.extras.properties.EnumProperty;
+import ca.corbett.extras.properties.KeyStrokeProperty;
 import ca.corbett.extras.properties.LookAndFeelProperty;
 import ca.corbett.snotes.extensions.SnotesExtension;
 import ca.corbett.snotes.extensions.SnotesExtensionManager;
+import ca.corbett.snotes.ui.actions.AboutAction;
+import ca.corbett.snotes.ui.actions.ExtensionManagerAction;
+import ca.corbett.snotes.ui.actions.LogConsoleAction;
+import ca.corbett.snotes.ui.actions.NewNoteAction;
+import ca.corbett.snotes.ui.actions.PrefsAction;
 import com.formdev.flatlaf.FlatLightLaf;
 
+import javax.swing.Action;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +57,31 @@ public class AppConfig extends AppProperties<SnotesExtension> {
      * We expose this one because it's referenced elsewhere in the code.
      */
     public static final String SINGLE_INSTANCE_PROP = "UI.General.singleInstance";
+
+    /**
+     * Extensions can use this prefix when defining their own keystroke properties,
+     * so that they show up on the same properties dialog tab as the other ones.
+     * This is optional! Extensions can opt to keep all of their properties
+     * on their own separate tab if they prefer.
+     * <p>
+     * Suggested format: KEYSTROKE_PREFIX + ExtensionUserFriendlyName + "." + ActionName
+     * </p>
+     */
+    public static final String KEYSTROKE_PREFIX = "Keystrokes.";
+
+    public static final String KEY_ABOUT = KEYSTROKE_PREFIX + "General.about";
+    public static final String KEY_EXT_MANAGER = KEYSTROKE_PREFIX + "General.extensionManager";
+    public static final String KEY_LOG_CONSOLE = KEYSTROKE_PREFIX + "General.logConsole";
+    public static final String KEY_NEW_NOTE = KEYSTROKE_PREFIX + "General.newNote";
+    public static final String KEY_PREFERENCES = KEYSTROKE_PREFIX + "General.preferences";
+
+    // We centralize these here so that KeyStrokeManager can handle updating
+    // their keyboard accelerators when the user changes them in the properties dialog:
+    private Action aboutAction;
+    private Action extensionManagerAction;
+    private Action logConsoleAction;
+    private Action newNoteAction;
+    private Action preferencesAction;
 
     private BooleanProperty enableSingleInstance;
     private LookAndFeelProperty lookAndFeelProp;
@@ -103,6 +136,46 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         desktopLogoPlacementProp.setSelectedItem(placement);
     }
 
+    public Action getAboutAction() {
+        return aboutAction;
+    }
+
+    public Action getExtensionManagerAction() {
+        return extensionManagerAction;
+    }
+
+    public Action getLogConsoleAction() {
+        return logConsoleAction;
+    }
+
+    public Action getNewNoteAction() {
+        return newNoteAction;
+    }
+
+    public Action getPreferencesAction() {
+        return preferencesAction;
+    }
+
+    /**
+     * Returns all KeyStrokeProperty instances defined in the application config,
+     * or offered by any currently-enabled extension.
+     */
+    public List<KeyStrokeProperty> getKeyStrokeProperties() {
+        List<KeyStrokeProperty> keyProps = new ArrayList<>();
+
+        // Add the ones we control:
+        keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_ABOUT));
+        keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_EXT_MANAGER));
+        keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_LOG_CONSOLE));
+        keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_NEW_NOTE));
+        keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_PREFERENCES));
+
+        // And now ask our extension manager:
+        keyProps.addAll(SnotesExtensionManager.getInstance().getKeyStrokeProperties());
+
+        return keyProps;
+    }
+
     @Override
     protected List<AbstractProperty> createInternalProperties() {
         List<AbstractProperty> props = new ArrayList<>();
@@ -129,6 +202,35 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         props.add(desktopLogoAlphaProp);
         props.add(desktopGradientProp);
         props.add(desktopLogoPlacementProp);
+        props.addAll(createKeystrokeProperties());
+
+        return props;
+    }
+
+    private List<AbstractProperty> createKeystrokeProperties() {
+        aboutAction = new AboutAction();
+        extensionManagerAction = new ExtensionManagerAction();
+        logConsoleAction = new LogConsoleAction();
+        newNoteAction = new NewNoteAction();
+        preferencesAction = new PrefsAction();
+
+        List<AbstractProperty> props = new ArrayList<>();
+
+        props.add(new KeyStrokeProperty(KEY_ABOUT, "About dialog:",
+                                        KeyStrokeManager.parseKeyStroke("Ctrl+A"), aboutAction)
+                      .setAllowBlank(true));
+        props.add(new KeyStrokeProperty(KEY_EXT_MANAGER, "Extension Manager:",
+                                        KeyStrokeManager.parseKeyStroke("Ctrl+E"), extensionManagerAction)
+                      .setAllowBlank(true));
+        props.add(new KeyStrokeProperty(KEY_LOG_CONSOLE, "Log Console:",
+                                        KeyStrokeManager.parseKeyStroke("Ctrl+L"), logConsoleAction)
+                      .setAllowBlank(true));
+        props.add(new KeyStrokeProperty(KEY_NEW_NOTE, "New note:",
+                                        KeyStrokeManager.parseKeyStroke("Ctrl+N"), newNoteAction)
+                      .setAllowBlank(true));
+        props.add(new KeyStrokeProperty(KEY_PREFERENCES, "Preferences:",
+                                        KeyStrokeManager.parseKeyStroke("Ctrl+P"), preferencesAction)
+                      .setAllowBlank(true));
 
         return props;
     }

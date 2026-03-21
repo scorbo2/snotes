@@ -2,8 +2,10 @@ package ca.corbett.snotes.extensions.builtin;
 
 import ca.corbett.extensions.AppExtensionInfo;
 import ca.corbett.extras.EnhancedAction;
+import ca.corbett.extras.io.KeyStrokeManager;
 import ca.corbett.extras.properties.AbstractProperty;
 import ca.corbett.extras.properties.BooleanProperty;
+import ca.corbett.extras.properties.KeyStrokeProperty;
 import ca.corbett.extras.properties.LabelProperty;
 import ca.corbett.snotes.Version;
 import ca.corbett.snotes.extensions.SnotesExtension;
@@ -26,6 +28,7 @@ public class TestExtension extends SnotesExtension {
     private final AppExtensionInfo extInfo;
 
     private static final String TASK_PANE_NAME = "Test1";
+    private final EnhancedAction keyStrokeAction;
 
     public TestExtension() {
         extInfo = new AppExtensionInfo.Builder("Test extension")
@@ -36,6 +39,9 @@ public class TestExtension extends SnotesExtension {
             .setShortDescription("Test extension")
             .setLongDescription("Just a test of the Snotes extension system.")
             .build();
+
+        keyStrokeAction = new DummyAction("Test keystroke action",
+                                          "You triggered the test keystroke action!");
     }
 
     @Override
@@ -54,6 +60,9 @@ public class TestExtension extends SnotesExtension {
         props.add(new BooleanProperty("TestExtension.Options.checkbox2", "Enable feature 2", true));
         props.add(new LabelProperty("TestExtension.Note.label1",
                                     "Testing properties integration - these properties do nothing."));
+        props.add(new KeyStrokeProperty("TestExtension.Options.testKeyStroke", "Test keystroke",
+                                        KeyStrokeManager.parseKeyStroke("Ctrl+Shift+T"), keyStrokeAction)
+                      .setAllowBlank(true)); // Make sure extensions can contribute keystroke props.
         return props;
     }
 

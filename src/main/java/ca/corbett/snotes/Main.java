@@ -78,7 +78,6 @@ public class Main {
 
         // Load all extra Look and Feels:
         LookAndFeelManager.installExtraLafs();
-        final MainWindow mainWindow = MainWindow.getInstance();
 
         // Load all extensions:
         SnotesExtensionManager extManager = SnotesExtensionManager.getInstance();
@@ -91,6 +90,7 @@ public class Main {
         AppConfig.getInstance().load();
 
         // Get MainWindow ready but don't show it just yet:
+        final MainWindow mainWindow = MainWindow.getInstance();
         SwingUtilities.invokeLater(() -> {
             LookAndFeelManager.switchLaf(AppConfig.getInstance().getLookAndFeelClassName());
             mainWindow.processStartArgs(Arrays.asList(args));

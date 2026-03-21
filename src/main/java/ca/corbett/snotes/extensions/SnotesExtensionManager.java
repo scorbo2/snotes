@@ -2,6 +2,7 @@ package ca.corbett.snotes.extensions;
 
 import ca.corbett.extensions.ExtensionManager;
 import ca.corbett.extras.EnhancedAction;
+import ca.corbett.extras.properties.KeyStrokeProperty;
 import ca.corbett.snotes.Version;
 import ca.corbett.snotes.extensions.builtin.TestExtension;
 import ca.corbett.snotes.ui.actions.ActionGroup;
@@ -64,6 +65,23 @@ public class SnotesExtensionManager extends ExtensionManager<SnotesExtension> {
             // But, just in case, let's have additional logging here.
             logger.log(Level.SEVERE, "One or more extensions could not be loaded.", le);
         }
+    }
+
+    /**
+     * Returns all KeyStrokeProperty instances supplied by enabled extensions.
+     * Extensions can supply KeyStrokeProperty instances as part of their usual
+     * configuration properties. We have a separate getter for them here as a
+     * convenience when registering keyboard shortcuts with our KeyStrokeManager.
+     * Properties from currently-disabled extensions will not be included.
+     *
+     * @return A List of KeyStrokeProperty instances supplied by enabled extensions.
+     */
+    public List<KeyStrokeProperty> getKeyStrokeProperties() {
+        return getAllEnabledExtensionProperties()
+            .stream()
+            .filter(p -> p instanceof KeyStrokeProperty)
+            .map(p -> (KeyStrokeProperty)p)
+            .toList();
     }
 
     /**

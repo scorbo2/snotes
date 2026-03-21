@@ -5,7 +5,9 @@ import ca.corbett.extras.EnhancedAction;
 import ca.corbett.extras.SingleInstanceManager;
 import ca.corbett.extras.actionpanel.ActionPanel;
 import ca.corbett.extras.actionpanel.ColorTheme;
+import ca.corbett.extras.io.KeyStrokeManager;
 import ca.corbett.extras.logging.LogConsole;
+import ca.corbett.extras.properties.KeyStrokeProperty;
 import ca.corbett.snotes.AppConfig;
 import ca.corbett.snotes.Resources;
 import ca.corbett.snotes.Version;
@@ -34,6 +36,7 @@ public class MainWindow extends JFrame implements UIReloadable {
     private static final Logger logger = Logger.getLogger(MainWindow.class.getName());
     private static MainWindow instance = null;
     private final ActionPanel actionPanel;
+    private final KeyStrokeManager keyStrokeManager;
     private boolean cleanupComplete;
 
     private CustomizableDesktopPane desktopPane;
@@ -44,6 +47,7 @@ public class MainWindow extends JFrame implements UIReloadable {
         setSize(800, 600);
         setMinimumSize(new Dimension(500, 400));
         setLocationRelativeTo(null); // center on default display
+        keyStrokeManager = new KeyStrokeManager(this);
         actionPanel = new ActionPanel();
         initComponents();
         addWindowListener(new WindowCloseHandler());
@@ -108,6 +112,7 @@ public class MainWindow extends JFrame implements UIReloadable {
         logger.info("Shutting down: MainWindow cleanup invoked.");
 
         actionPanel.dispose();
+        keyStrokeManager.dispose();
         SnotesExtensionManager.getInstance().deactivateAll();
         SingleInstanceManager.getInstance().release();
     }
@@ -146,6 +151,18 @@ public class MainWindow extends JFrame implements UIReloadable {
         finally {
             // Re-enabling this triggers an automatic rebuild:
             actionPanel.setAutoRebuildEnabled(true);
+        }
+
+        // Clear all keystrokes and reload, since they are all user-configurable:
+        keyStrokeManager.clear();
+        for (KeyStrokeProperty prop : AppConfig.getInstance().getKeyStrokeProperties()) {
+            // If there's no Action attached, or if there is no keystroke assigned to it, skip it:
+            if (prop.getAction() == null || prop.getKeyStroke() == null) {
+                continue;
+            }
+
+            // Register it! This will update the shortcut attached to our menu items as well:
+            keyStrokeManager.registerHandler(prop.getKeyStroke(), prop.getAction());
         }
     }
 
