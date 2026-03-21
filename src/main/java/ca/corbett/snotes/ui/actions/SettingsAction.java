@@ -7,21 +7,20 @@ import ca.corbett.snotes.ui.MainWindow;
 import java.awt.event.ActionEvent;
 
 /**
- * Action to open the Extension Manager dialog.
+ * An action for showing the application settings dialog.
  *
  * @author <a href="https://github.com/scorbo2">scorbo2</a>
  * @since Snotes 2.0
  */
-public class ExtensionManagerAction extends EnhancedAction {
+public class SettingsAction extends EnhancedAction {
 
-    public ExtensionManagerAction() {
-        super("Extension Manager");
+    public SettingsAction() {
+        super("Settings");
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (AppConfig.getInstance().showExtensionDialog(MainWindow.getInstance())) {
-            // Reload the UI to reflect any changes in extensions:
+        if (AppConfig.getInstance().showPropertiesDialog(MainWindow.getInstance())) {
             UIReloadAction.getInstance().actionPerformed(null);
         }
     }

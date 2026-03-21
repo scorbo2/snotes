@@ -4,6 +4,7 @@ import ca.corbett.extras.LookAndFeelManager;
 import ca.corbett.extras.SingleInstanceManager;
 import ca.corbett.extras.progress.SimpleProgressWorker;
 import ca.corbett.extras.progress.SplashProgressWindow;
+import ca.corbett.snotes.extensions.SnotesExtensionManager;
 import ca.corbett.snotes.ui.MainWindow;
 
 import javax.swing.JFrame;
@@ -43,19 +44,18 @@ import java.util.logging.Logger;
  */
 public class Main {
 
+    public static final int SINGLE_INSTANCE_PORT = 56624; // arbitrary random port choice
+
     public static void main(String[] args) {
         // Before we do anything else, set up logging:
         configureLogging();
 
         // Ensure only a single instance is running (if configured to do so):
-        //boolean isSingleInstanceEnabled = Boolean.parseBoolean(AppConfig.peek("UI.General.singleInstance"));
-
-        // TODO wire up AppConfig... for now, just hard-code it to true
-        boolean isSingleInstanceEnabled = true;
+        boolean isSingleInstanceEnabled = Boolean.parseBoolean(AppConfig.peek(AppConfig.SINGLE_INSTANCE_PROP));
 
         if (isSingleInstanceEnabled) {
             SingleInstanceManager instanceManager = SingleInstanceManager.getInstance();
-            if (!instanceManager.tryAcquireLock(Main::handleStartArgs)) {
+            if (!instanceManager.tryAcquireLock(Main::handleStartArgs, SINGLE_INSTANCE_PORT)) {
                 // Another instance is already running, let's send our args to it and exit:
                 // Send even if empty, as this will force the main window to the front.
                 SingleInstanceManager.getInstance().sendArgsToRunningInstance(args);
@@ -79,6 +79,13 @@ public class Main {
         // Load all extra Look and Feels:
         LookAndFeelManager.installExtraLafs();
         final MainWindow mainWindow = MainWindow.getInstance();
+
+        // Load all extensions:
+        SnotesExtensionManager extManager = SnotesExtensionManager.getInstance();
+        extManager.loadAll();
+        extManager.activateAll();
+        logger.log(Level.INFO, "Loaded {0} extensions ({1} enabled).",
+                   new Object[]{extManager.getLoadedExtensionCount(), extManager.getEnabledLoadedExtensions().size()});
 
         // Load up our application configuration:
         AppConfig.getInstance().load();

@@ -1,9 +1,9 @@
 package ca.corbett.snotes.extensions;
 
 import ca.corbett.extensions.AppExtension;
+import ca.corbett.extras.EnhancedAction;
+import ca.corbett.snotes.ui.actions.ActionGroup;
 
-import javax.swing.Action;
-import javax.swing.ImageIcon;
 import java.util.List;
 
 /**
@@ -19,50 +19,27 @@ import java.util.List;
 public abstract class SnotesExtension extends AppExtension {
 
     /**
-     * If the extension wishes to supply one or more additional task panes,
-     * this method should return a list of names of those task panes.
-     * Returning null or an empty list is fine, if there are no extra task panes.
+     * Extensions can optionally supply a list of ActionGroups to be added
+     * to the main ActionPanel on the main window. Returning null or an empty list is fine.
+     * The returned ActionGroups should be populated with whatever actions the
+     * extension wants to add to the UI.
+     */
+    public List<ActionGroup> getActionGroups() {
+        return List.of();
+    }
+
+    /**
+     * Extensions can supply actions to be added to the built-in ActionGroups.
+     * The given group name will be one of ActionGroup.READ, ActionGroup.WRITE,
+     * or ActionGroup.OPTIONS. Extensions that have actions that don't belong
+     * in one of the three built-in groups must supply their
+     * own action group(s) via getActionGroups(). This method will ONLY
+     * be invoked for the application's built-in action groups.
      * <p>
-     * <b>Note:</b> The names returned here will be used to identify the task panes
-     * in other extension methods, such as getExtraTaskPaneIcon() and
-     * getTaskPaneActions(). The supplied name may not conflict with one
-     * of the built-in task pane names defined in TaskPaneBuilder.StandardTaskPanes.
-     * If your extra task pane name conflicts with a built-in name, your
-     * extension's task pane will be ignored.
+     * Returning null or an empty list here is fine.
      * </p>
      */
-    public List<String> getExtraTaskPaneNames() {
+    public List<EnhancedAction> getExtraActions(String actionGroupName) {
         return List.of();
     }
-
-    /**
-     * If an extension supplies an extra task pane, it can also supply an icon to go
-     * with that task pane by implementing this method. The given taskPaneName
-     * will be one of the names returned by getExtraTaskPaneNames().
-     * Returning null is fine, but your task pane will be assigned a default icon.
-     */
-    public ImageIcon getExtraTaskPaneIcon(String taskPaneName) {
-        return null;
-    }
-
-    /**
-     * Extensions can supply actions to be added to specific task panes
-     * by implementing this method. The given taskPaneName will be either
-     * one of the built-in task panes defined in TaskPaneBuilder.StandardTaskPanes,
-     * or one of the names returned by getExtraTaskPaneNames().
-     * Returning null or an empty list is fine.
-     */
-    public List<Action> getTaskPaneActions(String taskPaneName) {
-        return List.of();
-    }
-
-    // TODO random thoughts for possible extension points (2.0 doesn't have to hit all of these):
-    // - loading/saving Snotes in custom formats (our IO classes need to allow for this)
-    // - custom tag types, or maybe different versions of existing tag types? custom date tag perhaps?
-    // - extension-supplied Actions that can be invoked when a Snote is created/edited/deleted
-    // - notify an extension when a Snote is loaded or saved (can't prevent the operation but can react to it)
-    // - hmm, actually... how about a pre-save hook? Like, spell-check before save, prompt to confirm if
-    //   snote is missing a certain tag, that sort of thing.
-    // - hooks in the edit window in general... let me add toolbar buttons, right click menu options, etc.
-    // - extensions should be allowed to provide queries and templates too.
 }

@@ -11,6 +11,7 @@ import java.util.logging.Logger;
 
 /**
  * A utility class for managing access to images and other resources.
+ * TODO swing-extras has a ResourceLoader class we could use instead of this...
  *
  * @author <a href="https://github.com/scorbo2">scorbo2</a>
  * @since Snotes 2.0
@@ -50,9 +51,9 @@ public class Resources {
         try {
             logoIcon = Toolkit.getDefaultToolkit().createImage(logoIconUrl);
             logoWide = ImageUtil.loadImage(logoWideUrl);
-            iconRead = new ImageIcon(iconReadUrl);
-            iconWrite = new ImageIcon(iconWriteUrl);
-            iconOptions = new ImageIcon(iconOptionsUrl);
+            iconRead = new ImageIcon(ImageUtil.loadImage(iconReadUrl));
+            iconWrite = new ImageIcon(ImageUtil.loadImage(iconWriteUrl));
+            iconOptions = new ImageIcon(ImageUtil.loadImage(iconOptionsUrl));
         }
         catch (Exception e) {
             logger.severe("Failed to load one or more resource images: " + e.getMessage());

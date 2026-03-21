@@ -1,17 +1,26 @@
 package ca.corbett.snotes.ui;
 
 import ca.corbett.extras.CustomizableDesktopPane;
+import ca.corbett.extras.EnhancedAction;
+import ca.corbett.extras.SingleInstanceManager;
 import ca.corbett.extras.actionpanel.ActionPanel;
+import ca.corbett.extras.actionpanel.ColorTheme;
 import ca.corbett.extras.logging.LogConsole;
 import ca.corbett.snotes.AppConfig;
 import ca.corbett.snotes.Resources;
 import ca.corbett.snotes.Version;
+import ca.corbett.snotes.extensions.SnotesExtensionManager;
+import ca.corbett.snotes.ui.actions.ActionGroup;
 import ca.corbett.snotes.ui.actions.UIReloadAction;
 
 import javax.swing.JFrame;
 import javax.swing.JSplitPane;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -23,7 +32,9 @@ import java.util.logging.Logger;
 public class MainWindow extends JFrame implements UIReloadable {
 
     private static final Logger logger = Logger.getLogger(MainWindow.class.getName());
-    private static final MainWindow instance = new MainWindow();
+    private static MainWindow instance = null;
+    private final ActionPanel actionPanel;
+    private boolean cleanupComplete;
 
     private CustomizableDesktopPane desktopPane;
 
@@ -32,10 +43,17 @@ public class MainWindow extends JFrame implements UIReloadable {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(800, 600);
         setMinimumSize(new Dimension(500, 400));
+        setLocationRelativeTo(null); // center on default display
+        actionPanel = new ActionPanel();
         initComponents();
+        addWindowListener(new WindowCloseHandler());
+        cleanupComplete = false;
     }
 
     public static MainWindow getInstance() {
+        if (instance == null) {
+            instance = new MainWindow();
+        }
         return instance;
     }
 
@@ -50,11 +68,12 @@ public class MainWindow extends JFrame implements UIReloadable {
             instance.setIconImage(Resources.getLogoIcon());
             LogConsole.getInstance().setIconImage(Resources.getLogoIcon());
             UIReloadAction.getInstance().registerReloadable(this);
+            reloadUI(); // trigger an immediate reload to set everything up according to current settings
         }
     }
 
     public void processStartArgs(java.util.List<String> args) {
-        // TODO implement argument processing
+        // TODO implement argument processing - is there any for this app?
     }
 
     private void initComponents() {
@@ -63,14 +82,34 @@ public class MainWindow extends JFrame implements UIReloadable {
                                                   AppConfig.getInstance().getDesktopLogoAlpha(),
                                                   AppConfig.getInstance().getDesktopGradient());
 
+        // One-time customization of ActionPanel:
+        actionPanel.getColorOptions().setFromTheme(ColorTheme.DEFAULT); // TODO should be a config option; fine for now
+        actionPanel.getActionGroupMargins().setAll(8).setInternalSpacing(12).setTop(12);
+        actionPanel.setHeaderIconSize(20);
+        actionPanel.getExpandCollapseOptions().setAllowHeaderDoubleClick(true);
+
         JSplitPane splitPane = new JSplitPane();
         splitPane.setOneTouchExpandable(false); // Sadly, this does not play well with some look and feels
-        splitPane.setLeftComponent(new ActionPanel()); // TODO
+        splitPane.setLeftComponent(actionPanel);
         splitPane.setRightComponent(desktopPane);
         splitPane.setDividerLocation(0.25);
 
         setLayout(new BorderLayout());
         add(splitPane, BorderLayout.CENTER);
+    }
+
+    private void cleanup() {
+        // Make the method idempotent, just in case:
+        if (cleanupComplete) {
+            return;
+        }
+
+        cleanupComplete = true;
+        logger.info("Shutting down: MainWindow cleanup invoked.");
+
+        actionPanel.dispose();
+        SnotesExtensionManager.getInstance().deactivateAll();
+        SingleInstanceManager.getInstance().release();
     }
 
     /**
@@ -85,6 +124,58 @@ public class MainWindow extends JFrame implements UIReloadable {
         desktopPane.setLogoImagePlacement(AppConfig.getInstance().getDesktopLogoPlacement());
         desktopPane.repaint();
 
-        // TODO rebuild ActionPanel
+        // Remove ALL actions and rebuild from scratch, since all of it may have changed
+        // if extensions were enabled/disabled/installed/uninstalled.
+        actionPanel.setAutoRebuildEnabled(false);
+        try {
+            actionPanel.clear(true);
+            List<ActionGroup> groups = new ArrayList<>();
+            groups.add(ActionGroup.buildReadGroup());
+            groups.add(ActionGroup.buildWriteGroup());
+            groups.addAll(SnotesExtensionManager.getInstance().getActionGroups());
+            groups.add(ActionGroup.buildOptionsGroup()); // Add Options group last for consistency
+            for (ActionGroup group : groups) {
+                for (EnhancedAction action : group.getActions()) {
+                    actionPanel.add(group.getName(), action);
+                }
+                if (group.getIcon() != null) {
+                    actionPanel.setGroupIcon(group.getName(), group.getIcon());
+                }
+            }
+        }
+        finally {
+            // Re-enabling this triggers an automatic rebuild:
+            actionPanel.setAutoRebuildEnabled(true);
+        }
+    }
+
+    /**
+     * This class can ensure that our cleanup() method is invoked
+     * whenever the main window is closed, whether by user action
+     * or programmatically.
+     */
+    private static class WindowCloseHandler extends WindowAdapter {
+        /**
+         * Invoked when the user manually closes a window by clicking its X button
+         * or using a keyboard shortcut like Ctrl+Q or whatever. This event handler
+         * is NOT invoked when you manually dispose() the window (at least in my
+         * testing on linux mint). We need BOTH windowClosing() and windowClosed() handlers
+         * to ensure cleanup() is always invoked.
+         */
+        @Override
+        public void windowClosing(WindowEvent e) {
+            MainWindow.getInstance().cleanup();
+        }
+
+        /**
+         * Invoked when you programmatically dispose() of the window. Note that the
+         * user manually closing the window via the OS does NOT invoke this handler
+         * (at least in my testing on linux mint). We need BOTH windowClosing() and windowClosed() handlers
+         * to ensure cleanup() is always invoked.
+         */
+        @Override
+        public void windowClosed(WindowEvent e) {
+            MainWindow.getInstance().cleanup();
+        }
     }
 }

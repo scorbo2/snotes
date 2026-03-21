@@ -1,17 +1,15 @@
 package ca.corbett.snotes.extensions.builtin;
 
 import ca.corbett.extensions.AppExtensionInfo;
+import ca.corbett.extras.EnhancedAction;
 import ca.corbett.extras.properties.AbstractProperty;
 import ca.corbett.extras.properties.BooleanProperty;
 import ca.corbett.extras.properties.LabelProperty;
-import ca.corbett.snotes.Resources;
 import ca.corbett.snotes.Version;
 import ca.corbett.snotes.extensions.SnotesExtension;
 import ca.corbett.snotes.ui.MainWindow;
+import ca.corbett.snotes.ui.actions.ActionGroup;
 
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
@@ -65,46 +63,44 @@ public class TestExtension extends SnotesExtension {
     }
 
     /**
-     * We supply one extra task pane with some dummy actions in it.
+     * We supply one extra action group with some dummy actions in it.
      */
-    public List<String> getExtraTaskPaneNames() {
-        return List.of(TASK_PANE_NAME);
-    }
-
-    /**
-     * We supply an icon for our extra task pane.
-     */
-    public ImageIcon getExtraTaskPaneIcon(String taskPaneName) {
-        // Our icon should be used for our extra task pane, and it should be scaled to fit:
-        return TASK_PANE_NAME.equals(taskPaneName) ? new ImageIcon(Resources.getLogoIcon()) : null;
+    @Override
+    public List<ActionGroup> getActionGroups() {
+        ActionGroup group = new ActionGroup(TASK_PANE_NAME, null);
+        for (EnhancedAction action : getExtraActions(TASK_PANE_NAME)) {
+            group.addAction(action);
+        }
+        return List.of(group);
     }
 
     /**
      * We supply a couple of dummy actions for our extra task pane,
      * as well as some actions for the built-in task panes.
      */
-    public List<Action> getTaskPaneActions(String taskPaneName) {
+    @Override
+    public List<EnhancedAction> getExtraActions(String actionGroupName) {
         // Return some dummy action for our test task pane:
-        if (TASK_PANE_NAME.equals(taskPaneName)) {
+        if (TASK_PANE_NAME.equals(actionGroupName)) {
             return List.of(
                 new DummyAction("Say hello", "Hello from the test extension!"),
                 new DummyAction("Show version", "Snotes version: " + Version.VERSION)
             );
         }
 
-        else if ("read".equalsIgnoreCase(taskPaneName)) {
+        else if ("read".equalsIgnoreCase(actionGroupName)) {
             return List.of(
                 new DummyAction("Read action", "This is a dummy action added to the Read task pane.")
             );
         }
 
-        else if ("write".equalsIgnoreCase(taskPaneName)) {
+        else if ("write".equalsIgnoreCase(actionGroupName)) {
             return List.of(
                 new DummyAction("Write action", "This is a dummy action added to the Write task pane.")
             );
         }
 
-        else if ("options".equalsIgnoreCase(taskPaneName)) {
+        else if ("options".equalsIgnoreCase(actionGroupName)) {
             return List.of(
                 new DummyAction("Options action", "This is a dummy action added to the Options task pane.")
             );
@@ -118,7 +114,7 @@ public class TestExtension extends SnotesExtension {
      * require an action. This action just shows a message dialog with
      * a supplied message when invoked.
      */
-    private static class DummyAction extends AbstractAction {
+    private static class DummyAction extends EnhancedAction {
 
         private final String message;
 
