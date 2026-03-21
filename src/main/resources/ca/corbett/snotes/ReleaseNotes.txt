@@ -2,6 +2,7 @@ Snotes Release Notes
 Author: Steve Corbett
 
 Version 2.0 [TODO] rewrite
+  #16 - Implement KeyStrokeManager
   #14 - Implement ActionPanel (replaces JxTaskPane from V1)
   #12 - Query persistence
   Port to GitHub, switch to Maven, upgrade to Java 17
