@@ -1,15 +1,14 @@
 package ca.corbett.snotes.extensions;
 
 import ca.corbett.extensions.ExtensionManager;
+import ca.corbett.extras.EnhancedAction;
 import ca.corbett.snotes.Version;
 import ca.corbett.snotes.extensions.builtin.TestExtension;
+import ca.corbett.snotes.ui.actions.ActionGroup;
 
-import javax.swing.Action;
-import javax.swing.ImageIcon;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.logging.Level;
 
 /**
  * Manages extensions for Snotes, and provides wrapper methods to make it
@@ -34,13 +33,6 @@ public class SnotesExtensionManager extends ExtensionManager<SnotesExtension> {
     }
 
     protected SnotesExtensionManager() {
-        // Add our built-in extensions here:
-        if (isTestExtensionRequired()) {
-            addExtension(new TestExtension(), true);
-        }
-
-        // Let's try to scan for dynamically loaded extensions:
-        loadExtensions(Version.EXTENSIONS_DIR, SnotesExtension.class, Version.NAME, Version.VERSION);
     }
 
     public static SnotesExtensionManager getInstance() {
@@ -48,49 +40,66 @@ public class SnotesExtensionManager extends ExtensionManager<SnotesExtension> {
     }
 
     /**
-     * Returns a sorted list of unique names of all extra task panes
-     * provided by enabled extensions.
+     * Scans our EXTENSION_DIR looking for jar files containing classes that extend CryptTextExtension.
+     * All found classes will be instantiated and made available as extensions, enabled by default.
      */
-    public List<String> getExtraTaskPaneNames() {
-        Set<String> paneNames = new HashSet<>(); // strip duplicates
-        for (SnotesExtension ext : getEnabledLoadedExtensions()) {
-            List<String> extPaneNames = ext.getExtraTaskPaneNames();
-            if (extPaneNames != null && !extPaneNames.isEmpty()) {
-                paneNames.addAll(extPaneNames);
-            }
+    public void loadAll() {
+        // Load our built-in extensions first:
+        if (isTestExtensionRequired()) {
+            addExtension(new TestExtension(), true);
         }
 
-        // Sort and return:
-        return paneNames.stream().sorted().toList();
+        // TestExtension is a bit special... we won't show it at all unless you've gone
+        // out of your way to enable it. This is not intended for general users:
+        boolean enableTestExtension = System.getProperty("enableTestExtension", null) != null;
+        if (enableTestExtension) {
+            addExtension(new TestExtension(), true);
+        }
+
+        // Now look for external extensions in jar files in our EXTENSIONS_DIR:
+        try {
+            loadExtensions(Version.EXTENSIONS_DIR,
+                           SnotesExtension.class,
+                           Version.NAME,     // Extensions must target this application name!
+                           Version.VERSION); // Extensions must target our major version!
+        }
+        catch (LinkageError le) {
+            // The parent class is pretty good about trapping errors that occur during extension load.
+            // These are presented to the user on an "errors" tab that will be added automatically
+            // to the ExtensionManagerDialog. For example, an extension may target an older version
+            // of our application, or perhaps a malformed jar file was copied to our extensions dir.
+            logger.log(Level.SEVERE, "One or more extensions could not be loaded.", le);
+        }
+    }
+
+    /**
+     * Queries all loaded extensions for any additional ActionGroups that should be displayed
+     * in the main ActionPanel on the main window, and returns a combined list of all of them.
+     */
+    public List<ActionGroup> getActionGroups() {
+        List<ActionGroup> groups = new ArrayList<>();
+        for (SnotesExtension ext : getEnabledLoadedExtensions()) {
+            List<ActionGroup> extGroups = ext.getActionGroups();
+            if (extGroups != null && !extGroups.isEmpty()) {
+                groups.addAll(extGroups);
+            }
+        }
+        return groups;
     }
 
     /**
      * Returns a list of all actions provided by enabled extensions
-     * for the given task pane name.
+     * for the given action group name.
      */
-    public List<Action> getTaskPaneActions(String taskPaneName) {
-        List<Action> actions = new ArrayList<>();
+    public List<EnhancedAction> getExtraActions(String actionGroupName) {
+        List<EnhancedAction> actions = new ArrayList<>();
         for (SnotesExtension ext : getEnabledLoadedExtensions()) {
-            List<Action> extActions = ext.getTaskPaneActions(taskPaneName);
+            List<EnhancedAction> extActions = ext.getExtraActions(actionGroupName);
             if (extActions != null && !extActions.isEmpty()) {
                 actions.addAll(extActions);
             }
         }
         return actions;
-    }
-
-    /**
-     * Returns the icon provided by the first enabled extension
-     * that has one for the given task pane name.
-     */
-    public ImageIcon getTaskPaneIcon(String taskPaneName) {
-        for (SnotesExtension ext : getEnabledLoadedExtensions()) {
-            ImageIcon icon = ext.getExtraTaskPaneIcon(taskPaneName);
-            if (icon != null) {
-                return icon; // return the first one we find for this task pane name
-            }
-        }
-        return null;
     }
 
     /**

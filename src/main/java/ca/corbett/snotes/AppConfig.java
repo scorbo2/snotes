@@ -5,6 +5,7 @@ import ca.corbett.extras.CustomizableDesktopPane;
 import ca.corbett.extras.gradient.ColorSelectionType;
 import ca.corbett.extras.gradient.Gradient;
 import ca.corbett.extras.properties.AbstractProperty;
+import ca.corbett.extras.properties.BooleanProperty;
 import ca.corbett.extras.properties.ColorProperty;
 import ca.corbett.extras.properties.DecimalProperty;
 import ca.corbett.extras.properties.EnumProperty;
@@ -39,19 +40,39 @@ import java.util.List;
  */
 public class AppConfig extends AppProperties<SnotesExtension> {
 
-    private static final AppConfig instance = new AppConfig();
+    private static final String PROPS_FILE_NAME = "Snotes.props";
+    public static final File PROPS_FILE = new File(Version.SETTINGS_DIR, PROPS_FILE_NAME);
+    private static AppConfig instance = null;
 
+    /**
+     * Property name for enabling/disabling single-instance mode.
+     * We expose this one because it's referenced elsewhere in the code.
+     */
+    public static final String SINGLE_INSTANCE_PROP = "UI.General.singleInstance";
+
+    private BooleanProperty enableSingleInstance;
     private LookAndFeelProperty lookAndFeelProp;
     private DecimalProperty desktopLogoAlphaProp;
     private ColorProperty desktopGradientProp;
     private EnumProperty<CustomizableDesktopPane.LogoPlacement> desktopLogoPlacementProp;
 
     private AppConfig() {
-        super(Version.FULL_NAME, new File(Version.SETTINGS_DIR, "Snotes.props"), SnotesExtensionManager.getInstance());
+        super(Version.FULL_NAME, PROPS_FILE, SnotesExtensionManager.getInstance());
     }
 
     public static AppConfig getInstance() {
+        if (instance == null) {
+            instance = new AppConfig();
+        }
         return instance;
+    }
+
+    /**
+     * We'll add a convenience wrapper around the static peek() method so that
+     * our callers don't have to specify our props file each time.
+     */
+    public static String peek(String propName) {
+        return AppProperties.peek(PROPS_FILE, propName);
     }
 
     public String getLookAndFeelClassName() {
@@ -85,6 +106,12 @@ public class AppConfig extends AppProperties<SnotesExtension> {
     @Override
     protected List<AbstractProperty> createInternalProperties() {
         List<AbstractProperty> props = new ArrayList<>();
+
+        // We'll create a property to allow enabling/disabling single-instance mode:
+        enableSingleInstance = new BooleanProperty(SINGLE_INSTANCE_PROP,
+                                                   "Allow only a single instance of the application",
+                                                   true);
+        props.add(enableSingleInstance);
 
         // Look and feel stuff:
         lookAndFeelProp = new LookAndFeelProperty("UI.Look and Feel.Look and Feel", "Look and Feel:",

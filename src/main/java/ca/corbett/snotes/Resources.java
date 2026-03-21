@@ -11,6 +11,7 @@ import java.util.logging.Logger;
 
 /**
  * A utility class for managing access to images and other resources.
+ * TODO swing-extras has a ResourceLoader class we could use instead of this...
  *
  * @author <a href="https://github.com/scorbo2">scorbo2</a>
  * @since Snotes 2.0
