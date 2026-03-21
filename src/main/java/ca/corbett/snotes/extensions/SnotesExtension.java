@@ -29,7 +29,7 @@ public abstract class SnotesExtension extends AppExtension {
     /**
      * Extensions can supply actions to be added to the built-in ActionGroups.
      * The given group name will be one of ActionGroup.READ, ActionGroup.WRITE,
-     * or ActionGroup.OPTIONS. Extensions that have actions that don't belone
+     * or ActionGroup.OPTIONS. Extensions that have actions that don't belong
      * in one of the three built-in groups should consider supplying their
      * own action group(s) via getActionGroups().
      * <p>
