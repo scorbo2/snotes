@@ -1,5 +1,6 @@
 package ca.corbett.snotes.model;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -83,6 +84,8 @@ public class Template {
     private DateOption dateOption;
     private Context context;
     private final List<Tag> tagList;
+    private File sourceFile;
+    private boolean isDirty;
 
     /**
      * Creates a new, empty, unnamed Template.
@@ -101,6 +104,8 @@ public class Template {
         this.dateOption = DateOption.NONE;
         this.context = Context.NONE;
         this.tagList = new ArrayList<>();
+        this.sourceFile = null;
+        isDirty = true;
     }
 
     public String getName() {
@@ -109,8 +114,8 @@ public class Template {
 
     /**
      * Sets a human-presentable name for this Template. The default name is "Untitled Template".
-     * No uniqueness check is done here, but you may receive an exception when trying to save
-     * the note if the name is not unique. (TODO that's goofy - uniqueness should be enforced here).
+     * The name should be unique. Having multiple Templates with the same name will cause
+     * trouble when saving them later.
      * <p>
      * If the given name is too long, it will be truncated to NAME_LENGTH_LIMIT characters.
      * If it is null or blank, the name will be set to DEFAULT_NAME.
@@ -126,6 +131,26 @@ public class Template {
             name = name.substring(0, NAME_LENGTH_LIMIT);
         }
         this.name = name.isBlank() ? DEFAULT_NAME : name;
+        isDirty = true;
+    }
+
+    /**
+     * Returns the File from which this Query was loaded, or null if this Query has not yet been saved to disk.
+     */
+    public File getSourceFile() {
+        return sourceFile;
+    }
+
+    /**
+     * Sets the source File for this Template. Replaces any previous value.
+     * This should generally only be called from DataManager - calling it directly may
+     * result in the old file being left on disk.
+     *
+     * @param sourceFile The new sourceFile for this Template.
+     */
+    public void setSourceFile(File sourceFile) {
+        this.sourceFile = sourceFile;
+        isDirty = true;
     }
 
     public DateOption getDateOption() {
@@ -142,6 +167,7 @@ public class Template {
             throw new IllegalArgumentException("dateOption cannot be null");
         }
         this.dateOption = dateOption;
+        isDirty = true;
     }
 
     public Context getContext() {
@@ -162,6 +188,7 @@ public class Template {
             throw new IllegalArgumentException("context cannot be null");
         }
         this.context = context;
+        isDirty = true;
     }
 
     /**
@@ -175,12 +202,16 @@ public class Template {
             throw new IllegalArgumentException("tag cannot be null or blank");
         }
         tagList.add(new Tag(tag));
+        isDirty = true;
     }
 
     /**
      * Removes all tags from this Template.
      */
     public void clearTags() {
+        if (!tagList.isEmpty()) {
+            isDirty = true;
+        }
         tagList.clear();
     }
 
@@ -190,5 +221,19 @@ public class Template {
      */
     public List<Tag> getTagList() {
         return new ArrayList<>(tagList);
+    }
+
+    /**
+     * Reports whether this Template has unsaved changes.
+     */
+    public boolean isDirty() {
+        return isDirty;
+    }
+
+    /**
+     * Marks this Template as clean, meaning that it has no unsaved changes.
+     */
+    public void markClean() {
+        isDirty = false;
     }
 }

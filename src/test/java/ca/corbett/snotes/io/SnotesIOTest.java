@@ -1,5 +1,6 @@
 package ca.corbett.snotes.io;
 
+import ca.corbett.extras.io.FileSystemUtil;
 import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.model.Query;
 import ca.corbett.snotes.model.Tag;
@@ -538,7 +539,7 @@ class SnotesIOTest {
 
         assertTrue(note.isDirty());
 
-        SnotesIO.saveNote(note);
+        SnotesIO.saveNote(note, note.getSourceFile());
 
         assertTrue(Files.exists(noteFile));
         assertFalse(note.isDirty());
@@ -552,15 +553,15 @@ class SnotesIOTest {
 
     @Test
     public void saveNote_withNullNote_shouldThrowIllegalArgumentException() {
-        assertThrows(IllegalArgumentException.class, () -> SnotesIO.saveNote(null));
+        assertThrows(IllegalArgumentException.class, () -> SnotesIO.saveNote(null, new File("a")));
     }
 
     @Test
-    public void saveNote_withNoSourceFile_shouldThrowIllegalArgumentException() {
+    public void saveNote_withNoTargetFile_shouldThrowIllegalArgumentException() {
         Note note = new Note();
         note.setText("hello");
 
-        assertThrows(IllegalArgumentException.class, () -> SnotesIO.saveNote(note));
+        assertThrows(IllegalArgumentException.class, () -> SnotesIO.saveNote(note, null));
     }
 
     @Test
@@ -570,7 +571,177 @@ class SnotesIOTest {
         note.setSourceFile(directory);
         note.setText("hello");
 
-        assertThrows(IOException.class, () -> SnotesIO.saveNote(note));
+        assertThrows(IOException.class, () -> SnotesIO.saveNote(note, directory));
     }
 
+    @Test
+    public void computeFile_withNoteAndNullDataDir_shouldThrow() {
+        assertThrows(IllegalArgumentException.class, () -> SnotesIO.computeFile(null, new Note()));
+    }
+
+    @Test
+    public void computeFile_withQueryAndNullDataDir_shouldThrow() {
+        assertThrows(IllegalArgumentException.class, () -> SnotesIO.computeFile(null, new Query()));
+    }
+
+    @Test
+    public void computeFile_withTemplateAndNullDataDir_shouldThrow() {
+        assertThrows(IllegalArgumentException.class, () -> SnotesIO.computeFile(null, new Template()));
+    }
+
+    @Test
+    public void computeFile_withNullNote_shouldThrow() {
+        assertThrows(IllegalArgumentException.class, () -> SnotesIO.computeFile(tempDir, (Note)null));
+    }
+
+    @Test
+    public void computeFile_withNullQuery_shouldThrow() {
+        assertThrows(IllegalArgumentException.class, () -> SnotesIO.computeFile(tempDir, (Query)null));
+    }
+
+    @Test
+    public void computeFile_withNullTemplate_shouldThrow() {
+        assertThrows(IllegalArgumentException.class, () -> SnotesIO.computeFile(tempDir, (Template)null));
+    }
+
+    @Test
+    public void computeFile_withUntaggedUndatedNote_shouldReturnDefaultStaticFile() {
+        // GIVEN an untagged, undated Note:
+        Note note = new Note();
+
+        // WHEN we compute a filename for it:
+        File computed = SnotesIO.computeFile(tempDir, note);
+
+        // THEN it should have the default filename:
+        assertEquals("untagged_note.txt", computed.getName());
+
+        // AND it should be in the "static" subdirectory of the data directory:
+        File expectedDir = new File(tempDir, DataManager.STATIC_DIR);
+        assertEquals(expectedDir.getAbsolutePath(), computed.getParentFile().getAbsolutePath());
+    }
+
+    @Test
+    public void computeFile_withTaggedUndatedNote_shouldReturnFileWithTags() {
+        // GIVEN a Note with some tags but no date:
+        Note note = new Note();
+        note.tag("work");
+        note.tag("project");
+
+        // WHEN we compute a filename for it:
+        File computed = SnotesIO.computeFile(tempDir, note);
+
+        // THEN the filename should include both tags:
+        assertTrue(computed.getName().contains("work"));
+        assertTrue(computed.getName().contains("project"));
+
+        // AND the tags should have been sorted, with an underscore separator:
+        assertEquals("project_work.txt", computed.getName());
+
+        // AND it should be in the "static" subdirectory of the data directory:
+        File expectedDir = new File(tempDir, DataManager.STATIC_DIR);
+        assertEquals(expectedDir.getAbsolutePath(), computed.getParentFile().getAbsolutePath());
+    }
+
+    @Test
+    public void computeFile_withUntaggedDatedNote_shouldReturnDefaultNameInDatedDir() {
+        // GIVEN a Note with a date but no tags:
+        Note note = new Note();
+        note.setDate(new YMDDate("2020-01-01"));
+        assertTrue(note.hasDate());
+
+        // WHEN we compute a filename for it:
+        File computed = SnotesIO.computeFile(tempDir, note);
+
+        // THEN it should have the default filename:
+        assertEquals("untagged_note.txt", computed.getName());
+
+        // AND it should be in a dated subdirectory structure in the data directory:
+        String expectedPath = tempDir.getAbsolutePath() + File.separator
+            + note.getDate().getYearStr() + File.separator
+            + note.getDate().getMonthStr() + File.separator
+            + note.getDate().getDayStr() + File.separator + "untagged_note.txt";
+        assertEquals(expectedPath, computed.getAbsolutePath());
+    }
+
+    @Test
+    public void computeFile_withTaggedDatedNote_shouldReturnFileWithTagsInDatedDir() {
+        // GIVEN a Note with a date and some tags:
+        Note note = new Note();
+        note.setDate(new YMDDate("2020-01-01"));
+        note.tag("work");
+        note.tag("project");
+
+        // WHEN we compute a filename for it:
+        File computed = SnotesIO.computeFile(tempDir, note);
+
+        // THEN the filename should include both tags:
+        assertTrue(computed.getName().contains("work"));
+        assertTrue(computed.getName().contains("project"));
+
+        // AND the tags should have been sorted, with an underscore separator:
+        assertEquals("project_work.txt", computed.getName());
+
+        // AND it should be in a dated subdirectory structure in the data directory:
+        String expectedPath = tempDir.getAbsolutePath() + File.separator
+            + note.getDate().getYearStr() + File.separator
+            + note.getDate().getMonthStr() + File.separator
+            + note.getDate().getDayStr() + File.separator + "project_work.txt";
+        assertEquals(expectedPath, computed.getAbsolutePath());
+    }
+
+    @Test
+    public void computeFile_withNamelessQuery_shouldUseDefaultName() {
+        // GIVEN a Query with no name:
+        Query query = new Query();
+        query.setName(" "); // Query won't let us do this, and will silently set it to DEFAULT_NAME
+
+        // WHEN we compute a file for it:
+        File computed = SnotesIO.computeFile(tempDir, query);
+
+        // THEN the filename should be based on the default query name:
+        String expectedName = FileSystemUtil.sanitizeFilename(Query.DEFAULT_NAME + ".query");
+        assertEquals(expectedName, computed.getName());
+    }
+
+    @Test
+    public void computeFile_withNamedQuery_shouldNameProperly() {
+        // GIVEN a Query with a name:
+        Query query = new Query();
+        query.setName("My Test Query");
+
+        // WHEN we compute a file for it:
+        File computed = SnotesIO.computeFile(tempDir, query);
+
+        // THEN the filename should be based on the query name:
+        String expectedName = FileSystemUtil.sanitizeFilename("My Test Query.query");
+        assertEquals(expectedName, computed.getName());
+    }
+
+    @Test
+    public void computeFile_withNamelessTemplate_shouldUseDefaultName() {
+        // GIVEN a Template with no name:
+        Template template = new Template();
+        template.setName(" "); // Template won't let us do this, and will silently set it to DEFAULT_NAME
+
+        // WHEN we compute a file for it:
+        File computed = SnotesIO.computeFile(tempDir, template);
+
+        // THEN the filename should be based on the default template name:
+        String expectedName = FileSystemUtil.sanitizeFilename(Template.DEFAULT_NAME + ".template");
+        assertEquals(expectedName, computed.getName());
+    }
+
+    @Test
+    public void computeFile_withNamedTemplate_shouldNameProperly() {
+        // GIVEN a Template with a name:
+        Template template = new Template();
+        template.setName("My Test Template");
+
+        // WHEN we compute a file for it:
+        File computed = SnotesIO.computeFile(tempDir, template);
+
+        // THEN the filename should be based on the template name:
+        String expectedName = FileSystemUtil.sanitizeFilename("My Test Template.template");
+        assertEquals(expectedName, computed.getName());
+    }
 }

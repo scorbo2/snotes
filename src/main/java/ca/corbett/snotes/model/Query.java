@@ -2,6 +2,7 @@ package ca.corbett.snotes.model;
 
 import ca.corbett.snotes.model.filter.Filter;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +24,8 @@ public class Query {
 
     private String name;
     private final List<Filter> filters;
+    private File sourceFile;
+    private boolean isDirty;
 
     /**
      * Creates an empty, unnamed Query with no filters.
@@ -32,6 +35,8 @@ public class Query {
     public Query() {
         this.filters = new ArrayList<>();
         name = DEFAULT_NAME;
+        sourceFile = null;
+        isDirty = true;
     }
 
     /**
@@ -54,7 +59,27 @@ public class Query {
             name = name.substring(0, NAME_LENGTH_LIMIT);
         }
         this.name = name;
+        isDirty = true;
         return this;
+    }
+
+    /**
+     * Returns the File from which this Query was loaded, or null if this Query has not yet been saved to disk.
+     */
+    public File getSourceFile() {
+        return sourceFile;
+    }
+
+    /**
+     * Sets the source File for this Query. Replaces any previous value.
+     * This should generally only be called from DataManager - calling it directly may
+     * result in the old file being left on disk.
+     *
+     * @param sourceFile The new sourceFile for this Query.
+     */
+    public void setSourceFile(File sourceFile) {
+        this.sourceFile = sourceFile;
+        isDirty = true;
     }
 
     /**
@@ -76,6 +101,9 @@ public class Query {
      * An empty Query will return a completely unfiltered list of Notes when applied.
      */
     public void clear() {
+        if (!filters.isEmpty()) {
+            isDirty = true;
+        }
         filters.clear();
     }
 
@@ -91,6 +119,7 @@ public class Query {
             throw new IllegalArgumentException("Cannot add a null Filter to a Query.");
         }
         filters.add(filter);
+        isDirty = true;
         return this;
     }
 
@@ -98,7 +127,9 @@ public class Query {
      * Removes the given Filter from this Query, if it is present.
      */
     public Query removeFilter(Filter filter) {
-        filters.remove(filter);
+        if (filters.remove(filter)) {
+            isDirty = true;
+        }
         return this;
     }
 
@@ -135,5 +166,19 @@ public class Query {
             }
         }
         return filteredNotes;
+    }
+
+    /**
+     * Reports whether this Query has unsaved changes.
+     */
+    public boolean isDirty() {
+        return isDirty;
+    }
+
+    /**
+     * Marks this Query as clean, meaning that it has no unsaved changes.
+     */
+    public void markClean() {
+        isDirty = false;
     }
 }

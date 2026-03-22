@@ -11,6 +11,7 @@ import ca.corbett.snotes.ui.MainWindow;
 import javax.swing.SwingUtilities;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -64,12 +65,18 @@ public class DataManager {
      * Creates a new Note with a new temporary scratch file as its source.
      * Invoking save() with this Note object will move it from the scratch
      * directory into the data directory, and update its source file accordingly.
+     * Note: scratch notes are not "real" notes until they are saved. This means
+     * that they will not show up in Query results. They will, however, be
+     * persisted across application restarts. Invoking save() on a scratch
+     * note will give it a proper home in the data directory and will
+     * promote it to a "real" Note. Invoking saveScratch() on a scratch
+     * note will save it in-place in the scratch directory, but will not
+     * promote it to a "real" Note.
      */
     public Note newNote() {
         Note note = new Note();
         note.setSourceFile(newScratchFile()); // okay if null - it just won't get persisted, is all.
         scratchNotes.add(note);
-        notes.add(note);
         return note;
     }
 
@@ -86,21 +93,51 @@ public class DataManager {
      * @param note The Note object to save.
      */
     public void save(Note note) throws IOException {
-        // TODO: pseudocode:
-        // 1. Compute the save path based on Note metadata (specifically: date and tags).
-        //    a. Code for this exists in the old Mercurial repo for Snotes v1... dig it up and reuse it!
-        // 2. If the Note is a scratch note, move it from the scratch directory to its proper home.
-        //    a. The scratch file may not exist! newScratchFile() is not guaranteed to return something.
-        //    b. The scratch file may not be where you expect it! There's a possible fallback to system temp dir.
-        //    c. If the scratch file does exist, make sure it gets deleted from the scratch directory AFTER the save.
-        // 3. If it's not a scratch note, check if the new save location is different from the old one.
-        //    a. This is not an error! It's possible that the Note was re-dated or the tags changed. Just move it.
-        //    b. If the source file hasn't changed, just overwrite the original.
-        //
-        // Questions:
-        // - Should we throw IOExceptions here to the caller (UI)? Probably yes, so errors can be displayed.
-        // - Should we update the Note's source file immediately after the save, or only after a successful save?
-        //   Probably only after a successful save.
+        File savePath = SnotesIO.computeFile(dataDir, note);
+        if (!Files.isSameFile(note.getSourceFile().toPath(), savePath.toPath())) {
+            if (savePath.exists()) {
+                // Now we have a problem...
+                // We're moving a Note to a new save location, but there's already something there.
+                // Do we overwrite? Do we merge this note with that one? Do we give up and throw an IOException?
+                // TODO sort this out... it's a wonky case, but it could absolutely happen.
+                // For now, we'll throw, but we need a better strategy here.
+                throw new IOException("Save failed: won't overwrite existing file at " + savePath.getAbsolutePath());
+            }
+
+            // If we get here, it's a new save location, but there's no existing file... so just move it:
+            if (!note.getSourceFile().delete()) {
+                // This is not fatal, but it is wonky... warn but proceed:
+                log.warning("Failed to delete old source file for note: " + note.getSourceFile().getAbsolutePath());
+            }
+            SnotesIO.saveNote(note, savePath); // updates the Note's source file to the new location + marks it clean.
+
+            // If this was a scratch note, move it from the scratch list to the main notes list:
+            if (scratchNotes.remove(note)) {
+                notes.add(note); // the note is now "real" and will show up in Query results.
+            }
+        }
+        else {
+            // The Note's source file is the same as the computed save path, so we can just overwrite it.
+            SnotesIO.saveNote(note, savePath);
+        }
+    }
+
+    /**
+     * Saves a scratch Note in-place in the scratch directory. This is mostly used by the auto-save feature,
+     * so that we don't lose scratch notes if the application exits before the user actually saves it.
+     * If the given Note is not a scratch note, this method does nothing.
+     *
+     * @param note Any scratch Note. Must not be null. If this Note is not a scratch note, this method does nothing.
+     * @throws IOException If an error occurs while saving the Note.
+     */
+    public void saveScratch(Note note) throws IOException {
+        if (!scratchNotes.contains(note)) {
+            // Not a scratch note, so we can just return here. It is suspicious, though, so let's log a warning:
+            log.warning("saveScratch() invoked on a non-scratch Note: " + note.getSourceFile().getAbsolutePath());
+            return;
+        }
+
+        SnotesIO.saveNote(note, note.getSourceFile()); // save in-place in the scratch directory
     }
     
     /**
@@ -127,10 +164,118 @@ public class DataManager {
         return new ArrayList<>(templates);
     }
 
+    /**
+     * Saves all Notes, Queries, and Templates to the given data directory, if they are marked as
+     * needing to be saved.
+     *
+     * @param dataDir The data directory to save to. TODO why are we passing this in? Don't we already know it?
+     * @throws IOException If any save fails.
+     */
+    public void saveAll(File dataDir) throws IOException {
+        // Save all scratch notes in-place (this list should be quite small):
+        for (Note scratchNote : scratchNotes) {
+            if (scratchNote.isDirty()) {
+                saveScratch(scratchNote);
+            }
+        }
+
+        // Go through all notes and save the dirty ones.
+        // The assumption here is that only a small number of notes will be dirty at any given time.
+        // So, this is done on whatever thread invokes this method.
+        // We may want to consider moving this to a worker thread in future.
+        // The advantage of this approach is that IOExceptions can be surfaced to the caller immediately.
+        // The drawback is that if ANY note fails to save, all subsequent notes remain dirty.
+        for (Note note : notes) {
+            if (note.isDirty()) {
+                save(note);
+            }
+        }
+
+        // Save all dirty Query instances:
+        for (Query query : queries) {
+            if (query.isDirty()) {
+                File targetFile = SnotesIO.computeFile(dataDir, query);
+                if (query.getSourceFile() != null
+                    && !Files.isSameFile(query.getSourceFile().toPath(), targetFile.toPath())) {
+                    if (targetFile.exists()) {
+                        // User had a Query named "X" and they renamed Query "Y" to "X".
+                        // That's dumb, and now we have a problem.
+                        // Queries are considered lighter and more expendable than Notes, so we will just overwrite.
+                        // We'll log what we're doing so the user is aware of this.
+                        log.warning("Overwriting existing query file at " + targetFile.getAbsolutePath()
+                                        + " with query from " + query.getSourceFile().getAbsolutePath());
+                    }
+
+                    // Remove the old file if it still exists:
+                    if (query.getSourceFile().exists()) {
+                        if (!query.getSourceFile().delete()) {
+                            // This is not fatal, but it is wonky... warn but proceed:
+                            log.warning("Failed to delete old source file for query: "
+                                            + query.getSourceFile().getAbsolutePath());
+                        }
+                    }
+                }
+
+                // Now save this Query to its new location. This will update the Query's source file and mark it clean.
+                SnotesIO.saveQuery(query, targetFile);
+            }
+        }
+
+        // Save all dirty Template instances:
+        for (Template template : templates) {
+            if (template.isDirty()) {
+                File targetFile = SnotesIO.computeFile(dataDir, template);
+                if (template.getSourceFile() != null
+                    && !Files.isSameFile(template.getSourceFile().toPath(), targetFile.toPath())) {
+                    if (targetFile.exists()) {
+                        // User had a Template named "X" and they renamed Template "Y" to "X".
+                        // That's dumb, and now we have a problem.
+                        // Templates are considered lighter and more expendable than Notes, so we will just overwrite.
+                        // We'll log what we're doing so the user is aware of this.
+                        log.warning("Overwriting existing template file at " + targetFile.getAbsolutePath()
+                                        + " with query from " + template.getSourceFile().getAbsolutePath());
+                    }
+
+                    // Remove the old file if it still exists:
+                    if (template.getSourceFile().exists()) {
+                        if (!template.getSourceFile().delete()) {
+                            // This is not fatal, but it is wonky... warn but proceed:
+                            log.warning("Failed to delete old source file for template: "
+                                            + template.getSourceFile().getAbsolutePath());
+                        }
+                    }
+                }
+
+                // Now save this Template to its new location. This will update its source file and mark it clean.
+                SnotesIO.saveTemplate(template, targetFile);
+            }
+        }
+    }
+
+    /**
+     * Loads all Notes, Queries, and Templates from the given data directory, without specifying
+     * a callback listener. TODO do we need this? When would you ever do this without a callback?
+     */
     public void loadAll(File dataDir) throws IOException {
         loadAll(dataDir, null);
     }
 
+    /**
+     * Loads all Notes, Queries, and Templates from the given directory, and reports to the
+     * given LoadListener when complete. The loading is done in parallel in several worker threads.
+     * The listener is not notified until ALL worker threads have completed. Long-running threads
+     * will show a progress dialog as needed. The user has the option of canceling via the "cancel"
+     * button on the progress dialog. If the user cancels, or if any thread encounters an error,
+     * the listener will be notified, but the search results may be incomplete.
+     * <p>
+     * Note: The given listener is notified on the Swing EDT, and NOT on the worker thread,
+     * so it's safe to update the UI from the listener.
+     * </p>
+     *
+     * @param dataDir  The directory to load from. Must not be null. Will be created if it doesn't exist.
+     * @param listener The LoadListener to be notified when loading is complete. Can be null.
+     * @throws IOException If something is wrong with the given dataDir.
+     */
     public void loadAll(File dataDir, LoadListener listener) throws IOException {
         if (dataDir == null) {
             throw new IOException("Data directory is null.");
@@ -164,29 +309,38 @@ public class DataManager {
             throw new IOException("Static directory is not a directory: " + staticDir.getAbsolutePath());
         }
 
-        // This is our countdown latch for tracking our three worker threads:
-        loadProgress.set(3);
+        // This is our countdown latch for tracking our four worker threads:
+        LoaderThread<Note> noteThread;
+        LoaderThread<Note> scratchThread;
+        LoaderThread<Query> queryThread;
+        LoaderThread<Template> templateThread;
+        loadProgress.set(4);
 
         // Our 3 threads will load all Notes, Queries, and Templates in the data directory:
-        LoaderThread<Note> noteThread = new LoaderThread<>(dataDir, "txt", true, SnotesIO::loadNote);
+        noteThread = new LoaderThread<>("Notes", dataDir, "txt", true, SnotesIO::loadNote);
         addSkipDirectories(noteThread); // Don't waste time scanning directories we know won't contain Notes.
         noteThread.addProgressListener(new ThreadListener<>(noteThread, listener, this::setNotes));
-        LoaderThread<Query> queryThread = new LoaderThread<>(metadataDir, "query", false, SnotesIO::loadQuery);
+        scratchThread = new LoaderThread<>("Scratch notes",
+                                           new File(dataDir, SCRATCH_DIR), "txt", false, SnotesIO::loadNote);
+        scratchThread.addProgressListener(new ThreadListener<>(scratchThread, listener, this::setScratchNotes));
+        queryThread = new LoaderThread<>("Queries", metadataDir, "query", false, SnotesIO::loadQuery);
         queryThread.addProgressListener(new ThreadListener<>(queryThread, listener, this::setQueries));
-        LoaderThread<Template> templateThread = new LoaderThread<>(metadataDir, "template", false,
-                                                                   SnotesIO::loadTemplate);
+        templateThread = new LoaderThread<>("Templates", metadataDir, "template", false, SnotesIO::loadTemplate);
         templateThread.addProgressListener(new ThreadListener<>(templateThread, listener, this::setTemplates));
 
         // We'll configure the progress dialogs with a half-second delay so they don't show for quick loads:
         MultiProgressDialog dialog1 = new MultiProgressDialog(MainWindow.getInstance(), "Loading notes...");
         dialog1.setInitialShowDelayMS(500);
         dialog1.runWorker(noteThread, true);
-        MultiProgressDialog dialog2 = new MultiProgressDialog(MainWindow.getInstance(), "Loading queries...");
+        MultiProgressDialog dialog2 = new MultiProgressDialog(MainWindow.getInstance(), "Loading scratch notes...");
         dialog2.setInitialShowDelayMS(500);
-        dialog2.runWorker(queryThread, true);
-        MultiProgressDialog dialog3 = new MultiProgressDialog(MainWindow.getInstance(), "Loading templates...");
+        dialog2.runWorker(scratchThread, true);
+        MultiProgressDialog dialog3 = new MultiProgressDialog(MainWindow.getInstance(), "Loading queries...");
         dialog3.setInitialShowDelayMS(500);
-        dialog3.runWorker(templateThread, true);
+        dialog3.runWorker(queryThread, true);
+        MultiProgressDialog dialog4 = new MultiProgressDialog(MainWindow.getInstance(), "Loading templates...");
+        dialog4.setInitialShowDelayMS(500);
+        dialog4.runWorker(templateThread, true);
     }
 
     /**
@@ -199,10 +353,7 @@ public class DataManager {
         loaderThread.addDirectoryToSkip(METADATA_DIR); // There are no Notes in the metadata directory.
         loaderThread.addDirectoryToSkip(".hg"); // Don't scan the top-level Mercurial directory.
         loaderThread.addDirectoryToSkip("images"); // There are no Notes in the images directory.
-
-        // Note that we DON'T exclude the scratch directory - if the application exited
-        // previously with unsaved Notes, the user can resume editing them as scratch
-        // files if we load them here. This is why we don't use the system temp dir as our scratch dir!
+        loaderThread.addDirectoryToSkip(SCRATCH_DIR); // Scratch notes will be loaded separately.
     }
 
     private void setNotes(List<Note> notes) {
@@ -218,6 +369,11 @@ public class DataManager {
     private void setTemplates(List<Template> templates) {
         this.templates.clear();
         this.templates.addAll(templates);
+    }
+
+    private void setScratchNotes(List<Note> scratchNotes) {
+        this.scratchNotes.clear();
+        this.scratchNotes.addAll(scratchNotes);
     }
 
     /**

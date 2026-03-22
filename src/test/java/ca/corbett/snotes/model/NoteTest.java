@@ -4,11 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Locale;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class NoteTest {
 
@@ -17,12 +13,11 @@ class NoteTest {
         // WHEN we construct a Note and give it no tags at all:
         Note note = new Note();
 
-        // THEN the Note should have no tags, no date, no text, no source file, and should not be dirty:
+        // THEN the Note should have no tags, no date, no text, no source file, and should be dirty:
         assertFalse(note.hasDate());
         assertEquals(0, note.getNonDateTags().size());
-        assertFalse(note.isDirty());
         assertNull(note.getSourceFile());
-        assertFalse(note.isDirty());
+        assertTrue(note.isDirty());
     }
 
     @Test

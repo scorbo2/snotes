@@ -28,6 +28,7 @@ class LoaderThread<T> extends SimpleProgressWorker {
         T load(File file) throws IOException;
     }
 
+    private final String searchType;
     private final List<T> searchResults;
     private final List<String> directoriesToSkip;
     private final File directory;
@@ -42,15 +43,17 @@ class LoaderThread<T> extends SimpleProgressWorker {
      * You can optionally invoke addDirectoryToSkip() on this thread to specify named
      * directories to be skipped during the loading process.
      *
-     * @param directory The directory to scan for T files. Must be a readable directory that exists on disk.
-     * @param extension The file extension to look for, without the dot. For example: "txt"
+     * @param searchType A user-presentable name for the type of object we are loading, used only for logging.
+     * @param dir The directory to scan for T files. Must be a readable directory that exists on disk.
+     * @param ext The file extension to look for, without the dot. For example: "txt"
      * @param isRecursive Whether to scan subdirectories recursively or not.
      * @param loadFunction A function that can take a File and return a T. Presumably from SnotesIO.
      */
-    public LoaderThread(File directory, String extension, boolean isRecursive, FileLoader<T> loadFunction) {
-        this.directory = directory;
+    public LoaderThread(String searchType, File dir, String ext, boolean isRecursive, FileLoader<T> loadFunction) {
+        this.searchType = searchType;
+        this.directory = dir;
         this.isRecursive = isRecursive;
-        this.searchExtension = extension;
+        this.searchExtension = ext;
         this.loadFunction = loadFunction;
         this.directoriesToSkip = new ArrayList<>();
         this.searchResults = new ArrayList<>();
@@ -98,24 +101,32 @@ class LoaderThread<T> extends SimpleProgressWorker {
 
     @Override
     public void run() {
+        log.info("LoaderThread started: " + searchType);
         searchResults.clear();
         wasCanceled = false;
         hadErrors = false;
 
         // Sanity check our settings:
         if (directory == null || !directory.exists() || !directory.isDirectory()) {
-            log.severe("Skipping invalid directory specified for LoaderThread: " + directory);
+            log.severe("Skipping invalid directory specified for " + searchType + " LoaderThread: " + directory);
             hadErrors = true;
             return;
         }
         if (searchExtension == null || searchExtension.isBlank()) {
-            log.severe("Skipping search with invalid extension specified for LoaderThread: " + searchExtension);
+            log.severe("Skipping search with invalid extension specified for "
+                           + searchType + " LoaderThread: " + searchExtension);
             hadErrors = true;
             return;
         }
 
-        // Force the progress bar to appear while we enumerate the files, since this can be a heavy operation:
-        fireProgressBegins(1); // 1 is just a dummy value until we know how many files there are
+        // The progress system provided by the swing-extras library doesn't have an "indeterminate" state,
+        // so in order to show the progress bar, we have to give it an upper bound for progress.
+        // But we don't know it yet!
+        // The only workaround I have found for this is to give it a "dummy" value, just to get the
+        // bar to appear, and then update it later, once we have an exact count.
+        // If we don't do this, the progress bar does not appear during our initial findFiles() call,
+        // leaving the user wondering if anything is happening.
+        fireProgressBegins(1);
         try {
             List<File> fileList = FileSystemUtil.findFiles(directory, isRecursive, searchExtension);
 
@@ -136,7 +147,8 @@ class LoaderThread<T> extends SimpleProgressWorker {
                 }
                 catch (IOException ioe) {
                     // Log the error and keep going. One bad file shouldn't stop the whole operation.
-                    log.log(Level.SEVERE, "Problem loading object: " + file.getAbsolutePath(), ioe);
+                    log.log(Level.SEVERE,
+                            searchType + " LoaderThread: Problem loading object: " + file.getAbsolutePath(), ioe);
                     hadErrors = true;
                 }
 
@@ -150,10 +162,11 @@ class LoaderThread<T> extends SimpleProgressWorker {
         finally {
             // Ensure the progress bar is closed, one way or another:
             if (wasCanceled) {
-                log.warning("LoaderThread was canceled by the user.");
+                log.warning(searchType + " LoaderThread was canceled by the user.");
                 fireProgressCanceled();
             }
             else {
+                log.info(searchType + " LoaderThread found " + searchResults.size() + " results.");
                 fireProgressComplete();
             }
         }

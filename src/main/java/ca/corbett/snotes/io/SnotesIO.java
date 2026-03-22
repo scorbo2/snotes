@@ -81,7 +81,13 @@ class SnotesIO {
 
     /**
      * Attempts to persist the given Query and all of its Filters to the given file.
-     * The save format is pretty-printed JSON.
+     * The save format is pretty-printed JSON. The name of the file is auto-computed
+     * from the Query's name. This means that changing the name of a Query and then
+     * saving it may move it to a new file. This method does NOT handle cleaning
+     * the old file! It's up to the caller to manage the file move.
+     * <p>
+     * If the save succeeds, the Query's sourceFile is updated to the given targetFile, and the Query is marked clean.
+     * </p>
      *
      * @param targetFile Any writable file. If the file already exists, it will be overwritten.
      * @throws IOException If the save fails.
@@ -108,10 +114,21 @@ class SnotesIO {
         rootNode.set("filters", filtersArray);
 
         mapper.writerWithDefaultPrettyPrinter().writeValue(targetFile, rootNode);
+
+        // If we make it here, the Query is clean, and has a new source file:
+        query.markClean();
+        query.setSourceFile(targetFile);
     }
 
     /**
      * Attempts to persist the given Template in pretty-printed JSON form to disk.
+     * The name of the file is auto-computed  from the Template's name. This means
+     * that changing the name of a Template and then saving it may move it to a new file.
+     * This method does NOT handle cleaning the old file! It's up to the caller to
+     * manage the file move.
+     * <p>
+     * If the save succeeds, the Template's sourceFile is updated to the given targetFile, and it is marked clean.
+     * </p>
      *
      * @param targetFile Any writable file. Must not be null.
      * @throws IOException If the save fails for any reason, including if the target file is not writable.
@@ -138,6 +155,10 @@ class SnotesIO {
             tagsArray.add(tag.getTag()); // get raw tag without the '#' prefix for cleaner JSON
         }
         mapper.writerWithDefaultPrettyPrinter().writeValue(targetFile, rootNode);
+
+        // If we make it here, the Template is clean, and it has a new source file:
+        template.markClean();
+        template.setSourceFile(targetFile);
     }
 
     /**
@@ -301,32 +322,22 @@ class SnotesIO {
 
     /**
      * Attempts to save the given Note to disk, and will throw an IOException if something goes wrong.
+     * The sourceFile of the given Note is ignored in favor of the specified targetFile.
+     * If the save succeeds, the Note's sourceFile is updated with this file. If the given targetFile
+     * does not match the Note's existing sourceFile, this method does NOT handle cleaning up
+     * the old file! It's up to the caller to handle the move.
      *
-     * @param note The Note to save. Must not be null, and must have a non-null source file.
+     * @param note The Note to save. Must not be null.
+     * @param targetFile The save destination. Must not be null.
      * @throws IOException If anything at all goes wrong with the save.
      */
-    static void saveNote(Note note) throws IOException {
+    static void saveNote(Note note, File targetFile) throws IOException {
         if (note == null) {
             throw new IllegalArgumentException("Cannot save a null Note.");
         }
-        if (note.getSourceFile() == null) {
-            throw new IllegalArgumentException("Cannot save a Note with no source file.");
+        if (targetFile == null) {
+            throw new IllegalArgumentException("Cannot save a Note with no target file.");
         }
-
-        // TODO this is wrong!
-        //      Dated notes require special handling, as they automatically go into folders
-        //      based on the date, like 2021/01/09/note.txt
-        //      If it's a first-time save, we have to compute that path.
-        //      If it's an existing note, we have to check to see if the location is still good, and update it if not.
-        //      Undated notes typically go into a "static" or "undated" folder, but we are not yet
-        //      exposing that config property.
-        //      All Notes, dated or not, get an automatic filename based on their tag list.
-        //      Need to circle back to this in a future ticket! We're not handling any of it right now!
-        //      And don't forget the "append if existing" option from the original application!
-        //      e.g. create a new dated note with a tag of "tag" and save it when one already exists for that date...
-        //           user should be prompted to append to or overwrite the existing note, and the code should be
-        //           smart enough to do the right thing.
-        //      The code for all of the above exists in the old Mercurial repo. Dig it up and reuse it!
 
         List<String> lines = new ArrayList<>();
         lines.add(note.getPersistenceTagLine());
@@ -337,9 +348,114 @@ class SnotesIO {
         lines.add(note.getText());
 
         // Write it:
-        FileSystemUtil.writeLinesToFile(lines, note.getSourceFile());
+        FileSystemUtil.writeLinesToFile(lines, targetFile);
 
-        // If we make it this far, the Note is clean:
+        // If we make it this far, the Note is clean, and has a new sourceFile:
+        note.setSourceFile(targetFile);
         note.markClean();
+    }
+
+    /**
+     * Automatically computes a suggested File for the given Note based
+     * on its metadata, and based on the supplied data directory.
+     *
+     * @param dataDirectory the base directory where all Notes are stored. Must not be null.
+     * @param note          Any non-null Note object.
+     * @return A filename suitable for this Note.
+     */
+    static File computeFile(File dataDirectory, Note note) {
+        if (dataDirectory == null) {
+            throw new IllegalArgumentException("dataDirectory cannot be null");
+        }
+        if (note == null) {
+            throw new IllegalArgumentException("note cannot be null");
+        }
+
+        // Dated notes are stored into a yyyy/mm/dd directory structure:
+        String dirPath = dataDirectory.getAbsolutePath();
+        if (note.hasDate()) {
+            YMDDate date = note.getDate();
+            dirPath += File.separator + date.getYearStr()
+                + File.separator + date.getMonthStr()
+                + File.separator + date.getDayStr();
+        }
+
+        // Undated notes go into the static directory by default, but the UI allows this to be changed:
+        else {
+            dirPath += File.separator + DataManager.STATIC_DIR;
+        }
+
+        // Untagged notes get a boring default filename:
+        String filename;
+        List<Tag> tagList = note.getNonDateTags();
+        if (tagList.isEmpty()) {
+            filename = "untagged_note";
+        }
+
+        // Tagged notes are by default named after their (non-date) tags, separated by underscores.
+        else {
+            filename = tagList.get(0).getTag();
+            for (int i = 1; i < tagList.size(); i++) {
+                filename += "_" + tagList.get(i).getTag();
+            }
+        }
+
+        // Make sure the filename is safe to use on all platforms by stripping out any illegal characters:
+        filename = FileSystemUtil.sanitizeFilename(filename);
+
+        return new File(dirPath, filename + ".txt");
+    }
+
+    /**
+     * Automatically computes a suggested File for the given Template, based on its name.
+     * Templates are saved in JSON format, but we use a "*.template" extension for them.
+     * (Queries and Templates are stored in the same directory, so this lets us distinguish them).
+     *
+     * @param dataDirectory the base data directory. Must not be null.
+     * @param template      Any non-null Template object.
+     * @return A filename suitable for this Template.
+     */
+    static File computeFile(File dataDirectory, Template template) {
+        if (dataDirectory == null) {
+            throw new IllegalArgumentException("dataDirectory cannot be null");
+        }
+        if (template == null) {
+            throw new IllegalArgumentException("template cannot be null");
+        }
+
+        String filename = template.getName();
+        if (filename == null || filename.isBlank()) {
+            // Template guards against empty names, so this SHOULD be impossible, but let's be safe:
+            filename = Template.DEFAULT_NAME;
+        }
+        filename = FileSystemUtil.sanitizeFilename(filename);
+        return new File(dataDirectory, DataManager.METADATA_DIR + File.separator + filename + ".template");
+    }
+
+    /**
+     * Automatically computes a suggested File for the given Query, based on its name.
+     * Queries are saved in JSON format, but we use a "*.query" extension for them
+     * to distinguish them from Templates, which are stored in the same directory.
+     *
+     * @param dataDirectory the base data directory. Must not be null.
+     * @param query         Any non-null Query object.
+     * @return A filename suitable for this Query.
+     */
+    static File computeFile(File dataDirectory, Query query) {
+        if (dataDirectory == null) {
+            throw new IllegalArgumentException("dataDirectory cannot be null");
+        }
+        if (query == null) {
+            throw new IllegalArgumentException("query cannot be null");
+        }
+
+        String filename = query.getName();
+        if (filename == null || filename.isBlank()) {
+            // Query guards against empty names, so this SHOULD be impossible, but let's be safe:
+            filename = Query.DEFAULT_NAME;
+        }
+
+        filename = FileSystemUtil.sanitizeFilename(filename);
+        return new File(dataDirectory, DataManager.METADATA_DIR + File.separator + filename + ".query");
     }
 }
