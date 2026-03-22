@@ -2,11 +2,13 @@ package ca.corbett.snotes.io;
 
 import ca.corbett.extras.progress.MultiProgressDialog;
 import ca.corbett.extras.progress.SimpleProgressAdapter;
+import ca.corbett.snotes.AppConfig;
 import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.model.Query;
 import ca.corbett.snotes.model.Template;
 import ca.corbett.snotes.ui.MainWindow;
 
+import javax.swing.SwingUtilities;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,6 +28,7 @@ public class DataManager {
 
     public static final String METADATA_DIR = ".snotes"; // Not currently configurable
     public static final String STATIC_DIR = "static"; // Not currently configurable
+    public static final String SCRATCH_DIR = ".scratch"; // Not currently configurable
 
     private static final Logger log = Logger.getLogger(DataManager.class.getName());
 
@@ -46,14 +49,60 @@ public class DataManager {
     private final List<Note> scratchNotes;
     private final AtomicInteger loadProgress;
 
+    private File dataDir;
+
     public DataManager() {
         this.notes = new CopyOnWriteArrayList<>();
         this.queries = new CopyOnWriteArrayList<>();
         this.templates = new CopyOnWriteArrayList<>();
         this.scratchNotes = new CopyOnWriteArrayList<>();
         loadProgress = new AtomicInteger(0);
+        dataDir = AppConfig.getInstance().getDataDirectory();
     }
 
+    /**
+     * Creates a new Note with a new temporary scratch file as its source.
+     * Invoking save() with this Note object will move it from the scratch
+     * directory into the data directory, and update its source file accordingly.
+     */
+    public Note newNote() {
+        Note note = new Note();
+        note.setSourceFile(newScratchFile()); // okay if null - it just won't get persisted, is all.
+        scratchNotes.add(note);
+        notes.add(note);
+        return note;
+    }
+
+    /**
+     * Saves the given Note to disk. The save location is determined dynamically based
+     * on the metadata of the Note. This may mean that an existing Note is moved within the data
+     * directory as a result of this save. If the given Note is a scratch note, it will
+     * be moved from the scratch directory to its proper home in the data directory.
+     * <p>
+     * The idea here is that the caller never has to specify (or care about) where
+     * the Note will be saved. The Note itself, and this Manager class, figure that out.
+     * </p>
+     *
+     * @param note The Note object to save.
+     */
+    public void save(Note note) throws IOException {
+        // TODO: pseudocode:
+        // 1. Compute the save path based on Note metadata (specifically: date and tags).
+        //    a. Code for this exists in the old Mercurial repo for Snotes v1... dig it up and reuse it!
+        // 2. If the Note is a scratch note, move it from the scratch directory to its proper home.
+        //    a. The scratch file may not exist! newScratchFile() is not guaranteed to return something.
+        //    b. The scratch file may not be where you expect it! There's a possible fallback to system temp dir.
+        //    c. If the scratch file does exist, make sure it gets deleted from the scratch directory AFTER the save.
+        // 3. If it's not a scratch note, check if the new save location is different from the old one.
+        //    a. This is not an error! It's possible that the Note was re-dated or the tags changed. Just move it.
+        //    b. If the source file hasn't changed, just overwrite the original.
+        //
+        // Questions:
+        // - Should we throw IOExceptions here to the caller (UI)? Probably yes, so errors can be displayed.
+        // - Should we update the Note's source file immediately after the save, or only after a successful save?
+        //   Probably only after a successful save.
+    }
+    
     /**
      * Returns a defensive copy of the list of Notes currently loaded in memory.
      * Modifying this list will not affect the DataManager's internal state.
@@ -150,6 +199,10 @@ public class DataManager {
         loaderThread.addDirectoryToSkip(METADATA_DIR); // There are no Notes in the metadata directory.
         loaderThread.addDirectoryToSkip(".hg"); // Don't scan the top-level Mercurial directory.
         loaderThread.addDirectoryToSkip("images"); // There are no Notes in the images directory.
+
+        // Note that we DON'T exclude the scratch directory - if the application exited
+        // previously with unsaved Notes, the user can resume editing them as scratch
+        // files if we load them here. This is why we don't use the system temp dir as our scratch dir!
     }
 
     private void setNotes(List<Note> notes) {
@@ -168,8 +221,53 @@ public class DataManager {
     }
 
     /**
+     * Will attempt to create and return a new temporary file in our scratch directory.
+     * If the scratch directory does not already exist, it will be silently created.
+     * If the scratch directory cannot be created, we fall back to the system
+     * temp directory. This means that scratch files will not be persisted
+     * across application restarts. If the scratch directory cannot be
+     * created in the system temp directory, then we give up and return null.
+     *
+     * @return A new temporary File in our scratch directory, or null if we failed to create one.
+     */
+    private File newScratchFile() {
+        File scratchDir = new File(dataDir, SCRATCH_DIR);
+        if (!scratchDir.exists()) {
+            if (!scratchDir.mkdirs()) {
+                log.warning("Failed to create scratch directory: "
+                                + scratchDir.getAbsolutePath()
+                                + " - Falling back to system temp directory.");
+                // Fall back to system temp dir if we can't create our own scratch dir.
+                scratchDir = new File(System.getProperty("java.io.tmpdir"), SCRATCH_DIR);
+                if (!scratchDir.exists() && !scratchDir.mkdirs()) {
+                    log.severe("Failed to create scratch directory: " + scratchDir.getAbsolutePath());
+                    return null;
+                }
+            }
+        }
+        else if (!scratchDir.isDirectory()) {
+            log.warning("Scratch directory is not a directory: " + scratchDir.getAbsolutePath());
+            return null;
+        }
+        try {
+            return File.createTempFile("scratch", ".txt", scratchDir);
+        }
+        catch (IOException e) {
+            log.warning("Failed to create scratch file: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
      * An internal progress listener that we will hook onto our various worker threads.
      * When all worker threads have completed, we will notify the given LoadListener, if any.
+     * <p>
+     *     If a LoadListener is specified, it will only be notified once after ALL threads
+     *     have completed. This is true regardless of whether the threads complete normally
+     *     or are canceled by the user. Note that the listener will NOT be notified
+     *     on the worker thread! The notification happens on the EDT, so it's safe to
+     *     update the UI from the listener.
+     * </p>
      */
     private class ThreadListener<T> extends SimpleProgressAdapter {
 
@@ -203,7 +301,8 @@ public class DataManager {
             // Only notify the listener when ALL three threads are done:
             if (loadProgress.decrementAndGet() == 0) {
                 if (listener != null) {
-                    listener.onLoadComplete(DataManager.this);
+                    // We're on the worker thread! Marshall this back to the EDT before notifying:
+                    SwingUtilities.invokeLater(() -> listener.onLoadComplete(DataManager.this));
                 }
             }
         }

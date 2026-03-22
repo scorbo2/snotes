@@ -285,6 +285,15 @@ public class AppConfig extends AppProperties<SnotesExtension> {
                                          "<br>Not currently configurable.</html>");
         props.add(staticSubDirProp);
 
+        // And finally, the scratch subdirectory is ALSO not configurable:
+        LabelProperty scratchSubDirProp = new LabelProperty("Persistence.Directory.scratchSubdir",
+                                                            DataManager.SCRATCH_DIR);
+        scratchSubDirProp.setFieldLabelText("Scratch:");
+        scratchSubDirProp.setExtraMargins(0, 0);
+        scratchSubDirProp.setHelpText("<html>The subdirectory where temporary files are stored." +
+                                          "<br>Not currently configurable.</html>");
+        props.add(scratchSubDirProp);
+
         return props;
     }
 }
