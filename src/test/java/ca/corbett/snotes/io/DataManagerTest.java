@@ -284,4 +284,46 @@ class DataManagerTest {
         assertThrows(IOException.class, () -> dataManager.loadAll(notADirectory));
     }
 
+    @Test
+    void loadAll_whenMetadataDirIsFile_shouldThrowIOException() throws IOException {
+        // GIVEN a data directory where the expected metadata subdirectory already exists as a plain file:
+        File dataDir = new File(tempDir, "data-meta-file");
+        assertTrue(dataDir.mkdirs());
+        File metadataAsFile = new File(dataDir, DataManager.METADATA_DIR);
+        assertTrue(metadataAsFile.createNewFile());
+
+        // WHEN we try to load from that directory:
+        // THEN it should throw an IOException because the metadata dir is not a directory:
+        assertThrows(IOException.class, () -> dataManager.loadAll(dataDir));
+    }
+
+    @Test
+    void loadAll_whenStaticDirIsFile_shouldThrowIOException() throws IOException {
+        // GIVEN a data directory where the expected static subdirectory already exists as a plain file:
+        File dataDir = new File(tempDir, "data-static-file");
+        assertTrue(dataDir.mkdirs());
+        File staticAsFile = new File(dataDir, DataManager.STATIC_DIR);
+        assertTrue(staticAsFile.createNewFile());
+
+        // WHEN we try to load from that directory:
+        // THEN it should throw an IOException because the static dir is not a directory:
+        assertThrows(IOException.class, () -> dataManager.loadAll(dataDir));
+    }
+
+    @Test
+    void loadAll_whenScratchDirIsFile_shouldThrowIOException() throws IOException {
+        // GIVEN a data directory where the expected scratch subdirectory already exists as a plain file:
+        File dataDir = new File(tempDir, "data-scratch-file");
+        assertTrue(dataDir.mkdirs());
+        // The metadata and static dirs must exist as real directories first so we reach the scratch check:
+        assertTrue(new File(dataDir, DataManager.METADATA_DIR).mkdirs());
+        assertTrue(new File(dataDir, DataManager.STATIC_DIR).mkdirs());
+        File scratchAsFile = new File(dataDir, DataManager.SCRATCH_DIR);
+        assertTrue(scratchAsFile.createNewFile());
+
+        // WHEN we try to load from that directory:
+        // THEN it should throw an IOException because the scratch dir is not a directory:
+        assertThrows(IOException.class, () -> dataManager.loadAll(dataDir));
+    }
+
 }
