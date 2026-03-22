@@ -487,7 +487,7 @@ public class DataManager {
             if (loaderThread.hadErrors()) {
                 log.warning("A loader thread encountered errors. Results may be incomplete.");
             }
-            // Only notify the listener when ALL three threads are done:
+            // Only notify the listener when ALL loader threads are done:
             if (loadProgress.decrementAndGet() == 0) {
                 if (listener != null) {
                     // We're on the worker thread! Marshall this back to the EDT before notifying:
