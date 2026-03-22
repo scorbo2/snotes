@@ -135,7 +135,7 @@ public class Template {
     }
 
     /**
-     * Returns the File from which this Query was loaded, or null if this Query has not yet been saved to disk.
+     * Returns the File from which this Template was loaded, or null if this Template has not yet been saved to disk.
      */
     public File getSourceFile() {
         return sourceFile;

@@ -7,8 +7,6 @@ import ca.corbett.snotes.ui.MainWindow;
 
 import java.awt.event.ActionEvent;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.logging.Logger;
 
 /**
@@ -28,23 +26,18 @@ public class PrefsAction extends EnhancedAction {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        File dataDirectory = AppConfig.getInstance().getDataDirectory();
+        File dataDirectory = AppConfig.getInstance().getDataDirectory(); // Make a note of the old one
         if (AppConfig.getInstance().showPropertiesDialog(MainWindow.getInstance())) {
 
             // If the data directory changed, we need to restart the application:
             File newDataDirectory = AppConfig.getInstance().getDataDirectory();
-            try {
-                if (!Files.isSameFile(dataDirectory.toPath(), newDataDirectory.toPath())) {
-                    getMessageUtil().info("Restart required",
-                                          "Changing the data directory requires restarting the application.");
+            if (!dataDirectory.getAbsolutePath().equals(newDataDirectory.getAbsolutePath())) {
+                getMessageUtil().info("Restart required",
+                                      "Changing the data directory requires restarting the application.");
 
-                    // TODO once we have wired up the UpdateManager (future ticket),
-                    //      we can restart the application automatically.
-                    //      Until then, all we can do is nag the user to do it for us.
-                }
-            }
-            catch (IOException ioe) {
-                log.severe("Error checking data directory: " + ioe.getMessage());
+                // TODO once we have wired up the UpdateManager (future ticket),
+                //      we can restart the application automatically.
+                //      Until then, all we can do is nag the user to do it for us.
             }
 
             // If the user clicked OK, reload the UI:

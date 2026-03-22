@@ -168,10 +168,9 @@ public class DataManager {
      * Saves all Notes, Queries, and Templates to the given data directory, if they are marked as
      * needing to be saved.
      *
-     * @param dataDir The data directory to save to. TODO why are we passing this in? Don't we already know it?
      * @throws IOException If any save fails.
      */
-    public void saveAll(File dataDir) throws IOException {
+    public void saveAll() throws IOException {
         // Save all scratch notes in-place (this list should be quite small):
         for (Note scratchNote : scratchNotes) {
             if (scratchNote.isDirty()) {
