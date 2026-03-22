@@ -76,6 +76,8 @@ class SnotesIO {
             }
         }
 
+        query.setSourceFile(sourceFile);
+        query.markClean();
         return query;
     }
 
