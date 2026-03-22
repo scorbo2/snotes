@@ -105,11 +105,14 @@ public class DataManager {
             }
 
             // If we get here, it's a new save location, but there's no existing file... so just move it:
-            if (!note.getSourceFile().delete()) {
-                // This is not fatal, but it is wonky... warn but proceed:
-                log.warning("Failed to delete old source file for note: " + note.getSourceFile().getAbsolutePath());
-            }
+            File oldSourceFile = note.getSourceFile();
             SnotesIO.saveNote(note, savePath); // updates the Note's source file to the new location + marks it clean.
+            if (oldSourceFile != null && oldSourceFile.exists() && !oldSourceFile.equals(savePath)) {
+                if (!oldSourceFile.delete()) {
+                    // This is not fatal, but it is wonky... warn but proceed:
+                    log.warning("Failed to delete old source file for note: " + oldSourceFile.getAbsolutePath());
+                }
+            }
 
             // If this was a scratch note, move it from the scratch list to the main notes list:
             if (scratchNotes.remove(note)) {
