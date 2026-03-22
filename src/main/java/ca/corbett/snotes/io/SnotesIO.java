@@ -343,6 +343,14 @@ class SnotesIO {
             throw new IllegalArgumentException("Cannot save a Note with no target file.");
         }
 
+        // The targetFile's path may not exist:
+        File parentDir = targetFile.getParentFile();
+        if (!parentDir.exists()) {
+            if (!parentDir.mkdirs()) {
+                throw new IOException("Failed to create directories for target file: " + targetFile.getAbsolutePath());
+            }
+        }
+
         List<String> lines = new ArrayList<>();
         lines.add(note.getPersistenceTagLine());
         lines.add(""); // blank line between tags and text is conventional.
