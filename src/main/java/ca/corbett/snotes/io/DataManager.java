@@ -235,7 +235,7 @@ public class DataManager {
                         // Templates are considered lighter and more expendable than Notes, so we will just overwrite.
                         // We'll log what we're doing so the user is aware of this.
                         log.warning("Overwriting existing template file at " + targetFile.getAbsolutePath()
-                                        + " with query from " + template.getSourceFile().getAbsolutePath());
+                                        + " with template from " + template.getSourceFile().getAbsolutePath());
                     }
 
                     // Remove the old file if it still exists:
