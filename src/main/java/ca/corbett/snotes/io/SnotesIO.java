@@ -247,6 +247,8 @@ class SnotesIO {
         for (String tag : tagList) {
             template.addTag(tag);
         }
+        template.setSourceFile(sourceFile);
+        template.markClean();
         return template;
     }
 
