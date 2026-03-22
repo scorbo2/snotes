@@ -116,8 +116,8 @@ class SnotesIO {
         mapper.writerWithDefaultPrettyPrinter().writeValue(targetFile, rootNode);
 
         // If we make it here, the Query is clean, and has a new source file:
-        query.markClean();
         query.setSourceFile(targetFile);
+        query.markClean();
     }
 
     /**
