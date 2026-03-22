@@ -335,6 +335,16 @@ public class DataManager {
             throw new IOException("Static directory is not a directory: " + staticDir.getAbsolutePath());
         }
 
+        File scratchDir = new File(dataDir, SCRATCH_DIR);
+        if (!scratchDir.exists()) {
+            if (!scratchDir.mkdirs()) {
+                throw new IOException("Failed to create scratch directory: " + scratchDir.getAbsolutePath());
+            }
+        }
+        else if (!scratchDir.isDirectory()) {
+            throw new IOException("Scratch directory is not a directory: " + scratchDir.getAbsolutePath());
+        }
+
         // This is our countdown latch for tracking our four worker threads:
         LoaderThread<Note> noteThread;
         LoaderThread<Note> scratchThread;
@@ -342,12 +352,11 @@ public class DataManager {
         LoaderThread<Template> templateThread;
         loadProgress.set(4);
 
-        // Our 3 threads will load all Notes, Queries, and Templates in the data directory:
+        // Our loader threads will load all Notes, scratch Notes, Queries, and Templates in the data directory:
         noteThread = new LoaderThread<>("Notes", dataDir, "txt", true, SnotesIO::loadNote);
         addSkipDirectories(noteThread); // Don't waste time scanning directories we know won't contain Notes.
         noteThread.addProgressListener(new ThreadListener<>(noteThread, listener, this::setNotes));
-        scratchThread = new LoaderThread<>("Scratch notes",
-                                           new File(dataDir, SCRATCH_DIR), "txt", false, SnotesIO::loadNote);
+        scratchThread = new LoaderThread<>("Scratch notes", scratchDir, "txt", false, SnotesIO::loadNote);
         scratchThread.addProgressListener(new ThreadListener<>(scratchThread, listener, this::setScratchNotes));
         queryThread = new LoaderThread<>("Queries", metadataDir, "query", false, SnotesIO::loadQuery);
         queryThread.addProgressListener(new ThreadListener<>(queryThread, listener, this::setQueries));
