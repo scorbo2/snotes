@@ -438,6 +438,13 @@ public class DataManager {
         }
 
         @Override
+        public boolean progressError(String errorSource, String errorDescription) {
+            log.severe("LoaderThread error: " + errorSource + " - " + errorDescription);
+            acceptResults(); // Likely nothing to accept, but we have to decrement the latch.
+            return false; // irrelevant return; our LoaderThread doesn't check this
+        }
+
+        @Override
         public void progressComplete() {
             acceptResults();
         }

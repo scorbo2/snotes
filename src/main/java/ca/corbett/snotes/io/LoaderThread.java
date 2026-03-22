@@ -110,12 +110,14 @@ class LoaderThread<T> extends SimpleProgressWorker {
         if (directory == null || !directory.exists() || !directory.isDirectory()) {
             log.severe("Skipping invalid directory specified for " + searchType + " LoaderThread: " + directory);
             hadErrors = true;
+            fireProgressError(searchType, "Invalid directory specified: " + directory);
             return;
         }
         if (searchExtension == null || searchExtension.isBlank()) {
             log.severe("Skipping search with invalid extension specified for "
                            + searchType + " LoaderThread: " + searchExtension);
             hadErrors = true;
+            fireProgressError(searchType, "Invalid file extension specified: " + searchExtension);
             return;
         }
 
