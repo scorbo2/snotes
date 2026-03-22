@@ -52,13 +52,25 @@ public class DataManager {
 
     private File dataDir;
 
+    /**
+     * Creates a new DataManager with empty caches and a data directory
+     * taken from AppConfig.
+     */
     public DataManager() {
+        this(AppConfig.getInstance().getDataDirectory());
+    }
+
+    /**
+     * Package-private constructor for unit tests. Allows a custom data directory to be specified
+     * directly, bypassing AppConfig entirely so that the full application need not be initialized.
+     */
+    DataManager(File dataDir) {
         this.notes = new CopyOnWriteArrayList<>();
         this.queries = new CopyOnWriteArrayList<>();
         this.templates = new CopyOnWriteArrayList<>();
         this.scratchNotes = new CopyOnWriteArrayList<>();
         loadProgress = new AtomicInteger(0);
-        dataDir = AppConfig.getInstance().getDataDirectory();
+        this.dataDir = dataDir;
     }
 
     /**
@@ -94,7 +106,13 @@ public class DataManager {
      */
     public void save(Note note) throws IOException {
         File savePath = SnotesIO.computeFile(dataDir, note);
-        if (!Files.isSameFile(note.getSourceFile().toPath(), savePath.toPath())) {
+        // Files.isSameFile() requires both paths to exist; if the computed target doesn't exist yet
+        // it is always a new save location, so we only call it when both sides are present:
+        boolean isSameFile = savePath.exists()
+            && note.getSourceFile() != null
+            && note.getSourceFile().exists()
+            && Files.isSameFile(note.getSourceFile().toPath(), savePath.toPath());
+        if (!isSameFile) {
             if (savePath.exists()) {
                 // Now we have a problem...
                 // We're moving a Note to a new save location, but there's already something there.
@@ -104,7 +122,13 @@ public class DataManager {
                 throw new IOException("Save failed: won't overwrite existing file at " + savePath.getAbsolutePath());
             }
 
-            // If we get here, it's a new save location, but there's no existing file... so just move it:
+            // If we get here, it's a new save location, but there's no existing file... so just move it.
+            // Ensure the target directory exists before attempting to write:
+            File targetDir = savePath.getParentFile();
+            if (targetDir != null && !targetDir.exists() && !targetDir.mkdirs()) {
+                throw new IOException("Failed to create directory for note: " + targetDir.getAbsolutePath());
+            }
+
             File oldSourceFile = note.getSourceFile();
             SnotesIO.saveNote(note, savePath); // updates the Note's source file to the new location + marks it clean.
             if (oldSourceFile != null && oldSourceFile.exists() && !oldSourceFile.equals(savePath)) {
