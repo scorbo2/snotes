@@ -164,6 +164,12 @@ public class DataManager {
             return;
         }
 
+        // This shouldn't happen, but it is technically possible for our scratch note
+        // to have no sourceFile if something went wrong with scratch file creation.
+        if (note.getSourceFile() == null) {
+            throw new IOException("Scratch note has no source file: " + note);
+        }
+
         SnotesIO.saveNote(note, note.getSourceFile()); // save in-place in the scratch directory
     }
     
