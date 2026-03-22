@@ -93,7 +93,9 @@ public class TestExtension extends SnotesExtension {
         if (TASK_PANE_NAME.equals(actionGroupName)) {
             return List.of(
                 new DummyAction("Say hello", "Hello from the test extension!"),
-                new DummyAction("Show version", "Snotes version: " + Version.VERSION)
+                new DummyAction("Show version", "Snotes version: " + Version.VERSION),
+                new DummyAction("Really long action name that should get truncated automatically",
+                                "The actual name was much longer!")
             );
         }
 

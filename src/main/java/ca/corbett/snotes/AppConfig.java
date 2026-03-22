@@ -10,11 +10,14 @@ import ca.corbett.extras.properties.AbstractProperty;
 import ca.corbett.extras.properties.BooleanProperty;
 import ca.corbett.extras.properties.ColorProperty;
 import ca.corbett.extras.properties.DecimalProperty;
+import ca.corbett.extras.properties.DirectoryProperty;
 import ca.corbett.extras.properties.EnumProperty;
 import ca.corbett.extras.properties.KeyStrokeProperty;
+import ca.corbett.extras.properties.LabelProperty;
 import ca.corbett.extras.properties.LookAndFeelProperty;
 import ca.corbett.snotes.extensions.SnotesExtension;
 import ca.corbett.snotes.extensions.SnotesExtensionManager;
+import ca.corbett.snotes.io.DataManager;
 import ca.corbett.snotes.ui.actions.AboutAction;
 import ca.corbett.snotes.ui.actions.ExitAction;
 import ca.corbett.snotes.ui.actions.ExtensionManagerAction;
@@ -91,6 +94,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
     private DecimalProperty desktopLogoAlphaProp;
     private ColorProperty desktopGradientProp;
     private EnumProperty<CustomizableDesktopPane.LogoPlacement> desktopLogoPlacementProp;
+    private DirectoryProperty dataDirProp;
 
     private AppConfig() {
         super(Version.FULL_NAME, PROPS_FILE, SnotesExtensionManager.getInstance());
@@ -137,6 +141,10 @@ public class AppConfig extends AppProperties<SnotesExtension> {
 
     public void setDesktopLogoPlacement(CustomizableDesktopPane.LogoPlacement placement) {
         desktopLogoPlacementProp.setSelectedItem(placement);
+    }
+
+    public File getDataDirectory() {
+        return dataDirProp.getDirectory();
     }
 
     public EnhancedAction getAboutAction() {
@@ -211,6 +219,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         props.add(desktopGradientProp);
         props.add(desktopLogoPlacementProp);
         props.addAll(createKeystrokeProperties());
+        props.addAll(createDataProperties());
 
         return props;
     }
@@ -243,6 +252,38 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         props.add(new KeyStrokeProperty(KEY_EXIT, "Exit:",
                                         KeyStrokeManager.parseKeyStroke("Ctrl+Q"), exitAction)
                       .setAllowBlank(true));
+
+        return props;
+    }
+
+    private List<AbstractProperty> createDataProperties() {
+        List<AbstractProperty> props = new ArrayList<>();
+
+        // The main data directory is configurable:
+        dataDirProp = new DirectoryProperty("Persistence.Directory.dataDirectory", "Data directory:", false,
+                                            new File(Version.SETTINGS_DIR, "data"));
+        dataDirProp.setColumns(16);
+        dataDirProp.setHelpText("<html>The parent directory where all notes, queries, and templates are stored." +
+                                    "<br>Changing this property requires an application restart.</html>");
+        props.add(dataDirProp);
+
+        // The metadata subdirectory is not configurable, but we can at least show it here:
+        LabelProperty metaSubDirProp = new LabelProperty("Persistence.Directory.metadataSubdir",
+                                                         DataManager.METADATA_DIR);
+        metaSubDirProp.setFieldLabelText("Metadata:");
+        metaSubDirProp.setExtraMargins(0, 0);
+        metaSubDirProp.setHelpText("<html>The subdirectory where queries and templates are stored." +
+                                       "<br>Not currently configurable.</html>");
+        props.add(metaSubDirProp);
+
+        // The static subdirectory is also not configurable:
+        LabelProperty staticSubDirProp = new LabelProperty("Persistence.Directory.staticSubdir",
+                                                           DataManager.STATIC_DIR);
+        staticSubDirProp.setFieldLabelText("Undated notes:");
+        staticSubDirProp.setExtraMargins(0, 0);
+        staticSubDirProp.setHelpText("<html>The subdirectory where undated Notes are stored." +
+                                         "<br>Not currently configurable.</html>");
+        props.add(staticSubDirProp);
 
         return props;
     }

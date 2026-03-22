@@ -5,26 +5,18 @@ import ca.corbett.snotes.model.filter.DayOfMonthFilter;
 import ca.corbett.snotes.model.filter.DayOfWeekFilter;
 import ca.corbett.snotes.model.filter.FilterTest;
 import ca.corbett.snotes.model.filter.MonthFilter;
-import ca.corbett.snotes.model.filter.TagFilter;
 import ca.corbett.snotes.model.filter.TextFilter;
-import ca.corbett.snotes.model.filter.UndatedFilter;
 import ca.corbett.snotes.model.filter.YearFilter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.time.DayOfWeek;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class QueryTest extends FilterTest {
 
@@ -209,88 +201,6 @@ public class QueryTest extends FilterTest {
 
         // THEN the name should be set correctly:
         assertEquals(validName, query.getName());
-    }
-
-    @Test
-    public void save_roundTrip_shouldLoad() {
-        // GIVEN a Query with some filters and a name:
-        Query query = new Query();
-        query.setName("My Test Query");
-        query.addFilter(new YearFilter(1997, YearFilter.FilterType.ON));
-        query.addFilter(new MonthFilter(4, MonthFilter.FilterType.IS));
-        query.addFilter(new TextFilter("test"));
-        query.addFilter(new DateFilter(JAN_1_2020, DateFilter.FilterType.AFTER_INCLUSIVE));
-        query.addFilter(new DayOfWeekFilter(DayOfWeek.MONDAY, DayOfWeekFilter.FilterType.IS));
-        query.addFilter(new DayOfMonthFilter(21, DayOfMonthFilter.FilterType.IS));
-        query.addFilter(new TagFilter(List.of(new Tag("test-tag")), TagFilter.FilterType.ALL));
-        query.addFilter(new UndatedFilter());
-
-        try {
-            // WHEN we save it to a file and then load it back:
-            File savedFile = File.createTempFile("test", ".query", tempDir);
-            query.save(savedFile);
-            assertNotNull(savedFile);
-            assertTrue(savedFile.exists());
-            Query loadedQuery = Query.load(savedFile);
-
-            // THEN the loaded Query should have the same name and filters as the original:
-            assertNotNull(loadedQuery);
-            assertEquals(query.getName(), loadedQuery.getName());
-            assertEquals(query.size(), loadedQuery.size());
-
-            // AND the filters should be present in the same order, so let's go through them and verify types and values
-            assertInstanceOf(YearFilter.class, loadedQuery.getFilters().get(0));
-            YearFilter loadedYearFilter = (YearFilter)loadedQuery.getFilters().get(0);
-            assertEquals(1997, loadedYearFilter.getTargetYear());
-            assertEquals(YearFilter.FilterType.ON, loadedYearFilter.getFilterType());
-            assertInstanceOf(MonthFilter.class, loadedQuery.getFilters().get(1));
-            MonthFilter loadedMonthFilter = (MonthFilter)loadedQuery.getFilters().get(1);
-            assertEquals(4, loadedMonthFilter.getTargetMonth());
-            assertEquals(MonthFilter.FilterType.IS, loadedMonthFilter.getFilterType());
-            assertInstanceOf(TextFilter.class, loadedQuery.getFilters().get(2));
-            TextFilter loadedTextFilter = (TextFilter)loadedQuery.getFilters().get(2);
-            assertEquals("test", loadedTextFilter.getContains());
-            assertInstanceOf(DateFilter.class, loadedQuery.getFilters().get(3));
-            DateFilter loadedDateFilter = (DateFilter)loadedQuery.getFilters().get(3);
-            assertEquals(JAN_1_2020, loadedDateFilter.getTargetDate());
-            assertEquals(DateFilter.FilterType.AFTER_INCLUSIVE, loadedDateFilter.getFilterType());
-            assertInstanceOf(DayOfWeekFilter.class, loadedQuery.getFilters().get(4));
-            DayOfWeekFilter loadedDayOfWeekFilter = (DayOfWeekFilter)loadedQuery.getFilters().get(4);
-            assertEquals(DayOfWeek.MONDAY, loadedDayOfWeekFilter.getDayOfWeek());
-            assertEquals(DayOfWeekFilter.FilterType.IS, loadedDayOfWeekFilter.getFilterType());
-            assertInstanceOf(DayOfMonthFilter.class, loadedQuery.getFilters().get(5));
-            DayOfMonthFilter loadedDayOfMonthFilter = (DayOfMonthFilter)loadedQuery.getFilters().get(5);
-            assertEquals(21, loadedDayOfMonthFilter.getDayOfMonth());
-            assertEquals(DayOfMonthFilter.FilterType.IS, loadedDayOfMonthFilter.getFilterType());
-            assertInstanceOf(TagFilter.class, loadedQuery.getFilters().get(6));
-            TagFilter loadedTagFilter = (TagFilter)loadedQuery.getFilters().get(6);
-            assertEquals(1, loadedTagFilter.getTagsToFilter().size());
-            assertEquals("test-tag", loadedTagFilter.getTagsToFilter().get(0).getTag());
-            assertEquals(TagFilter.FilterType.ALL, loadedTagFilter.getFilterType());
-            assertInstanceOf(UndatedFilter.class, loadedQuery.getFilters().get(7));
-        }
-        catch (IOException ioe) {
-            fail("IOException thrown during save/load: " + ioe.getMessage());
-        }
-    }
-
-    @Test
-    public void load_withMalformedDate_shouldThrowIOException() throws IOException {
-        // GIVEN a Query saved with a valid DateFilter:
-        Query query = new Query();
-        query.setName("Malformed Date Test");
-        query.addFilter(new DateFilter(JAN_1_2020, DateFilter.FilterType.ON));
-        File savedFile = File.createTempFile("test-malformed", ".query", tempDir);
-        query.save(savedFile);
-
-        // WHEN we corrupt the saved file by replacing the valid date with a malformed one:
-        String content = Files.readString(savedFile.toPath(), StandardCharsets.UTF_8);
-        String corrupted = content.replace("2020-01-01", "not-a-real-date");
-        Files.writeString(savedFile.toPath(), corrupted, StandardCharsets.UTF_8);
-
-        // THEN Query.load() should throw an IOException rather than silently
-        // loading a filter with today's date substituted in:
-        assertThrows(IOException.class, () -> Query.load(savedFile));
     }
 }
 

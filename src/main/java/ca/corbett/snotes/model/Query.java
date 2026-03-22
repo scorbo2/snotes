@@ -1,13 +1,7 @@
 package ca.corbett.snotes.model;
 
 import ca.corbett.snotes.model.filter.Filter;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -141,79 +135,5 @@ public class Query {
             }
         }
         return filteredNotes;
-    }
-
-    /**
-     * Attempts to persist this Query and all of its Filters to the given file.
-     * The save format is pretty-printed JSON.
-     *
-     * @param targetFile Any writable file. If the file already exists, it will be overwritten.
-     * @throws IOException If the save fails.
-     */
-    public void save(File targetFile) throws IOException {
-        if (targetFile == null) {
-            throw new IllegalArgumentException("targetFile cannot be null");
-        }
-        if (targetFile.isDirectory() || (targetFile.exists() && !targetFile.canWrite())) {
-            throw new IOException("Target file is not a writable file: " + targetFile.getAbsolutePath());
-        }
-
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode rootNode = mapper.createObjectNode();
-        rootNode.put("name", name);
-
-        ArrayNode filtersArray = mapper.createArrayNode();
-        for (Filter filter : filters) {
-            filtersArray.add(mapper.valueToTree(filter));
-        }
-        rootNode.set("filters", filtersArray);
-
-        mapper.writerWithDefaultPrettyPrinter().writeValue(targetFile, rootNode);
-    }
-
-    /**
-     * Attempts to load a Query and its Filters from the given file,
-     * which should be in the same format as produced by save().
-     *
-     * @param sourceFile Any query file that was generated via the save() method in this class.
-     * @return A populated Query instance.
-     * @throws IOException If the load fails.
-     */
-    public static Query load(File sourceFile) throws IOException {
-        if (sourceFile == null) {
-            throw new IllegalArgumentException("sourceFile cannot be null");
-        }
-        if (!sourceFile.exists() || sourceFile.isDirectory() || !sourceFile.canRead()) {
-            throw new IOException("Source file is not a readable file: " + sourceFile.getAbsolutePath());
-        }
-
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode rootNode = mapper.readTree(sourceFile);
-        if (rootNode == null || rootNode.isNull() || rootNode.isMissingNode() || !rootNode.isObject()) {
-            // This can happen with empty/blank files, JSON arrays, bare scalars, or other non-object content:
-            throw new IOException("Failed to parse Query from file: " + sourceFile.getAbsolutePath());
-        }
-
-        Query query = new Query(); // Gets DEFAULT_NAME and an empty filter list by default
-
-        // Set query name if present in the JSON:
-        JsonNode nameNode = rootNode.get("name");
-        if (nameNode != null && !nameNode.isNull() && nameNode.isTextual()) {
-            String nameText = nameNode.asText();
-            if (nameText != null && !nameText.trim().isEmpty()) {
-                query.setName(nameText);
-            }
-        }
-
-        // Load up filters if any are here:
-        JsonNode filtersNode = rootNode.get("filters");
-        if (filtersNode != null && filtersNode.isArray()) {
-            for (JsonNode filterNode : filtersNode) {
-                Filter filter = mapper.treeToValue(filterNode, Filter.class);
-                query.addFilter(filter);
-            }
-        }
-
-        return query;
     }
 }

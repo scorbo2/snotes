@@ -1,24 +1,477 @@
 package ca.corbett.snotes.io;
 
 import ca.corbett.snotes.model.Note;
+import ca.corbett.snotes.model.Query;
 import ca.corbett.snotes.model.Tag;
+import ca.corbett.snotes.model.Template;
 import ca.corbett.snotes.model.YMDDate;
+import ca.corbett.snotes.model.filter.DateFilter;
+import ca.corbett.snotes.model.filter.DayOfMonthFilter;
+import ca.corbett.snotes.model.filter.DayOfWeekFilter;
+import ca.corbett.snotes.model.filter.MonthFilter;
+import ca.corbett.snotes.model.filter.TagFilter;
+import ca.corbett.snotes.model.filter.TextFilter;
+import ca.corbett.snotes.model.filter.UndatedFilter;
+import ca.corbett.snotes.model.filter.YearFilter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.DayOfWeek;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class SnotesIOTest {
+
+    static final YMDDate JAN_1_2020 = new YMDDate("2020-01-01");
+
+    @TempDir
+    File tempDir;
+
+    @Test
+    public void saveQuery_roundTrip_shouldLoad() {
+        // GIVEN a Query with some filters and a name:
+        Query query = new Query();
+        query.setName("My Test Query");
+        query.addFilter(new YearFilter(1997, YearFilter.FilterType.ON));
+        query.addFilter(new MonthFilter(4, MonthFilter.FilterType.IS));
+        query.addFilter(new TextFilter("test"));
+        query.addFilter(new DateFilter(JAN_1_2020, DateFilter.FilterType.AFTER_INCLUSIVE));
+        query.addFilter(new DayOfWeekFilter(DayOfWeek.MONDAY, DayOfWeekFilter.FilterType.IS));
+        query.addFilter(new DayOfMonthFilter(21, DayOfMonthFilter.FilterType.IS));
+        query.addFilter(new TagFilter(List.of(new Tag("test-tag")), TagFilter.FilterType.ALL));
+        query.addFilter(new UndatedFilter());
+
+        try {
+            // WHEN we save it to a file and then load it back:
+            File savedFile = File.createTempFile("test", ".query", tempDir);
+            SnotesIO.saveQuery(query, savedFile);
+            assertNotNull(savedFile);
+            assertTrue(savedFile.exists());
+            Query loadedQuery = SnotesIO.loadQuery(savedFile);
+
+            // THEN the loaded Query should have the same name and filters as the original:
+            assertNotNull(loadedQuery);
+            assertEquals(query.getName(), loadedQuery.getName());
+            assertEquals(query.size(), loadedQuery.size());
+
+            // AND the filters should be present in the same order, so let's go through them and verify types and values
+            assertInstanceOf(YearFilter.class, loadedQuery.getFilters().get(0));
+            YearFilter loadedYearFilter = (YearFilter)loadedQuery.getFilters().get(0);
+            assertEquals(1997, loadedYearFilter.getTargetYear());
+            assertEquals(YearFilter.FilterType.ON, loadedYearFilter.getFilterType());
+            assertInstanceOf(MonthFilter.class, loadedQuery.getFilters().get(1));
+            MonthFilter loadedMonthFilter = (MonthFilter)loadedQuery.getFilters().get(1);
+            assertEquals(4, loadedMonthFilter.getTargetMonth());
+            assertEquals(MonthFilter.FilterType.IS, loadedMonthFilter.getFilterType());
+            assertInstanceOf(TextFilter.class, loadedQuery.getFilters().get(2));
+            TextFilter loadedTextFilter = (TextFilter)loadedQuery.getFilters().get(2);
+            assertEquals("test", loadedTextFilter.getContains());
+            assertInstanceOf(DateFilter.class, loadedQuery.getFilters().get(3));
+            DateFilter loadedDateFilter = (DateFilter)loadedQuery.getFilters().get(3);
+            assertEquals(JAN_1_2020, loadedDateFilter.getTargetDate());
+            assertEquals(DateFilter.FilterType.AFTER_INCLUSIVE, loadedDateFilter.getFilterType());
+            assertInstanceOf(DayOfWeekFilter.class, loadedQuery.getFilters().get(4));
+            DayOfWeekFilter loadedDayOfWeekFilter = (DayOfWeekFilter)loadedQuery.getFilters().get(4);
+            assertEquals(DayOfWeek.MONDAY, loadedDayOfWeekFilter.getDayOfWeek());
+            assertEquals(DayOfWeekFilter.FilterType.IS, loadedDayOfWeekFilter.getFilterType());
+            assertInstanceOf(DayOfMonthFilter.class, loadedQuery.getFilters().get(5));
+            DayOfMonthFilter loadedDayOfMonthFilter = (DayOfMonthFilter)loadedQuery.getFilters().get(5);
+            assertEquals(21, loadedDayOfMonthFilter.getDayOfMonth());
+            assertEquals(DayOfMonthFilter.FilterType.IS, loadedDayOfMonthFilter.getFilterType());
+            assertInstanceOf(TagFilter.class, loadedQuery.getFilters().get(6));
+            TagFilter loadedTagFilter = (TagFilter)loadedQuery.getFilters().get(6);
+            assertEquals(1, loadedTagFilter.getTagsToFilter().size());
+            assertEquals("test-tag", loadedTagFilter.getTagsToFilter().get(0).getTag());
+            assertEquals(TagFilter.FilterType.ALL, loadedTagFilter.getFilterType());
+            assertInstanceOf(UndatedFilter.class, loadedQuery.getFilters().get(7));
+        }
+        catch (IOException ioe) {
+            fail("IOException thrown during save/load: " + ioe.getMessage());
+        }
+    }
+
+    @Test
+    public void loadQuery_withMalformedDate_shouldThrowIOException() throws IOException {
+        // GIVEN a Query saved with a valid DateFilter:
+        Query query = new Query();
+        query.setName("Malformed Date Test");
+        query.addFilter(new DateFilter(JAN_1_2020, DateFilter.FilterType.ON));
+        File savedFile = File.createTempFile("test-malformed", ".query", tempDir);
+        SnotesIO.saveQuery(query, savedFile);
+
+        // WHEN we corrupt the saved file by replacing the valid date with a malformed one:
+        String content = Files.readString(savedFile.toPath(), StandardCharsets.UTF_8);
+        String corrupted = content.replace("2020-01-01", "not-a-real-date");
+        Files.writeString(savedFile.toPath(), corrupted, StandardCharsets.UTF_8);
+
+        // THEN Query.load() should throw an IOException rather than silently
+        // loading a filter with today's date substituted in:
+        assertThrows(IOException.class, () -> SnotesIO.loadQuery(savedFile));
+    }
+
+    @Test
+    public void saveTemplate_withNullFile_shouldThrowIllegalArgumentException() {
+        // GIVEN a Template:
+        Template template = new Template();
+
+        // WHEN we try to save to a null file:
+        // THEN it should throw an IllegalArgumentException:
+        assertThrows(IllegalArgumentException.class, () -> SnotesIO.saveTemplate(template, null));
+    }
+
+    @Test
+    public void saveTemplate_withDirectory_shouldThrowIOException() {
+        // GIVEN a Template:
+        Template template = new Template();
+
+        // WHEN we try to save to a directory:
+        // THEN it should throw an IOException:
+        assertThrows(IOException.class, () -> SnotesIO.saveTemplate(template, tempDir));
+    }
+
+    @Test
+    public void saveTemplate_withNullTemplate_shouldThrowIllegalArgumentException() {
+        // WHEN we try to save a null Template:
+        // THEN it should throw an IllegalArgumentException:
+        File f = new File(tempDir, "template.template");
+        assertThrows(IllegalArgumentException.class, () -> SnotesIO.saveTemplate(null, f));
+    }
+
+    // -----------------------------------------------------------------------
+    // load tests
+    // -----------------------------------------------------------------------
+
+    @Test
+    public void loadTemplate_withNullFile_shouldThrowIllegalArgumentException() {
+        // WHEN we try to load from a null file:
+        // THEN it should throw an IllegalArgumentException:
+        assertThrows(IllegalArgumentException.class, () -> SnotesIO.loadTemplate(null));
+    }
+
+    @Test
+    public void loadTemplate_withNonExistentFile_shouldThrowIOException() {
+        // GIVEN a file that does not exist:
+        File nonExistent = new File(tempDir, "does-not-exist.template");
+
+        // WHEN we try to load from it:
+        // THEN it should throw an IOException:
+        assertThrows(IOException.class, () -> SnotesIO.loadTemplate(nonExistent));
+    }
+
+    // -----------------------------------------------------------------------
+    // load with malformed or edge-case content tests
+    // -----------------------------------------------------------------------
+
+    @Test
+    public void loadTemplate_withEmptyFile_shouldThrowIOException() throws IOException {
+        // GIVEN a file that is completely empty (Jackson readTree returns null for empty input):
+        File emptyFile = File.createTempFile("empty", ".template", tempDir);
+
+        // WHEN we try to load from it:
+        // THEN it should throw an IOException:
+        assertThrows(IOException.class, () -> SnotesIO.loadTemplate(emptyFile));
+    }
+
+    @Test
+    public void loadTemplate_withMalformedJson_shouldThrowIOException() throws IOException {
+        // GIVEN a file containing invalid JSON syntax:
+        File malformedFile = File.createTempFile("malformed", ".template", tempDir);
+        Files.writeString(malformedFile.toPath(), "{this is not : valid [ json !!!");
+
+        // WHEN we try to load from it:
+        // THEN Jackson throws JsonParseException (an IOException subclass):
+        assertThrows(IOException.class, () -> SnotesIO.loadTemplate(malformedFile));
+    }
+
+    @Test
+    public void loadTemplate_withMissingNameField_shouldUseDefaultName() throws IOException {
+        // GIVEN a valid JSON file that has no "name" field at all:
+        File file = File.createTempFile("no-name", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"dateOption\":\"NONE\",\"context\":\"NONE\",\"tags\":[]}");
+
+        // WHEN we load it:
+        Template loaded = SnotesIO.loadTemplate(file);
+
+        // THEN the name should fall back to DEFAULT_NAME:
+        assertEquals(Template.DEFAULT_NAME, loaded.getName());
+    }
+
+    @Test
+    public void loadTemplate_withBlankName_shouldUseDefaultName() throws IOException {
+        // GIVEN a valid JSON file where the "name" value is blank whitespace:
+        File file = File.createTempFile("blank-name", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":\"   \",\"dateOption\":\"NONE\",\"context\":\"NONE\",\"tags\":[]}");
+
+        // WHEN we load it:
+        Template loaded = SnotesIO.loadTemplate(file);
+
+        // THEN the name should fall back to DEFAULT_NAME:
+        assertEquals(Template.DEFAULT_NAME, loaded.getName());
+    }
+
+    @Test
+    public void loadTemplate_withNullNameNode_shouldUseDefaultName() throws IOException {
+        // GIVEN a valid JSON file where "name" is explicitly JSON null:
+        File file = File.createTempFile("null-name", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":null,\"dateOption\":\"NONE\",\"context\":\"NONE\",\"tags\":[]}");
+
+        // WHEN we load it:
+        Template loaded = SnotesIO.loadTemplate(file);
+
+        // THEN the name should fall back to DEFAULT_NAME:
+        assertEquals(Template.DEFAULT_NAME, loaded.getName());
+    }
+
+    @Test
+    public void loadTemplate_withInvalidDateOption_shouldUseNoneDateOption() throws IOException {
+        // GIVEN a JSON file with an unrecognized "dateOption" string:
+        File file = File.createTempFile("bad-date", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":\"Test\",\"dateOption\":\"INVALID_OPTION\",\"context\":\"NONE\",\"tags\":[]}");
+
+        // WHEN we load it:
+        Template loaded = SnotesIO.loadTemplate(file);
+
+        // THEN the dateOption should fall back to NONE:
+        assertEquals(Template.DateOption.NONE, loaded.getDateOption());
+    }
+
+    @Test
+    public void loadTemplate_withMissingDateOptionField_shouldUseNoneDateOption() throws IOException {
+        // GIVEN a JSON file with no "dateOption" field:
+        File file = File.createTempFile("no-date", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":\"Test\",\"context\":\"NONE\",\"tags\":[]}");
+
+        // WHEN we load it:
+        Template loaded = SnotesIO.loadTemplate(file);
+
+        // THEN the dateOption should fall back to NONE:
+        assertEquals(Template.DateOption.NONE, loaded.getDateOption());
+    }
+
+    @Test
+    public void loadTemplate_withNullDateOptionNode_shouldUseNoneDateOption() throws IOException {
+        // GIVEN a JSON file where "dateOption" is explicitly JSON null:
+        File file = File.createTempFile("null-date", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":\"Test\",\"dateOption\":null,\"context\":\"NONE\",\"tags\":[]}");
+
+        // WHEN we load it:
+        Template loaded = SnotesIO.loadTemplate(file);
+
+        // THEN the dateOption should fall back to NONE:
+        assertEquals(Template.DateOption.NONE, loaded.getDateOption());
+    }
+
+    @Test
+    public void loadTemplate_withInvalidContext_shouldUseNoneContext() throws IOException {
+        // GIVEN a JSON file with an unrecognized "context" string:
+        File file = File.createTempFile("bad-ctx", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":\"Test\",\"dateOption\":\"NONE\",\"context\":\"INVALID_CONTEXT\",\"tags\":[]}");
+
+        // WHEN we load it:
+        Template loaded = SnotesIO.loadTemplate(file);
+
+        // THEN the context should fall back to NONE:
+        assertEquals(Template.Context.NONE, loaded.getContext());
+    }
+
+    @Test
+    public void loadTemplate_withMissingContextField_shouldUseNoneContext() throws IOException {
+        // GIVEN a JSON file with no "context" field:
+        File file = File.createTempFile("no-ctx", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":\"Test\",\"dateOption\":\"NONE\",\"tags\":[]}");
+
+        // WHEN we load it:
+        Template loaded = SnotesIO.loadTemplate(file);
+
+        // THEN the context should fall back to NONE:
+        assertEquals(Template.Context.NONE, loaded.getContext());
+    }
+
+    @Test
+    public void loadTemplate_withNullContextNode_shouldUseNoneContext() throws IOException {
+        // GIVEN a JSON file where "context" is explicitly JSON null:
+        File file = File.createTempFile("null-ctx", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":\"Test\",\"dateOption\":\"NONE\",\"context\":null,\"tags\":[]}");
+
+        // WHEN we load it:
+        Template loaded = SnotesIO.loadTemplate(file);
+
+        // THEN the context should fall back to NONE:
+        assertEquals(Template.Context.NONE, loaded.getContext());
+    }
+
+    @Test
+    public void loadTemplate_withNonTextualTagValues_shouldSkipInvalidTags() throws IOException {
+        // GIVEN a JSON file where the tags array contains a mix of valid strings and non-string values:
+        File file = File.createTempFile("bad-tags", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":\"Test\",\"dateOption\":\"NONE\",\"context\":\"NONE\"," +
+                              "\"tags\":[\"valid-tag\",42,null,true]}");
+
+        // WHEN we load it:
+        Template loaded = SnotesIO.loadTemplate(file);
+
+        // THEN only the valid textual tag should be present; non-strings are silently skipped:
+        assertEquals(1, loaded.getTagList().size());
+        assertEquals("valid-tag", loaded.getTagList().get(0).getTag());
+    }
+
+    @Test
+    public void loadTemplate_withTagsNotArray_shouldHaveNoTags() throws IOException {
+        // GIVEN a JSON file where "tags" is a plain string rather than an array:
+        File file = File.createTempFile("tags-not-array", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":\"Test\",\"dateOption\":\"NONE\",\"context\":\"NONE\"," +
+                              "\"tags\":\"not-an-array\"}");
+
+        // WHEN we load it:
+        Template loaded = SnotesIO.loadTemplate(file);
+
+        // THEN the tag list should be empty (non-array tags field is silently ignored):
+        assertTrue(loaded.getTagList().isEmpty());
+    }
+
+    @Test
+    public void loadTemplate_withMissingTagsField_shouldHaveNoTags() throws IOException {
+        // GIVEN a JSON file with no "tags" field at all:
+        File file = File.createTempFile("no-tags", ".template", tempDir);
+        Files.writeString(file.toPath(),
+                          "{\"name\":\"Test\",\"dateOption\":\"NONE\",\"context\":\"NONE\"}");
+
+        // WHEN we load it:
+        Template loaded = SnotesIO.loadTemplate(file);
+
+        // THEN the tag list should be empty:
+        assertTrue(loaded.getTagList().isEmpty());
+    }
+
+    // -----------------------------------------------------------------------
+    // Round-trip test
+    // -----------------------------------------------------------------------
+
+    @Test
+    public void saveTemplate_roundTrip_shouldLoad() {
+        // GIVEN a fully populated Template:
+        Template template = new Template("My Test Template");
+        template.setDateOption(Template.DateOption.TODAY);
+        template.setContext(Template.Context.MOST_RECENT3);
+        template.addTag("work");
+        template.addTag("project-alpha");
+
+        try {
+            // WHEN we save it to a file and then load it back:
+            File savedFile = File.createTempFile("test", ".template", tempDir);
+            SnotesIO.saveTemplate(template, savedFile);
+            assertNotNull(savedFile);
+            assertTrue(savedFile.exists());
+            Template loaded = SnotesIO.loadTemplate(savedFile);
+
+            // THEN the loaded Template should match the original in all fields:
+            assertNotNull(loaded);
+            assertEquals(template.getName(), loaded.getName());
+            assertEquals(template.getDateOption(), loaded.getDateOption());
+            assertEquals(template.getContext(), loaded.getContext());
+
+            // AND the tags should match:
+            List<Tag> originalTags = template.getTagList();
+            List<Tag> loadedTags = loaded.getTagList();
+            assertEquals(originalTags.size(), loadedTags.size());
+            for (int i = 0; i < originalTags.size(); i++) {
+                assertEquals(originalTags.get(i).getTag(), loadedTags.get(i).getTag());
+            }
+        }
+        catch (IOException ioe) {
+            fail("IOException thrown during save/load: " + ioe.getMessage());
+        }
+    }
+
+    @Test
+    public void saveTemplate_roundTrip_withNoTagsAndDefaultValues_shouldLoad() {
+        // GIVEN a minimal Template with default values and no tags:
+        Template template = new Template();
+
+        try {
+            // WHEN we save it to a file and then load it back:
+            File savedFile = File.createTempFile("test-minimal", ".template", tempDir);
+            SnotesIO.saveTemplate(template, savedFile);
+            Template loaded = SnotesIO.loadTemplate(savedFile);
+
+            // THEN all default values should be preserved:
+            assertNotNull(loaded);
+            assertEquals(Template.DEFAULT_NAME, loaded.getName());
+            assertEquals(Template.DateOption.NONE, loaded.getDateOption());
+            assertEquals(Template.Context.NONE, loaded.getContext());
+            assertTrue(loaded.getTagList().isEmpty());
+        }
+        catch (IOException ioe) {
+            fail("IOException thrown during save/load: " + ioe.getMessage());
+        }
+    }
+
+    @Test
+    public void saveTemplate_roundTrip_withAllDateOptions_shouldLoad() {
+        // GIVEN a Template saved with each possible DateOption:
+        for (Template.DateOption option : Template.DateOption.values()) {
+            Template template = new Template("DateOption Test");
+            template.setDateOption(option);
+
+            try {
+                File savedFile = File.createTempFile("test-date-" + option.name(), ".template", tempDir);
+                SnotesIO.saveTemplate(template, savedFile);
+                Template loaded = SnotesIO.loadTemplate(savedFile);
+
+                // THEN the loaded Template should have the same DateOption:
+                assertEquals(option, loaded.getDateOption(),
+                             "DateOption mismatch for: " + option);
+            }
+            catch (IOException ioe) {
+                fail("IOException thrown for DateOption " + option + ": " + ioe.getMessage());
+            }
+        }
+    }
+
+    @Test
+    public void saveTemplate_roundTrip_withAllContextOptions_shouldLoad() {
+        // GIVEN a Template saved with each possible Context option:
+        for (Template.Context ctx : Template.Context.values()) {
+            Template template = new Template("Context Test");
+            template.setContext(ctx);
+
+            try {
+                File savedFile = File.createTempFile("test-ctx-" + ctx.name(), ".template", tempDir);
+                SnotesIO.saveTemplate(template, savedFile);
+                Template loaded = SnotesIO.loadTemplate(savedFile);
+
+                // THEN the loaded Template should have the same Context:
+                assertEquals(ctx, loaded.getContext(),
+                             "Context mismatch for: " + ctx);
+            }
+            catch (IOException ioe) {
+                fail("IOException thrown for Context " + ctx + ": " + ioe.getMessage());
+            }
+        }
+    }
 
     @Test
     public void loadNote_withDateTagsAndText_shouldPopulateModelAndMarkClean(@TempDir Path tempDir) throws IOException {
@@ -30,6 +483,7 @@ class SnotesIOTest {
         assertNotNull(loaded);
         assertEquals(noteFile.toFile(), loaded.getSourceFile());
         assertTrue(loaded.hasDate());
+        assertNotNull(loaded.getDate());
         assertEquals("1997-04-21", loaded.getDate().toString());
         assertTrue(loaded.hasTag(new Tag("work")));
         assertTrue(loaded.hasTag(new Tag("project")));
