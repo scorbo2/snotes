@@ -157,8 +157,8 @@ class SnotesIO {
         mapper.writerWithDefaultPrettyPrinter().writeValue(targetFile, rootNode);
 
         // If we make it here, the Template is clean, and it has a new source file:
-        template.markClean();
         template.setSourceFile(targetFile);
+        template.markClean();
     }
 
     /**
