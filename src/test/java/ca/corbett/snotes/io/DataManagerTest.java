@@ -45,7 +45,9 @@ class DataManagerTest {
         // AND it should have a scratch file assigned inside the scratch directory:
         assertNotNull(note.getSourceFile());
         assertTrue(note.getSourceFile().exists());
-        assertTrue(note.getSourceFile().getAbsolutePath().contains(DataManager.SCRATCH_DIR));
+        File expectedScratchDir = new File(tempDir, DataManager.SCRATCH_DIR);
+        assertEquals(expectedScratchDir.getAbsolutePath(),
+                note.getSourceFile().getParentFile().getAbsolutePath());
 
         // AND it should NOT appear in the regular notes list yet:
         assertFalse(dataManager.getNotes().contains(note));
