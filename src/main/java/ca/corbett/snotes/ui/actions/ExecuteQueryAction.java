@@ -25,7 +25,7 @@ public class ExecuteQueryAction extends EnhancedAction {
     private final Query query;
 
     public ExecuteQueryAction(Query query) {
-        super(query.getName()); // The query name is our action label
+        super(query == null ? "(empty query)" : query.getName()); // The query name is our action label
         this.query = query;
     }
 

@@ -26,7 +26,7 @@ public class NewQueryAction extends EnhancedAction {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        QueryBuilderDialog dialog = new QueryBuilderDialog();
+        QueryBuilderDialog dialog = new QueryBuilderDialog("New Query");
         dialog.setVisible(true);
         if (dialog.wasOkayed()) {
             try {

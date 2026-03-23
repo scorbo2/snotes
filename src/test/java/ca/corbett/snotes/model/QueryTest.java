@@ -37,7 +37,7 @@ public class QueryTest extends FilterTest {
     }
 
     @Test
-    public void execute_singleDateExecuteMatches_shouldSucceed() {
+    public void execute_singleDateFilterMatches_shouldSucceed() {
         // GIVEN a query with a single DateFilter that is matched in our test set:
         Query query = new Query();
         query.addFilter(new DateFilter(SPECIAL_DATE, DateFilter.FilterType.ON));
@@ -53,7 +53,7 @@ public class QueryTest extends FilterTest {
     }
 
     @Test
-    public void execute_YearAndMonthExecuteMatches_shouldSucceed() {
+    public void execute_YearAndMonthFilterMatches_shouldSucceed() {
         // GIVEN a query with a YearFilter and a MonthFilter that are matched in our test set:
         Query query = new Query();
         query.addFilter(new YearFilter(1997, YearFilter.FilterType.ON));
@@ -70,7 +70,7 @@ public class QueryTest extends FilterTest {
     }
 
     @Test
-    public void execute_YearAndMonthFilterMatchesTextExecuteNoMatch_shouldReturnNothing() {
+    public void execute_YearAndMonthFilterMatchesTextFilterNoMatch_shouldReturnNothing() {
         // GIVEN a query with a YearFilter and a MonthFilter that are matched in our test set:
         Query query = new Query();
         query.addFilter(new YearFilter(1997, YearFilter.FilterType.ON));

@@ -48,8 +48,8 @@ public class QueryBuilderDialog extends JDialog {
     private MessageUtil messageUtil;
     private boolean wasOkayed;
 
-    public QueryBuilderDialog() {
-        super(MainWindow.getInstance(), "Edit Query", true);
+    public QueryBuilderDialog(String title) {
+        super(MainWindow.getInstance(), title, true);
         setSize(new Dimension(580, 480));
         setResizable(false);
         setLocationRelativeTo(MainWindow.getInstance());

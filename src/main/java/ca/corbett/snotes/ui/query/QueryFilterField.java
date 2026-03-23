@@ -199,7 +199,7 @@ public class QueryFilterField extends FormField {
 
         @Override
         public ValidationResult validate(QueryFilterField fieldToValidate) {
-            String value = fieldToValidate.getFilterValue();
+            String value = fieldToValidate.getFilterValue().trim();
             switch (fieldToValidate.getFilterType()) {
                 case TEXT_INSENSITIVE, TEXT_SENSITIVE, TAG -> {
                     if (value.isBlank()) {
