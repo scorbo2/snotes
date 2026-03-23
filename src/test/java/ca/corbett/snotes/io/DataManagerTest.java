@@ -9,6 +9,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -135,10 +136,10 @@ class DataManagerTest {
         // THEN the file should exist inside the year/month/day directory structure:
         assertNotNull(note.getSourceFile());
         assertTrue(note.getSourceFile().exists());
-        String path = note.getSourceFile().getAbsolutePath();
-        assertTrue(path.contains("2024"), "Expected year directory in path: " + path);
-        assertTrue(path.contains("06"), "Expected month directory in path: " + path);
-        assertTrue(path.contains("15"), "Expected day directory in path: " + path);
+        Path relativePath = tempDir.toPath().relativize(note.getSourceFile().toPath());
+        assertEquals("2024", relativePath.getName(0).toString(), "Expected year directory");
+        assertEquals("06", relativePath.getName(1).toString(), "Expected month directory");
+        assertEquals("15", relativePath.getName(2).toString(), "Expected day directory");
     }
 
     // -----------------------------------------------------------------------
