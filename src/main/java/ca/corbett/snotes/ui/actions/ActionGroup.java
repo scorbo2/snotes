@@ -4,6 +4,9 @@ import ca.corbett.extras.EnhancedAction;
 import ca.corbett.snotes.AppConfig;
 import ca.corbett.snotes.Resources;
 import ca.corbett.snotes.extensions.SnotesExtensionManager;
+import ca.corbett.snotes.io.DataManager;
+import ca.corbett.snotes.model.Query;
+import ca.corbett.snotes.ui.MainWindow;
 
 import javax.swing.Icon;
 import java.util.ArrayList;
@@ -90,7 +93,19 @@ public class ActionGroup {
 
     public static ActionGroup buildReadGroup() {
         List<EnhancedAction> queryActions = new ArrayList<>();
-        // TODO Query actions go here
+
+        // Query CRUD actions:
+        queryActions.add(new NewQueryAction()); // Create new
+        // TODO edit existing
+        // TODO delete existing
+
+        // Show all Query instances as action links. Clicking one executes the Query!
+        DataManager dataManager = MainWindow.getInstance().getDataManager();
+        List<Query> savedQueries = dataManager.getQueries();
+        for (Query query : savedQueries) {
+            queryActions.add(new ExecuteQueryAction(query));
+        }
+
         return buildGroup(ActionGroup.READ, Resources.getIconRead(), queryActions);
     }
 

@@ -198,6 +198,82 @@ public class DataManager {
     }
 
     /**
+     * Saves the given Template to disk. If this is a first-time save, a filename and location
+     * is automatically selected within our data directory. Otherwise, if the Template has
+     * not been renamed since it was loaded, it is saved back to the same file.
+     *
+     * @param template Any non-null Template to save.
+     * @throws IOException If an error occurs while saving the Template, or if the given Template is null.
+     */
+    public void saveTemplate(Template template) throws IOException {
+        if (template == null) {
+            throw new IOException("Cannot save null Template.");
+        }
+        File targetFile = SnotesIO.computeFile(dataDir, template);
+        if (template.getSourceFile() != null
+            && !Files.isSameFile(template.getSourceFile().toPath(), targetFile.toPath())) {
+            if (targetFile.exists()) {
+                // User had a Template named "X" and they renamed Template "Y" to "X".
+                // That's dumb, and now we have a problem.
+                // Templates are considered lighter and more expendable than Notes, so we will just overwrite.
+                // We'll log what we're doing so the user is aware of this.
+                log.warning("Overwriting existing template file at " + targetFile.getAbsolutePath()
+                                + " with template from " + template.getSourceFile().getAbsolutePath());
+            }
+
+            // Remove the old file if it still exists:
+            if (template.getSourceFile().exists()) {
+                if (!template.getSourceFile().delete()) {
+                    // This is not fatal, but it is wonky... warn but proceed:
+                    log.warning("Failed to delete old source file for template: "
+                                    + template.getSourceFile().getAbsolutePath());
+                }
+            }
+        }
+
+        // Now save this Template to its new location. This will update its source file and mark it clean.
+        SnotesIO.saveTemplate(template, targetFile);
+    }
+
+    /**
+     * Saves the given Query to disk. If this is a first-time save, a filename and location
+     * is automatically selected within our data directory. Otherwise, if the Query has
+     * not been renamed since it was loaded, it is saved back to the same file.
+     *
+     * @param query Any non-null Query to save.
+     * @throws IOException If an error occurs while saving the Query, or if the given Query is null.
+     */
+    public void saveQuery(Query query) throws IOException {
+        if (query == null) {
+            throw new IOException("Cannot save null Query.");
+        }
+        File targetFile = SnotesIO.computeFile(dataDir, query);
+        if (query.getSourceFile() != null
+            && !Files.isSameFile(query.getSourceFile().toPath(), targetFile.toPath())) {
+            if (targetFile.exists()) {
+                // User had a Query named "X" and they renamed Query "Y" to "X".
+                // That's dumb, and now we have a problem.
+                // Queries are considered lighter and more expendable than Notes, so we will just overwrite.
+                // We'll log what we're doing so the user is aware of this.
+                log.warning("Overwriting existing query file at " + targetFile.getAbsolutePath()
+                                + " with query from " + query.getSourceFile().getAbsolutePath());
+            }
+
+            // Remove the old file if it still exists:
+            if (query.getSourceFile().exists()) {
+                if (!query.getSourceFile().delete()) {
+                    // This is not fatal, but it is wonky... warn but proceed:
+                    log.warning("Failed to delete old source file for query: "
+                                    + query.getSourceFile().getAbsolutePath());
+                }
+            }
+        }
+
+        // Now save this Query to its new location. This will update the Query's source file and mark it clean.
+        SnotesIO.saveQuery(query, targetFile);
+    }
+
+    /**
      * Saves all Notes, Queries, and Templates to the given data directory, if they are marked as
      * needing to be saved.
      *
@@ -226,60 +302,14 @@ public class DataManager {
         // Save all dirty Query instances:
         for (Query query : queries) {
             if (query.isDirty()) {
-                File targetFile = SnotesIO.computeFile(dataDir, query);
-                if (query.getSourceFile() != null
-                    && !Files.isSameFile(query.getSourceFile().toPath(), targetFile.toPath())) {
-                    if (targetFile.exists()) {
-                        // User had a Query named "X" and they renamed Query "Y" to "X".
-                        // That's dumb, and now we have a problem.
-                        // Queries are considered lighter and more expendable than Notes, so we will just overwrite.
-                        // We'll log what we're doing so the user is aware of this.
-                        log.warning("Overwriting existing query file at " + targetFile.getAbsolutePath()
-                                        + " with query from " + query.getSourceFile().getAbsolutePath());
-                    }
-
-                    // Remove the old file if it still exists:
-                    if (query.getSourceFile().exists()) {
-                        if (!query.getSourceFile().delete()) {
-                            // This is not fatal, but it is wonky... warn but proceed:
-                            log.warning("Failed to delete old source file for query: "
-                                            + query.getSourceFile().getAbsolutePath());
-                        }
-                    }
-                }
-
-                // Now save this Query to its new location. This will update the Query's source file and mark it clean.
-                SnotesIO.saveQuery(query, targetFile);
+                saveQuery(query);
             }
         }
 
         // Save all dirty Template instances:
         for (Template template : templates) {
             if (template.isDirty()) {
-                File targetFile = SnotesIO.computeFile(dataDir, template);
-                if (template.getSourceFile() != null
-                    && !Files.isSameFile(template.getSourceFile().toPath(), targetFile.toPath())) {
-                    if (targetFile.exists()) {
-                        // User had a Template named "X" and they renamed Template "Y" to "X".
-                        // That's dumb, and now we have a problem.
-                        // Templates are considered lighter and more expendable than Notes, so we will just overwrite.
-                        // We'll log what we're doing so the user is aware of this.
-                        log.warning("Overwriting existing template file at " + targetFile.getAbsolutePath()
-                                        + " with template from " + template.getSourceFile().getAbsolutePath());
-                    }
-
-                    // Remove the old file if it still exists:
-                    if (template.getSourceFile().exists()) {
-                        if (!template.getSourceFile().delete()) {
-                            // This is not fatal, but it is wonky... warn but proceed:
-                            log.warning("Failed to delete old source file for template: "
-                                            + template.getSourceFile().getAbsolutePath());
-                        }
-                    }
-                }
-
-                // Now save this Template to its new location. This will update its source file and mark it clean.
-                SnotesIO.saveTemplate(template, targetFile);
+                saveTemplate(template);
             }
         }
     }

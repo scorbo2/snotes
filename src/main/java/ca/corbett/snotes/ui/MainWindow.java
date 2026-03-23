@@ -1,6 +1,7 @@
 package ca.corbett.snotes.ui;
 
 import ca.corbett.extras.CustomizableDesktopPane;
+import ca.corbett.extras.MessageUtil;
 import ca.corbett.extras.SingleInstanceManager;
 import ca.corbett.extras.io.KeyStrokeManager;
 import ca.corbett.extras.logging.LogConsole;
@@ -9,6 +10,7 @@ import ca.corbett.snotes.AppConfig;
 import ca.corbett.snotes.Resources;
 import ca.corbett.snotes.Version;
 import ca.corbett.snotes.extensions.SnotesExtensionManager;
+import ca.corbett.snotes.io.DataManager;
 import ca.corbett.snotes.ui.actions.UIReloadAction;
 
 import javax.swing.JFrame;
@@ -17,6 +19,7 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.IOException;
 import java.util.logging.Logger;
 
 /**
@@ -29,8 +32,10 @@ public class MainWindow extends JFrame implements UIReloadable {
 
     private static final Logger logger = Logger.getLogger(MainWindow.class.getName());
     private static MainWindow instance = null;
+    private MessageUtil messageUtil;
     private final ActionPanelManager actionPanelManager;
     private final KeyStrokeManager keyStrokeManager;
+    private final DataManager dataManager;
     private boolean cleanupComplete;
 
     private CustomizableDesktopPane desktopPane;
@@ -41,6 +46,8 @@ public class MainWindow extends JFrame implements UIReloadable {
         setSize(800, 600);
         setMinimumSize(new Dimension(500, 400));
         setLocationRelativeTo(null); // center on default display
+        messageUtil = new MessageUtil(this, logger);
+        dataManager = new DataManager();
         keyStrokeManager = new KeyStrokeManager(this);
         actionPanelManager = new ActionPanelManager();
         initComponents();
@@ -66,8 +73,22 @@ public class MainWindow extends JFrame implements UIReloadable {
             instance.setIconImage(Resources.getLogoIcon());
             LogConsole.getInstance().setIconImage(Resources.getLogoIcon());
             UIReloadAction.getInstance().registerReloadable(this);
-            reloadUI(); // trigger an immediate reload to set everything up according to current settings
+
+            // Tell our DataManager to load everything (background thread), and then trigger a UI reload when finished:
+            try {
+                dataManager.loadAll(AppConfig.getInstance().getDataDirectory(), e -> reloadUI());
+            }
+            catch (IOException ioe) {
+                messageUtil.error("Load error", "An error occurred while loading data: " + ioe.getMessage(), ioe);
+            }
         }
+    }
+
+    /**
+     * Provides access to our DataManager.
+     */
+    public DataManager getDataManager() {
+        return dataManager;
     }
 
     public void processStartArgs(java.util.List<String> args) {

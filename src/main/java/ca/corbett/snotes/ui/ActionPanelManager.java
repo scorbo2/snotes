@@ -6,6 +6,7 @@ import ca.corbett.extras.actionpanel.ColorTheme;
 import ca.corbett.snotes.extensions.SnotesExtensionManager;
 import ca.corbett.snotes.ui.actions.ActionGroup;
 
+import java.awt.Dimension;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +24,7 @@ public class ActionPanelManager {
         this.actionPanel = new ActionPanel();
 
         // One-time customization of ActionPanel:
+        actionPanel.setMinimumSize(new Dimension(180, 0)); // don't let it get too narrow; height can be whatever
         actionPanel.getColorOptions().setFromTheme(ColorTheme.DEFAULT); // TODO should be a config option; fine for now
         actionPanel.getActionGroupMargins().setAll(8).setInternalSpacing(12).setTop(12);
         actionPanel.setHeaderIconSize(20);

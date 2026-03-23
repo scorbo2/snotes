@@ -2,6 +2,7 @@ Snotes Release Notes
 Author: Steve Corbett
 
 Version 2.0 [TODO] rewrite
+  #21 - Implement UI for creating Queries
   #20 - Implement intelligent model object persistence
   #18 - Implement Template and basic persistence
   #16 - Implement KeyStrokeManager

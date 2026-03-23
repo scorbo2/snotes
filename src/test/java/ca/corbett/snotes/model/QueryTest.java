@@ -24,12 +24,12 @@ public class QueryTest extends FilterTest {
     File tempDir;
 
     @Test
-    public void filter_withEmptyQuery_shouldFilterNothing() {
+    public void execute_withEmptyQuery_shouldExecuteNothing() {
         // GIVEN an empty Query:
         Query query = new Query();
 
         // WHEN we try to filter our test list:
-        List<Note> results = query.filter(unfilteredList);
+        List<Note> results = query.execute(unfilteredList);
 
         // THEN nothing should have been filtered:
         assertNotNull(results);
@@ -37,13 +37,13 @@ public class QueryTest extends FilterTest {
     }
 
     @Test
-    public void filter_singleDateFilterMatches_shouldSucceed() {
+    public void execute_singleDateFilterMatches_shouldSucceed() {
         // GIVEN a query with a single DateFilter that is matched in our test set:
         Query query = new Query();
         query.addFilter(new DateFilter(SPECIAL_DATE, DateFilter.FilterType.ON));
 
         // WHEN we try to filter our test list:
-        List<Note> results = query.filter(unfilteredList);
+        List<Note> results = query.execute(unfilteredList);
 
         // THEN we should get back our two test notes that have this date:
         assertNotNull(results);
@@ -53,14 +53,14 @@ public class QueryTest extends FilterTest {
     }
 
     @Test
-    public void filter_YearAndMonthFilterMatches_shouldSucceed() {
+    public void execute_YearAndMonthFilterMatches_shouldSucceed() {
         // GIVEN a query with a YearFilter and a MonthFilter that are matched in our test set:
         Query query = new Query();
         query.addFilter(new YearFilter(1997, YearFilter.FilterType.ON));
         query.addFilter(new MonthFilter(4, MonthFilter.FilterType.IS));
 
         // WHEN we try to filter our test list:
-        List<Note> results = query.filter(unfilteredList);
+        List<Note> results = query.execute(unfilteredList);
 
         // THEN we should get back our two test Notes that have this date:
         assertNotNull(results);
@@ -70,7 +70,7 @@ public class QueryTest extends FilterTest {
     }
 
     @Test
-    public void filter_YearAndMonthFilterMatchesTextFilterNoMatch_shouldReturnNothing() {
+    public void execute_YearAndMonthFilterMatchesTextFilterNoMatch_shouldReturnNothing() {
         // GIVEN a query with a YearFilter and a MonthFilter that are matched in our test set:
         Query query = new Query();
         query.addFilter(new YearFilter(1997, YearFilter.FilterType.ON));
@@ -80,7 +80,7 @@ public class QueryTest extends FilterTest {
         query.addFilter(new TextFilter("blah de blah blah"));
 
         // WHEN we try to filter our test list:
-        List<Note> results = query.filter(unfilteredList);
+        List<Note> results = query.execute(unfilteredList);
 
         // THEN we should find that all results are filtered, because no Note matches all of our filters:
         assertNotNull(results);
@@ -88,14 +88,14 @@ public class QueryTest extends FilterTest {
     }
 
     @Test
-    public void filter_betweenInclusiveWithMatches_shouldSucceed() {
+    public void execute_betweenInclusiveWithMatches_shouldSucceed() {
         // GIVEN a query with two DateFilters that describe a BETWEEN condition:
         Query query = new Query();
         query.addFilter(new DateFilter(JAN_1_2020, DateFilter.FilterType.AFTER_INCLUSIVE));
         query.addFilter(new DateFilter(FEB_15_2020, DateFilter.FilterType.BEFORE_INCLUSIVE));
 
         // WHEN we try to filter our test list:
-        List<Note> results = query.filter(unfilteredList);
+        List<Note> results = query.execute(unfilteredList);
 
         // THEN we should find the two test Notes that have dates between (and including) our two boundary dates:
         assertNotNull(results);
@@ -112,14 +112,14 @@ public class QueryTest extends FilterTest {
     }
 
     @Test
-    public void filter_betweenExclusiveWithoutMatches_shouldSucceed() {
+    public void execute_betweenExclusiveWithoutMatches_shouldSucceed() {
         // GIVEN a query with two DateFilters that describe a BETWEEN condition:
         Query query = new Query();
         query.addFilter(new DateFilter(JAN_1_2020, DateFilter.FilterType.AFTER_EXCLUSIVE));
         query.addFilter(new DateFilter(FEB_15_2020, DateFilter.FilterType.BEFORE_EXCLUSIVE));
 
         // WHEN we try to filter our test list:
-        List<Note> results = query.filter(unfilteredList);
+        List<Note> results = query.execute(unfilteredList);
 
         // THEN our two test notes that are right on the boundary of the range should be filtered out:
         assertNotNull(results);
@@ -127,7 +127,7 @@ public class QueryTest extends FilterTest {
     }
 
     @Test
-    public void filter_withMultipleMatchingFilters_shouldSucceed() {
+    public void execute_withMultipleMatchingFilters_shouldSucceed() {
         // GIVEN a ridiculous setup with four filters that specify an exact date:
         //   (obviously it would be easier to use a single DateFilter, but let's just try it)
         Query query = new Query();
@@ -137,7 +137,7 @@ public class QueryTest extends FilterTest {
         query.addFilter(new DayOfWeekFilter(DayOfWeek.MONDAY, DayOfWeekFilter.FilterType.IS));
 
         // WHEN we try to filter our test list:
-        List<Note> results = query.filter(unfilteredList);
+        List<Note> results = query.execute(unfilteredList);
 
         // THEN we should get back the two test Notes that have that exact date:
         assertNotNull(results);
