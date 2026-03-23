@@ -96,7 +96,7 @@ class DataManagerTest {
         dataManager.save(note);
 
         // THEN the note should still be saved to the same file:
-        assertEquals(originalFile.getAbsolutePath(), note.getSourceFile().getAbsolutePath());
+        assertTrue(Files.isSameFile(originalFile.toPath(), note.getSourceFile().toPath()));
 
         // AND the file should contain the updated content:
         String savedContent = Files.readString(note.getSourceFile().toPath());
