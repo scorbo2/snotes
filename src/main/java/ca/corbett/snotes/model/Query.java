@@ -148,7 +148,7 @@ public class Query {
      * @param notes The list of Notes to filter. This list is not modified by this method.
      * @return A new list of Notes that passed through all the filters in this Query. May be empty, but never null.
      */
-    public List<Note> filter(List<Note> notes) {
+    public List<Note> execute(List<Note> notes) {
         if (notes == null) {
             return new ArrayList<>();
         }

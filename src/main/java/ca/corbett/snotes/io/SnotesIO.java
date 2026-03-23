@@ -115,6 +115,14 @@ class SnotesIO {
         }
         rootNode.set("filters", filtersArray);
 
+        // The targetFile's path may not exist:
+        File parentDir = targetFile.getParentFile();
+        if (!parentDir.exists()) {
+            if (!parentDir.mkdirs()) {
+                throw new IOException("Failed to create directories for target file: " + targetFile.getAbsolutePath());
+            }
+        }
+
         mapper.writerWithDefaultPrettyPrinter().writeValue(targetFile, rootNode);
 
         // If we make it here, the Query is clean, and has a new source file:
