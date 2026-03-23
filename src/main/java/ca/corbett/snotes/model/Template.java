@@ -1,12 +1,6 @@
 package ca.corbett.snotes.model;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -90,6 +84,8 @@ public class Template {
     private DateOption dateOption;
     private Context context;
     private final List<Tag> tagList;
+    private File sourceFile;
+    private boolean isDirty;
 
     /**
      * Creates a new, empty, unnamed Template.
@@ -108,6 +104,8 @@ public class Template {
         this.dateOption = DateOption.NONE;
         this.context = Context.NONE;
         this.tagList = new ArrayList<>();
+        this.sourceFile = null;
+        isDirty = true;
     }
 
     public String getName() {
@@ -116,8 +114,8 @@ public class Template {
 
     /**
      * Sets a human-presentable name for this Template. The default name is "Untitled Template".
-     * No uniqueness check is done here, but you may receive an exception when trying to save
-     * the note if the name is not unique. (TODO that's goofy - uniqueness should be enforced here).
+     * The name should be unique. Having multiple Templates with the same name will cause
+     * trouble when saving them later.
      * <p>
      * If the given name is too long, it will be truncated to NAME_LENGTH_LIMIT characters.
      * If it is null or blank, the name will be set to DEFAULT_NAME.
@@ -133,6 +131,26 @@ public class Template {
             name = name.substring(0, NAME_LENGTH_LIMIT);
         }
         this.name = name.isBlank() ? DEFAULT_NAME : name;
+        isDirty = true;
+    }
+
+    /**
+     * Returns the File from which this Template was loaded, or null if this Template has not yet been saved to disk.
+     */
+    public File getSourceFile() {
+        return sourceFile;
+    }
+
+    /**
+     * Sets the source File for this Template. Replaces any previous value.
+     * This should generally only be called from DataManager - calling it directly may
+     * result in the old file being left on disk.
+     *
+     * @param sourceFile The new sourceFile for this Template.
+     */
+    public void setSourceFile(File sourceFile) {
+        this.sourceFile = sourceFile;
+        isDirty = true;
     }
 
     public DateOption getDateOption() {
@@ -149,6 +167,7 @@ public class Template {
             throw new IllegalArgumentException("dateOption cannot be null");
         }
         this.dateOption = dateOption;
+        isDirty = true;
     }
 
     public Context getContext() {
@@ -169,6 +188,7 @@ public class Template {
             throw new IllegalArgumentException("context cannot be null");
         }
         this.context = context;
+        isDirty = true;
     }
 
     /**
@@ -182,12 +202,16 @@ public class Template {
             throw new IllegalArgumentException("tag cannot be null or blank");
         }
         tagList.add(new Tag(tag));
+        isDirty = true;
     }
 
     /**
      * Removes all tags from this Template.
      */
     public void clearTags() {
+        if (!tagList.isEmpty()) {
+            isDirty = true;
+        }
         tagList.clear();
     }
 
@@ -200,121 +224,16 @@ public class Template {
     }
 
     /**
-     * Attempts to persist this Template in pretty-printed JSON form to disk.
-     * The file will be created if it does not already exist, and overwritten if it does.
-     * TODO the file location should be automatic, based on our name and some global save directory.
-     *
-     * @param targetFile Any writable file. Must not be null.
-     * @throws IOException If the save fails for any reason, including if the target file is not writable.
+     * Reports whether this Template has unsaved changes.
      */
-    public void save(File targetFile) throws IOException {
-        if (targetFile == null) {
-            throw new IllegalArgumentException("targetFile cannot be null");
-        }
-        if (targetFile.isDirectory() || (targetFile.exists() && !targetFile.canWrite())) {
-            throw new IOException("Target file is not a writable file: " + targetFile.getAbsolutePath());
-        }
-
-        // We use Jackson to build up the JSON and write it out:
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode rootNode = mapper.createObjectNode();
-        rootNode.put("name", name);
-        rootNode.put("dateOption", dateOption.name());
-        rootNode.put("context", context.name());
-        ArrayNode tagsArray = rootNode.putArray("tags");
-        for (Tag tag : tagList) {
-            tagsArray.add(tag.getTag()); // get raw tag without the '#' prefix for cleaner JSON
-        }
-        mapper.writerWithDefaultPrettyPrinter().writeValue(targetFile, rootNode);
+    public boolean isDirty() {
+        return isDirty;
     }
 
     /**
-     * Attempts to load a Template from the given file, which should be in the same format as produced by save().
-     * TODO this should maybe be "loadAll" with no args, and we figure out how many templates are saved there.
-     *
-     * @param sourceFile Any file that was generated via the save() method in this class. Must not be null.
-     * @return A populated Template instance.
-     * @throws IOException If the load fails for any reason, including if the source file does not exist/isn't readable.
+     * Marks this Template as clean, meaning that it has no unsaved changes.
      */
-    public static Template load(File sourceFile) throws IOException {
-        if (sourceFile == null) {
-            throw new IllegalArgumentException("sourceFile cannot be null");
-        }
-        if (!sourceFile.exists() || !sourceFile.canRead()) {
-            throw new IOException("Source file does not exist or is not readable: " + sourceFile.getAbsolutePath());
-        }
-
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode parsedNode = mapper.readTree(sourceFile);
-        if (parsedNode == null || parsedNode.isNull() || parsedNode.isMissingNode() || !parsedNode.isObject()) {
-            // This can happen with empty/blank files, JSON arrays, bare scalars, or other non-object content:
-            throw new IOException("Source file does not contain a valid JSON object: " + sourceFile.getAbsolutePath());
-        }
-        ObjectNode rootNode = (ObjectNode)parsedNode;
-
-        // Set name if present:
-        String name = DEFAULT_NAME;
-        JsonNode nameNode = rootNode.get("name");
-        if (nameNode != null && !nameNode.isNull() && nameNode.isTextual()) {
-            name = nameNode.asText();
-            if (name.isBlank()) {
-                log.warning("Template name is blank in file: "
-                                + sourceFile.getAbsolutePath()
-                                + ". Setting to default name.");
-                name = DEFAULT_NAME;
-            }
-        }
-
-        // Try to parse out a date option:
-        DateOption dateOption = DateOption.NONE;
-        JsonNode dateNode = rootNode.get("dateOption");
-        if (dateNode != null && !dateNode.isNull() && dateNode.isTextual()) {
-            try {
-                dateOption = DateOption.valueOf(dateNode.asText());
-            }
-            catch (IllegalArgumentException iae) {
-                log.warning("Invalid date option \"" + dateNode.asText() + "\" in template file: "
-                                + sourceFile.getAbsolutePath()
-                                + ". Setting to default (no date).");
-            }
-        }
-
-        // Try to parse out a context option:
-        Context context = Context.NONE;
-        JsonNode contextNode = rootNode.get("context");
-        if (contextNode != null && !contextNode.isNull() && contextNode.isTextual()) {
-            try {
-                context = Context.valueOf(contextNode.asText());
-            }
-            catch (IllegalArgumentException iae) {
-                log.warning("Invalid context option \"" + contextNode.asText() + "\" in template file: "
-                                + sourceFile.getAbsolutePath()
-                                + ". Setting to default (no context).");
-            }
-        }
-
-        // Parse out tag list if present:
-        List<String> tagList = new ArrayList<>();
-        JsonNode tagsNode = rootNode.get("tags");
-        if (tagsNode != null && !tagsNode.isNull() && tagsNode.isArray()) {
-            for (JsonNode tagNode : tagsNode) {
-                if (tagNode.isTextual()) {
-                    tagList.add(tagNode.asText());
-                }
-                else {
-                    log.warning("Invalid tag value in template file: "
-                                    + sourceFile.getAbsolutePath()
-                                    + ". Skipping invalid tag.");
-                }
-            }
-        }
-
-        Template template = new Template(name);
-        template.setDateOption(dateOption);
-        template.setContext(context);
-        for (String tag : tagList) {
-            template.addTag(tag);
-        }
-        return template;
+    public void markClean() {
+        isDirty = false;
     }
 }

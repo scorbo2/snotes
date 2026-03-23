@@ -1,10 +1,7 @@
 package ca.corbett.snotes.ui;
 
 import ca.corbett.extras.CustomizableDesktopPane;
-import ca.corbett.extras.EnhancedAction;
 import ca.corbett.extras.SingleInstanceManager;
-import ca.corbett.extras.actionpanel.ActionPanel;
-import ca.corbett.extras.actionpanel.ColorTheme;
 import ca.corbett.extras.io.KeyStrokeManager;
 import ca.corbett.extras.logging.LogConsole;
 import ca.corbett.extras.properties.KeyStrokeProperty;
@@ -12,7 +9,6 @@ import ca.corbett.snotes.AppConfig;
 import ca.corbett.snotes.Resources;
 import ca.corbett.snotes.Version;
 import ca.corbett.snotes.extensions.SnotesExtensionManager;
-import ca.corbett.snotes.ui.actions.ActionGroup;
 import ca.corbett.snotes.ui.actions.UIReloadAction;
 
 import javax.swing.JFrame;
@@ -21,8 +17,6 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -35,7 +29,7 @@ public class MainWindow extends JFrame implements UIReloadable {
 
     private static final Logger logger = Logger.getLogger(MainWindow.class.getName());
     private static MainWindow instance = null;
-    private final ActionPanel actionPanel;
+    private final ActionPanelManager actionPanelManager;
     private final KeyStrokeManager keyStrokeManager;
     private boolean cleanupComplete;
 
@@ -48,7 +42,7 @@ public class MainWindow extends JFrame implements UIReloadable {
         setMinimumSize(new Dimension(500, 400));
         setLocationRelativeTo(null); // center on default display
         keyStrokeManager = new KeyStrokeManager(this);
-        actionPanel = new ActionPanel();
+        actionPanelManager = new ActionPanelManager();
         initComponents();
         addWindowListener(new WindowCloseHandler());
         cleanupComplete = false;
@@ -86,15 +80,9 @@ public class MainWindow extends JFrame implements UIReloadable {
                                                   AppConfig.getInstance().getDesktopLogoAlpha(),
                                                   AppConfig.getInstance().getDesktopGradient());
 
-        // One-time customization of ActionPanel:
-        actionPanel.getColorOptions().setFromTheme(ColorTheme.DEFAULT); // TODO should be a config option; fine for now
-        actionPanel.getActionGroupMargins().setAll(8).setInternalSpacing(12).setTop(12);
-        actionPanel.setHeaderIconSize(20);
-        actionPanel.getExpandCollapseOptions().setAllowHeaderDoubleClick(true);
-
         JSplitPane splitPane = new JSplitPane();
         splitPane.setOneTouchExpandable(false); // Sadly, this does not play well with some look and feels
-        splitPane.setLeftComponent(actionPanel);
+        splitPane.setLeftComponent(actionPanelManager.getActionPanel());
         splitPane.setRightComponent(desktopPane);
         splitPane.setDividerLocation(0.25);
 
@@ -111,7 +99,7 @@ public class MainWindow extends JFrame implements UIReloadable {
         cleanupComplete = true;
         logger.info("Shutting down: MainWindow cleanup invoked.");
 
-        actionPanel.dispose();
+        actionPanelManager.dispose();
         keyStrokeManager.dispose();
         SnotesExtensionManager.getInstance().deactivateAll();
         SingleInstanceManager.getInstance().release();
@@ -129,29 +117,8 @@ public class MainWindow extends JFrame implements UIReloadable {
         desktopPane.setLogoImagePlacement(AppConfig.getInstance().getDesktopLogoPlacement());
         desktopPane.repaint();
 
-        // Remove ALL actions and rebuild from scratch, since all of it may have changed
-        // if extensions were enabled/disabled/installed/uninstalled.
-        actionPanel.setAutoRebuildEnabled(false);
-        try {
-            actionPanel.clear(true);
-            List<ActionGroup> groups = new ArrayList<>();
-            groups.add(ActionGroup.buildReadGroup());
-            groups.add(ActionGroup.buildWriteGroup());
-            groups.addAll(SnotesExtensionManager.getInstance().getActionGroups());
-            groups.add(ActionGroup.buildOptionsGroup()); // Add Options group last for consistency
-            for (ActionGroup group : groups) {
-                for (EnhancedAction action : group.getActions()) {
-                    actionPanel.add(group.getName(), action);
-                }
-                if (group.getIcon() != null) {
-                    actionPanel.setGroupIcon(group.getName(), group.getIcon());
-                }
-            }
-        }
-        finally {
-            // Re-enabling this triggers an automatic rebuild:
-            actionPanel.setAutoRebuildEnabled(true);
-        }
+        // The actions in our ActionManager may need refreshing:
+        actionPanelManager.reload();
 
         // Clear all keystrokes and reload, since they are all user-configurable:
         keyStrokeManager.clear();

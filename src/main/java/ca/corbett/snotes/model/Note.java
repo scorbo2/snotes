@@ -23,7 +23,7 @@ public final class Note {
         tagList = new TagList();
         text = "";
         sourceFile = null;
-        isDirty = false;
+        isDirty = true;
     }
 
     /**
@@ -250,6 +250,8 @@ public final class Note {
 
     /**
      * Returns a list of all non-date tags for this Note.
+     * The returned list is a defensive copy - making changes
+     * to it will not affect the tag list for this Note.
      */
     public List<Tag> getNonDateTags() {
         return tagList.getNonDateTags();
