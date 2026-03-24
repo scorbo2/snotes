@@ -73,7 +73,7 @@ public class QueryBuilderDialog extends JDialog {
         super(owner, (query == null) ? "New Query" : "Edit Query: " + query.getName(), ModalityType.APPLICATION_MODAL);
         setSize(new Dimension(580, 480));
         setResizable(false);
-        setLocationRelativeTo(MainWindow.getInstance());
+        setLocationRelativeTo(owner);
         this.queryToEdit = query;
         keyManager = new KeyStrokeManager(this);
         filterFields = new ArrayList<>(MAX_FILTERS);
@@ -175,7 +175,7 @@ public class QueryBuilderDialog extends JDialog {
         formPanel.add(filterFields.get(0)); // Default label is "Filter:"
         filterCount = (queryToEdit == null)
             ? 1 // There's always at least one filter visible, even if blank
-            : Math.max(1, queryToEdit.getFilters().size());
+            : Math.max(1, Math.min(queryToEdit.size(), MAX_FILTERS)); // keep between 1 and MAX_FILTERS, inclusive
         for (int i = 1; i < filterFields.size(); i++) {
             QueryFilterField filterField = filterFields.get(i);
             filterField.getFieldLabel().setText("AND:"); // only supported option currently, so make it the label.

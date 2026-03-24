@@ -333,20 +333,25 @@ class DataManagerTest {
 
     @Test
     void isQueryNameAvailable_withUniqueName_shouldReturnTrue() {
-        // GIVEN a DataManager with a couple of existing queries:
-        Query query1 = new Query();
-        query1.setName("Existing Query 1");
-        dataManager.getQueries().add(query1);
-        Query query2 = new Query();
-        query2.setName("Existing Query 2");
-        dataManager.getQueries().add(query2);
+        try {
+            // GIVEN a DataManager with a couple of existing queries:
+            Query query1 = new Query();
+            query1.setName("Existing Query 1");
+            dataManager.saveQuery(query1);
+            Query query2 = new Query();
+            query2.setName("Existing Query 2");
+            dataManager.saveQuery(query2);
 
-        // WHEN we check for the availability of a unique query name:
-        String newName = "Unique Query Name";
-        boolean isAvailable = dataManager.isQueryNameAvailable(newName);
+            // WHEN we check for the availability of a unique query name:
+            String newName = "Unique Query Name";
+            boolean isAvailable = dataManager.isQueryNameAvailable(newName);
 
-        // THEN it should return true:
-        assertTrue(isAvailable);
+            // THEN it should return true:
+            assertTrue(isAvailable);
+        }
+        catch (IOException ioe) {
+            fail("Unexpected IOException during test setup: " + ioe.getMessage());
+        }
     }
 
     @Test
@@ -369,7 +374,7 @@ class DataManagerTest {
     }
 
     @Test
-    void isQueryNameAvailable_withNullOrBlankName_shouldThrow() {
+    void isQueryNameAvailable_withNullName_shouldThrow() {
         // WHEN we check for the availability of a null name:
         // THEN it should immediately throw IllegalArgumentException:
         assertThrows(IllegalArgumentException.class, () -> dataManager.isQueryNameAvailable(null));

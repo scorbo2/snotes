@@ -199,7 +199,7 @@ public class DataManager {
 
     /**
      * Returns true if the given query name is not already in use by another Query.
-     * The search is done case-insenstively, so "my query" and "My Query" would be considered the same name.
+     * The search is done case-insensitively, so "my query" and "My Query" would be considered the same name.
      *
      * @param name Any non-null name to check for availability.
      * @return True if the given name is not already in use by another Query, false otherwise.
