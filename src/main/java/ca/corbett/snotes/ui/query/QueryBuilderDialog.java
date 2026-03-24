@@ -73,7 +73,7 @@ public class QueryBuilderDialog extends JDialog {
         super(owner, (query == null) ? "New Query" : "Edit Query: " + query.getName(), ModalityType.APPLICATION_MODAL);
         setSize(new Dimension(580, 480));
         setResizable(false);
-        setLocationRelativeTo(owner);
+        setLocationRelativeTo((owner != null) ? owner : MainWindow.getInstance());
         this.queryToEdit = query;
         keyManager = new KeyStrokeManager(this);
         filterFields = new ArrayList<>(MAX_FILTERS);
