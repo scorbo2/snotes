@@ -95,9 +95,8 @@ public class ActionGroup {
         List<EnhancedAction> queryActions = new ArrayList<>();
 
         // Query CRUD actions:
-        queryActions.add(new NewQueryAction()); // Create new
-        // TODO edit existing
-        // TODO delete existing
+        queryActions.add(new NewQueryAction());
+        queryActions.add(new ManageQueriesAction());
 
         // Show all Query instances as action links. Clicking one executes the Query!
         DataManager dataManager = MainWindow.getInstance().getDataManager();

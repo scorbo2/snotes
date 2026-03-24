@@ -1,6 +1,7 @@
 package ca.corbett.snotes.io;
 
 import ca.corbett.snotes.model.Note;
+import ca.corbett.snotes.model.Query;
 import ca.corbett.snotes.model.YMDDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class DataManagerTest {
 
@@ -329,4 +331,152 @@ class DataManagerTest {
         assertThrows(IOException.class, () -> dataManager.loadAll(dataDir));
     }
 
+    @Test
+    void isQueryNameAvailable_withUniqueName_shouldReturnTrue() {
+        try {
+            // GIVEN a DataManager with a couple of existing queries:
+            Query query1 = new Query();
+            query1.setName("Existing Query 1");
+            dataManager.saveQuery(query1);
+            Query query2 = new Query();
+            query2.setName("Existing Query 2");
+            dataManager.saveQuery(query2);
+
+            // WHEN we check for the availability of a unique query name:
+            String newName = "Unique Query Name";
+            boolean isAvailable = dataManager.isQueryNameAvailable(newName);
+
+            // THEN it should return true:
+            assertTrue(isAvailable);
+        }
+        catch (IOException ioe) {
+            fail("Unexpected IOException during test setup: " + ioe.getMessage());
+        }
+    }
+
+    @Test
+    void isQueryNameAvailable_withDuplicateName_shouldReturnFalse() {
+        try {
+            // GIVEN a DataManager with an existing query:
+            Query existingQuery = new Query();
+            existingQuery.setName("Duplicate Query Name");
+            dataManager.saveQuery(existingQuery);
+
+            // WHEN we check for the availability of the same name:
+            boolean isAvailable = dataManager.isQueryNameAvailable("Duplicate Query Name");
+
+            // THEN it should return false:
+            assertFalse(isAvailable);
+        }
+        catch (IOException ioe) {
+            fail("Unexpected IOException during test setup: " + ioe.getMessage());
+        }
+    }
+
+    @Test
+    void isQueryNameAvailable_withNullName_shouldThrow() {
+        // WHEN we check for the availability of a null name:
+        // THEN it should immediately throw IllegalArgumentException:
+        assertThrows(IllegalArgumentException.class, () -> dataManager.isQueryNameAvailable(null));
+    }
+
+    @Test
+    void isQueryNameAvailable_withExcludedNameMatches_shouldReturnTrue() {
+        try {
+            // GIVEN a DataManager with an existing query:
+            final String queryName = "Existing Query";
+            Query existingQuery = new Query();
+            existingQuery.setName(queryName);
+            dataManager.saveQuery(existingQuery);
+
+            // WHEN we check for the availability of the same name but exclude that very name:
+            boolean isAvailable = dataManager.isQueryNameAvailable(queryName, queryName);
+
+            // THEN it should return true because we are excluding the existing query from the check:
+            assertTrue(isAvailable);
+        }
+        catch (IOException ioe) {
+            fail("Unexpected IOException during test setup: " + ioe.getMessage());
+        }
+    }
+
+    @Test
+    void isQueryNameAvailable_withExcludedNameDoesNotMatch_shouldReturnFalse() {
+        try {
+            // GIVEN a DataManager with an existing query:
+            final String existingName = "Existing Query";
+            Query existingQuery = new Query();
+            existingQuery.setName(existingName);
+            dataManager.saveQuery(existingQuery);
+
+            // WHEN we check for the availability of the same name but exclude a different name:
+            boolean isAvailable = dataManager.isQueryNameAvailable(existingName, "Some Other Name");
+
+            // THEN it should return false because the existing query is not being excluded:
+            assertFalse(isAvailable);
+        }
+        catch (IOException ioe) {
+            fail("Unexpected IOException during test setup: " + ioe.getMessage());
+        }
+    }
+
+    @Test
+    void deleteQuery_withNull_shouldThrow() {
+        // WHEN we try to delete a null query:
+        // THEN it should throw IllegalArgumentException:
+        assertThrows(IllegalArgumentException.class, () -> dataManager.delete((Query)null));
+    }
+
+    @Test
+    void deleteQuery_withQueryNotInCache_shouldDoNothing() {
+        try {
+            // GIVEN a DataManager with a couple of queries:
+            Query query1 = new Query();
+            query1.setName("Query 1");
+            dataManager.saveQuery(query1);
+            Query query2 = new Query();
+            query2.setName("Query 2");
+            dataManager.saveQuery(query2);
+
+            // WHEN we delete a Query instance that is not contained by our dataManager:
+            Query notInCache = new Query();
+            notInCache.setName("Not In Cache");
+            assertFalse(dataManager.getQueries().contains(notInCache));
+            assertDoesNotThrow(() -> dataManager.delete(notInCache));
+
+            // THEN there should be no change to the existing queries:
+            assertEquals(2, dataManager.getQueries().size());
+            assertTrue(dataManager.getQueries().contains(query1));
+            assertTrue(dataManager.getQueries().contains(query2));
+        }
+        catch (IOException ioe) {
+            fail("Unexpected IOException during test setup: " + ioe.getMessage());
+        }
+    }
+
+    @Test
+    void deleteQuery_withQueryInCache_shouldRemove() {
+        try {
+            // GIVEN a DataManager with a couple of queries:
+            Query query1 = new Query();
+            query1.setName("Query 1");
+            dataManager.saveQuery(query1);
+            Query query2 = new Query();
+            query2.setName("Query 2");
+            dataManager.saveQuery(query2);
+
+            // WHEN we delete one of the existing queries:
+            assertTrue(dataManager.getQueries().contains(query1));
+            dataManager.delete(query1);
+
+            // THEN it should be removed from the cache:
+            assertFalse(dataManager.getQueries().contains(query1));
+
+            // AND the other query should still exist:
+            assertTrue(dataManager.getQueries().contains(query2));
+        }
+        catch (IOException ioe) {
+            fail("Unexpected IOException during test setup: " + ioe.getMessage());
+        }
+    }
 }

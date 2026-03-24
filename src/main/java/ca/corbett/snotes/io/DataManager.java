@@ -198,6 +198,65 @@ public class DataManager {
     }
 
     /**
+     * Returns true if the given query name is not already in use by another Query.
+     * The search is done case-insensitively, so "my query" and "My Query" would be considered the same name.
+     *
+     * @param name Any non-null name to check for availability.
+     * @return True if the given name is not already in use by another Query, false otherwise.
+     */
+    public boolean isQueryNameAvailable(String name) {
+        return isQueryNameAvailable(name, null);
+    }
+
+    /**
+     * Returns true if the given query name is not already in use by another Query,
+     * excluding the Query with the given name. This is handy if you are editing an
+     * existing Query and want to check if the new name is available, but you want to
+     * ignore the fact that the old name is already in use by the Query you are editing.
+     *
+     * @param name             Any non-null name to check for availability.
+     * @param excludingThisOne The name of a Query to exclude from the search. Can be null meaning "no exclusion".
+     * @return True if the given name is not already in use by another Query (other than the one with the given name).
+     */
+    public boolean isQueryNameAvailable(String name, String excludingThisOne) {
+        if (name == null) {
+            throw new IllegalArgumentException("Query name cannot be null.");
+        }
+        for (Query query : queries) {
+            // If it matches (case-insensitively), then the name is not available:
+            if (query.getName().equalsIgnoreCase(name)) {
+                // Unless we were given one to exclude, and this is it:
+                if (query.getName().equalsIgnoreCase(excludingThisOne)) { // equalsIgnoreCase handles nulls
+                    continue; // This is the one we're excluding, so ignore this match and keep searching.
+                }
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Removes the specified Query from our in-memory cache, and deletes its source file
+     * from disk if it existed. Note that this does not affect any Notes that may have been
+     * created using this Query as a template.
+     *
+     * @param query The Query to delete. Must not be null.
+     */
+    public void delete(Query query) {
+        if (query == null) {
+            throw new IllegalArgumentException("Cannot delete null Query.");
+        }
+
+        queries.remove(query);
+        if (query.getSourceFile() != null && query.getSourceFile().exists()) {
+            if (!query.getSourceFile().delete()) {
+                // This is not fatal, but it is wonky... warn but proceed:
+                log.warning("Failed to delete source file for query: " + query.getSourceFile().getAbsolutePath());
+            }
+        }
+    }
+
+    /**
      * Saves the given Template to disk. If this is a first-time save, a filename and location
      * is automatically selected within our data directory. Otherwise, if the Template has
      * not been renamed since it was loaded, it is saved back to the same file.
@@ -271,6 +330,11 @@ public class DataManager {
 
         // Now save this Query to its new location. This will update the Query's source file and mark it clean.
         SnotesIO.saveQuery(query, targetFile);
+
+        // If this Query wasn't already in our cache, add it now:
+        if (!queries.contains(query)) {
+            queries.add(query);
+        }
     }
 
     /**
