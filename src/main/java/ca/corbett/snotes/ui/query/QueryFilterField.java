@@ -120,6 +120,52 @@ public class QueryFilterField extends FormField {
     }
 
     /**
+     * Given a Filter object, sets the values of this QueryFilterField to match the filter.
+     * Any previous values are lost.
+     *
+     * @param filter An instance of any subclass of Filter.
+     */
+    public void setValuesFrom(Filter filter) {
+        if (filter instanceof TextFilter textFilter) {
+            filterTypeCombo.setSelectedItem(
+                textFilter.isCaseSensitive() ? FilterType.TEXT_SENSITIVE : FilterType.TEXT_INSENSITIVE);
+            filterValueField.setText(textFilter.getContains());
+        }
+        else if (filter instanceof TagFilter tagFilter) {
+            filterTypeCombo.setSelectedItem(FilterType.TAG);
+            filterValueField.setText(tagFilter.getTagsToFilter()
+                                              .stream()
+                                              .map(Tag::getTag)
+                                              .reduce((a, b) -> a + ", " + b)
+                                              .orElse(""));
+        }
+        else if (filter instanceof DateFilter dateFilter) {
+            filterTypeCombo.setSelectedItem(FilterType.DATE);
+            filterValueField.setText(dateFilter.getTargetDate().toString());
+        }
+        else if (filter instanceof DayOfMonthFilter dayOfMonthFilter) {
+            filterTypeCombo.setSelectedItem(FilterType.DAY_OF_MONTH);
+            filterValueField.setText(String.format("%02d", dayOfMonthFilter.getDayOfMonth()));
+        }
+        else if (filter instanceof DayOfWeekFilter dayOfWeekFilter) {
+            filterTypeCombo.setSelectedItem(FilterType.DAY_OF_WEEK);
+            filterValueField.setText(dayOfWeekFilter.getDayOfWeek().name());
+        }
+        else if (filter instanceof MonthFilter monthFilter) {
+            filterTypeCombo.setSelectedItem(FilterType.MONTH);
+            filterValueField.setText(String.format("%02d", monthFilter.getTargetMonth()));
+        }
+        else if (filter instanceof YearFilter yearFilter) {
+            filterTypeCombo.setSelectedItem(FilterType.YEAR);
+            filterValueField.setText(String.valueOf(yearFilter.getTargetYear()));
+        }
+        else if (filter instanceof UndatedFilter) {
+            filterTypeCombo.setSelectedItem(FilterType.UNDATED);
+            filterValueField.setText("");
+        }
+    }
+
+    /**
      * Builds a Filter object based on the current state of this QueryFilterField.
      * Note: this UI presents a subset of the available filter options. For example,
      * DateFilter supports filtering "before" or "after", and TagFilter offers

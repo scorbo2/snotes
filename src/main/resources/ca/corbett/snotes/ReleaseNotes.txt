@@ -2,6 +2,8 @@ Snotes Release Notes
 Author: Steve Corbett
 
 Version 2.0 [TODO] rewrite
+  #28 - Implement UI for deleting Queries
+  #27 - Implement UI for editing Queries
   #21 - Implement UI for creating Queries
   #20 - Implement intelligent model object persistence
   #18 - Implement Template and basic persistence

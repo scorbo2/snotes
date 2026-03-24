@@ -18,6 +18,7 @@ import javax.swing.JPanel;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,33 +41,72 @@ public class QueryBuilderDialog extends JDialog {
      */
     private static final int MAX_FILTERS = 8;
 
+    private final Query queryToEdit; // null if we're creating a new Query
     private final List<QueryFilterField> filterFields;
     private final KeyStrokeManager keyManager;
     private FormPanel formPanel;
     private ShortTextField nameField;
-    private int filterCount = 1;
+    private int filterCount;
     private MessageUtil messageUtil;
     private boolean wasOkayed;
 
-    public QueryBuilderDialog(String title) {
-        super(MainWindow.getInstance(), title, true);
+    /**
+     * Creates a QueryBuilderDialog suitable for creating a new Query.
+     * All fields will start with blank values, and the user can
+     * populate them to create a new Query.
+     *
+     * @param owner the parent window for this dialog
+     */
+    public QueryBuilderDialog(Window owner) {
+        this(owner, null);
+    }
+
+    /**
+     * Creates a QueryBuilderDialog for editing an existing Query. The fields will
+     * be pre-populated with the values from the given Query, and the user can edit
+     * them to modify the Query.
+     *
+     * @param owner the parent window for this dialog
+     * @param query the Query to edit. This dialog will be pre-populated with the values from this Query.
+     */
+    public QueryBuilderDialog(Window owner, Query query) {
+        super(owner, (query == null) ? "New Query" : "Edit Query: " + query.getName(), ModalityType.APPLICATION_MODAL);
         setSize(new Dimension(580, 480));
         setResizable(false);
         setLocationRelativeTo(MainWindow.getInstance());
+        this.queryToEdit = query;
         keyManager = new KeyStrokeManager(this);
         filterFields = new ArrayList<>(MAX_FILTERS);
+        List<Filter> filters = (queryToEdit == null) ? List.of() : queryToEdit.getFilters();
         for (int i = 0; i < MAX_FILTERS; i++) {
-            filterFields.add(new QueryFilterField());
+            QueryFilterField filterField = new QueryFilterField();
+            if (i < filters.size()) {
+                filterField.setValuesFrom(filters.get(i));
+            }
+            filterFields.add(filterField);
         }
         initKeyBindings();
         initComponents();
         wasOkayed = false;
     }
 
+    /**
+     * Returns true if the user clicked "OK" to close this dialog.
+     * If this is true, the form has been validated, and calling
+     * getQuery() is guaranteed to return a non-null Query with the values the user entered.
+     */
     public boolean wasOkayed() {
         return wasOkayed;
     }
 
+    /**
+     * Check wasOkayed() first! If the user canceled or closed the dialog,
+     * this method will return null! If wasOkayed() returns true, then
+     * this method will return a non-null Query instance with the values
+     * that the user entered. If we were editing an existing Query, this
+     * method is guaranteed to return the same instance that was passed in,
+     * but with the values updated as needed.
+     */
     public Query getQuery() {
         if (!wasOkayed) {
             return null;
@@ -76,11 +116,25 @@ public class QueryBuilderDialog extends JDialog {
         for (int i = 0; i < filterCount; i++) {
             filters.add(filterFields.get(i).getFilter());
         }
-        Query query = new Query();
-        query.setName(nameField.getText());
-        for (Filter filter : filters) {
-            query.addFilter(filter);
+        Query query;
+        if (queryToEdit == null) {
+            // This is a new Query:
+            query = new Query();
+            query.setName(nameField.getText());
+            for (Filter filter : filters) {
+                query.addFilter(filter);
+            }
         }
+        else {
+            // We're editing an existing query, let's return the same instance with the updated values:
+            query = queryToEdit;
+            query.setName(nameField.getText()); // User may have renamed it
+            query.clear(); // nuke and pave all filters to ensure we have what the user specified
+            for (Filter filter : filters) {
+                query.addFilter(filter);
+            }
+        }
+
         return query;
     }
 
@@ -112,17 +166,22 @@ public class QueryBuilderDialog extends JDialog {
         formPanel.add(LabelField.createBoldHeaderLabel("Query Filters"));
 
         nameField = new ShortTextField("Name:", 15);
-        nameField.setText(Query.DEFAULT_NAME);
+        String existingName = (queryToEdit == null) ? null : queryToEdit.getName();
+        nameField.setText((queryToEdit == null) ? Query.DEFAULT_NAME : existingName);
         nameField.setAllowBlank(false);
-        // TODO put a validator on here to ensure the chosen name is unique. Prevents problems on save.
-        //      Requires changes in DataManager to check for duplicate names.
+        nameField.addFieldValidator(new QueryNameValidator(MainWindow.getInstance().getDataManager(), existingName));
         formPanel.add(nameField);
 
         formPanel.add(filterFields.get(0)); // Default label is "Filter:"
+        filterCount = (queryToEdit == null)
+            ? 1 // There's always at least one filter visible, even if blank
+            : Math.max(1, queryToEdit.getFilters().size());
         for (int i = 1; i < filterFields.size(); i++) {
             QueryFilterField filterField = filterFields.get(i);
             filterField.getFieldLabel().setText("AND:"); // only supported option currently, so make it the label.
-            filterField.setVisible(false); // we'll show them as the user hits "add filter"
+            if (i >= filterCount) {
+                filterField.setVisible(false); // we'll show them as the user hits "add filter"
+            }
             formPanel.add(filterField);
         }
         ButtonField buttonField = new ButtonField();

@@ -181,4 +181,15 @@ public class Query {
     public void markClean() {
         isDirty = false;
     }
+
+    /**
+     * We override this so that Query instances can be displayed in a JList or JComboBox
+     * with a user-friendly display.
+     *
+     * @return The user-presentable name of this Query.
+     */
+    @Override
+    public String toString() {
+        return name;
+    }
 }
