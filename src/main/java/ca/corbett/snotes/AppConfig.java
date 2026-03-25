@@ -15,6 +15,7 @@ import ca.corbett.extras.properties.EnumProperty;
 import ca.corbett.extras.properties.KeyStrokeProperty;
 import ca.corbett.extras.properties.LabelProperty;
 import ca.corbett.extras.properties.LookAndFeelProperty;
+import ca.corbett.extras.properties.ShortTextProperty;
 import ca.corbett.snotes.extensions.SnotesExtension;
 import ca.corbett.snotes.extensions.SnotesExtensionManager;
 import ca.corbett.snotes.io.DataManager;
@@ -55,6 +56,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
     private static final String PROPS_FILE_NAME = "Snotes.props";
     public static final File PROPS_FILE = new File(Version.SETTINGS_DIR, PROPS_FILE_NAME);
     private static AppConfig instance = null;
+    public static final int VALUE_NOT_SET = -9999;
 
     /**
      * Property name for enabling/disabling single-instance mode.
@@ -90,6 +92,12 @@ public class AppConfig extends AppProperties<SnotesExtension> {
     private EnhancedAction exitAction;
 
     private BooleanProperty enableSingleInstance;
+    private BooleanProperty rememberSizePositionProp;
+    private ShortTextProperty windowStateProp;
+    private ShortTextProperty windowWidthProp;
+    private ShortTextProperty windowHeightProp;
+    private ShortTextProperty windowLeftProp;
+    private ShortTextProperty windowTopProp;
     private LookAndFeelProperty lookAndFeelProp;
     private DecimalProperty desktopLogoAlphaProp;
     private ColorProperty desktopGradientProp;
@@ -113,6 +121,68 @@ public class AppConfig extends AppProperties<SnotesExtension> {
      */
     public static String peek(String propName) {
         return AppProperties.peek(PROPS_FILE, propName);
+    }
+
+    public boolean isSingleInstanceEnabled() {
+        return enableSingleInstance.getValue();
+    }
+
+    public boolean isRememberSizeAndPositionEnabled() {
+        return rememberSizePositionProp.getValue();
+    }
+
+    public int getWindowState() {
+        try {
+            return Integer.parseInt(windowStateProp.getValue());
+        }
+        catch (NumberFormatException ignored) {
+            return VALUE_NOT_SET;
+        }
+    }
+
+    public int getWindowWidth() {
+        try {
+            return Integer.parseInt(windowWidthProp.getValue());
+        }
+        catch (NumberFormatException ignored) {
+            return VALUE_NOT_SET;
+        }
+    }
+
+    public int getWindowHeight() {
+        try {
+            return Integer.parseInt(windowHeightProp.getValue());
+        }
+        catch (NumberFormatException ignored) {
+            return VALUE_NOT_SET;
+        }
+    }
+
+    public int getWindowLeft() {
+        try {
+            return Integer.parseInt(windowLeftProp.getValue());
+        }
+        catch (NumberFormatException ignored) {
+            return VALUE_NOT_SET;
+        }
+    }
+
+    public int getWindowTop() {
+        try {
+            return Integer.parseInt(windowTopProp.getValue());
+        }
+        catch (NumberFormatException ignored) {
+            return VALUE_NOT_SET;
+        }
+    }
+
+    public void setWindowProps(int state, int width, int height, int left, int top) {
+        windowStateProp.setValue(Integer.toString(state));
+        windowWidthProp.setValue(Integer.toString(width));
+        windowHeightProp.setValue(Integer.toString(height));
+        windowLeftProp.setValue(Integer.toString(left));
+        windowTopProp.setValue(Integer.toString(top));
+        save(); // trigger an immediate save() to persist these.
     }
 
     public String getLookAndFeelClassName() {
@@ -202,6 +272,11 @@ public class AppConfig extends AppProperties<SnotesExtension> {
                                                    true);
         props.add(enableSingleInstance);
 
+        rememberSizePositionProp = new BooleanProperty("UI.General.rememberSizePosition",
+                                                       "Remember main window size and position between sessions",
+                                                       true);
+        props.add(rememberSizePositionProp);
+
         // Look and feel stuff:
         lookAndFeelProp = new LookAndFeelProperty("UI.Look and Feel.Look and Feel", "Look and Feel:",
                                                   FlatLightLaf.class.getName());
@@ -220,6 +295,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         props.add(desktopLogoPlacementProp);
         props.addAll(createKeystrokeProperties());
         props.addAll(createDataProperties());
+        props.addAll(createWindowStateProperties());
 
         return props;
     }
@@ -293,6 +369,48 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         scratchSubDirProp.setHelpText("<html>The subdirectory where temporary files are stored." +
                                           "<br>Not currently configurable.</html>");
         props.add(scratchSubDirProp);
+
+        return props;
+    }
+
+    /**
+     * Our window state properties are all hidden from direct user exposure, as we will manage
+     * them internally. We use a special value of VALUE_NOT_SET for the default values for all
+     * of these properties, to allow MainWindow to size and position itself on a first time run.
+     * On all subsequent runs, MainWindow will commit its current state on a clean shutdown
+     * (even if "remember size and position" is disabled). On startup, MainWindow will check
+     * to see if there are valid values here, and use them if "remember size and position" is enabled,
+     * or ignore them if not.
+     */
+    private List<AbstractProperty> createWindowStateProperties() {
+        List<AbstractProperty> props = new ArrayList<>();
+
+        // Technical note: we use ShortTextProperty for these instead of IntegerProperty,
+        // because our sentinel value VALUE_NOT_SET is (deliberately) well outside
+        // the min/max range of each of these properties. That will result in an
+        // IllegalArgumentException when trying to generate SpinnerNumberModels.
+        // So, since they're not user-visible anyway, screw it, we'll just
+        // store them as String values in a text prop and convert to int as needed.
+
+        windowStateProp = new ShortTextProperty("UI.Window.state", "Window state:", Integer.toString(VALUE_NOT_SET));
+        windowStateProp.setExposed(false); // not visible to the user
+        props.add(windowStateProp);
+
+        windowWidthProp = new ShortTextProperty("UI.Window.width", "Window width:", Integer.toString(VALUE_NOT_SET));
+        windowWidthProp.setExposed(false); // not visible to the user
+        props.add(windowWidthProp);
+
+        windowHeightProp = new ShortTextProperty("UI.Window.height", "Window height:", Integer.toString(VALUE_NOT_SET));
+        windowHeightProp.setExposed(false); // not visible to the user
+        props.add(windowHeightProp);
+
+        windowLeftProp = new ShortTextProperty("UI.Window.left", "Window left:", Integer.toString(VALUE_NOT_SET));
+        windowLeftProp.setExposed(false); // not visible to the user
+        props.add(windowLeftProp);
+
+        windowTopProp = new ShortTextProperty("UI.Window.top", "Window top:", Integer.toString(VALUE_NOT_SET));
+        windowTopProp.setExposed(false); // not visible to the user
+        props.add(windowTopProp);
 
         return props;
     }

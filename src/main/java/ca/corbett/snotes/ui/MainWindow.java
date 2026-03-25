@@ -7,6 +7,7 @@ import ca.corbett.extras.io.KeyStrokeManager;
 import ca.corbett.extras.logging.LogConsole;
 import ca.corbett.extras.properties.KeyStrokeProperty;
 import ca.corbett.snotes.AppConfig;
+import ca.corbett.snotes.Main;
 import ca.corbett.snotes.Resources;
 import ca.corbett.snotes.Version;
 import ca.corbett.snotes.extensions.SnotesExtensionManager;
@@ -32,7 +33,8 @@ public class MainWindow extends JFrame implements UIReloadable {
 
     private static final Logger logger = Logger.getLogger(MainWindow.class.getName());
     private static MainWindow instance = null;
-    private MessageUtil messageUtil;
+    private final MessageUtil messageUtil;
+    private boolean isSingleInstanceModeEnabled;
     private final ActionPanelManager actionPanelManager;
     private final KeyStrokeManager keyStrokeManager;
     private final DataManager dataManager;
@@ -46,6 +48,7 @@ public class MainWindow extends JFrame implements UIReloadable {
         setSize(800, 600);
         setMinimumSize(new Dimension(500, 400));
         setLocationRelativeTo(null); // center on default display
+        isSingleInstanceModeEnabled = AppConfig.getInstance().isSingleInstanceEnabled();
         messageUtil = new MessageUtil(this, logger);
         dataManager = new DataManager();
         keyStrokeManager = new KeyStrokeManager(this);
@@ -68,6 +71,9 @@ public class MainWindow extends JFrame implements UIReloadable {
      */
     @Override
     public void setVisible(boolean visible) {
+        if (visible) {
+            restoreWindowState(); // do this BEFORE we call super.setVisible()
+        }
         super.setVisible(visible);
         if (visible) {
             instance.setIconImage(Resources.getLogoIcon());
@@ -117,6 +123,9 @@ public class MainWindow extends JFrame implements UIReloadable {
             return;
         }
 
+        // Always save window state, even if "remember state" is disabled:
+        AppConfig.getInstance().setWindowProps(getExtendedState(), getWidth(), getHeight(), getX(), getY());
+
         cleanupComplete = true;
         logger.info("Shutting down: MainWindow cleanup invoked.");
 
@@ -132,6 +141,11 @@ public class MainWindow extends JFrame implements UIReloadable {
      */
     @Override
     public void reloadUI() {
+        // Single instance mode may have changed, so check that:
+        if (isSingleInstanceModeEnabled != AppConfig.getInstance().isSingleInstanceEnabled()) {
+            toggleSingleInstanceMode();
+        }
+
         // Update our desktop pane with new settings:
         desktopPane.setLogoImageTransparency(AppConfig.getInstance().getDesktopLogoAlpha());
         desktopPane.setGradientConfig(AppConfig.getInstance().getDesktopGradient());
@@ -152,6 +166,78 @@ public class MainWindow extends JFrame implements UIReloadable {
             // Register it! This will update the shortcut attached to our menu items as well:
             keyStrokeManager.registerHandler(prop.getKeyStroke(), prop.getAction());
         }
+    }
+
+    /**
+     * Invoked internally to toggle the state of single-instance mode.
+     */
+    private void toggleSingleInstanceMode() {
+        // Toggle our cached value:
+        isSingleInstanceModeEnabled = !isSingleInstanceModeEnabled;
+
+        // If single instance mode is now enabled, try to acquire the lock:
+        if (isSingleInstanceModeEnabled) {
+            logger.info("Enabling single instance mode.");
+            SingleInstanceManager instanceManager = SingleInstanceManager.getInstance();
+            if (!instanceManager.tryAcquireLock(a -> MainWindow.getInstance().processStartArgs(a),
+                                                Main.SINGLE_INSTANCE_PORT)) {
+                // Another instance is already running, let's inform the user:
+                messageUtil.error("Single Instance Mode",
+                                  "Another instance of the application is already running.\n" +
+                                      "Unable to enable single instance mode.");
+                isSingleInstanceModeEnabled = false; // revert our cached value
+            }
+        }
+
+        // Otherwise, if single instance mode is now disabled, release the lock if we have it:
+        else {
+            logger.info("Disabling single instance mode.");
+            SingleInstanceManager.getInstance().release();
+        }
+    }
+
+    /**
+     * If "remember window size and position" is enabled, restores the
+     * window size, position, and state (maximized, minimized, etc.) from the last application run.
+     * Otherwise, does nothing.
+     * <p>
+     * Note, on a first-time application run, or if our config file was removed,
+     * the values will be explicitly unset, and so we will stick with the
+     * default size, position, and state. On every subsequent run,
+     * if the option is enabled, we will restore the last size, position, and state.
+     * </p>
+     */
+    private void restoreWindowState() {
+        AppConfig appConfig = AppConfig.getInstance();
+        if (!appConfig.isRememberSizeAndPositionEnabled()) {
+            // Do nothing if the option is disabled.
+            return;
+        }
+
+        int state = appConfig.getWindowState();
+        int width = appConfig.getWindowWidth();
+        int height = appConfig.getWindowHeight();
+        int x = appConfig.getWindowLeft();
+        int y = appConfig.getWindowTop();
+        if (state == AppConfig.VALUE_NOT_SET
+            || width == AppConfig.VALUE_NOT_SET
+            || height == AppConfig.VALUE_NOT_SET
+            || x == AppConfig.VALUE_NOT_SET
+            || y == AppConfig.VALUE_NOT_SET) {
+            // Do nothing if any of the values are missing or invalid.
+            return;
+        }
+
+        // Special case: if the application was closed while minimized,
+        // ignore that, and restore NORMAL state instead. It would be
+        // terribly confusing to start the application and not see any window because it's minimized!
+        if ((state & ICONIFIED) != 0) {
+            state = NORMAL;
+        }
+
+        setSize(width, height);
+        setLocation(x, y);
+        setExtendedState(state);
     }
 
     /**
