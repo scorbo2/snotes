@@ -362,7 +362,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         List<AbstractProperty> props = new ArrayList<>();
 
         windowStateProp = new IntegerProperty("UI.Window.state", "Main window state:",
-                                              JFrame.NORMAL, 0, Integer.MAX_VALUE, 1);
+                                              VALUE_NOT_SET, 0, Integer.MAX_VALUE, 1);
         windowStateProp.setExposed(false); // not visible to the user
         props.add(windowStateProp);
 
