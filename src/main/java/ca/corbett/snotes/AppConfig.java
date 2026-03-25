@@ -12,10 +12,10 @@ import ca.corbett.extras.properties.ColorProperty;
 import ca.corbett.extras.properties.DecimalProperty;
 import ca.corbett.extras.properties.DirectoryProperty;
 import ca.corbett.extras.properties.EnumProperty;
-import ca.corbett.extras.properties.IntegerProperty;
 import ca.corbett.extras.properties.KeyStrokeProperty;
 import ca.corbett.extras.properties.LabelProperty;
 import ca.corbett.extras.properties.LookAndFeelProperty;
+import ca.corbett.extras.properties.ShortTextProperty;
 import ca.corbett.snotes.extensions.SnotesExtension;
 import ca.corbett.snotes.extensions.SnotesExtensionManager;
 import ca.corbett.snotes.io.DataManager;
@@ -27,7 +27,6 @@ import ca.corbett.snotes.ui.actions.NewNoteAction;
 import ca.corbett.snotes.ui.actions.PrefsAction;
 import com.formdev.flatlaf.FlatLightLaf;
 
-import javax.swing.JFrame;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -94,11 +93,11 @@ public class AppConfig extends AppProperties<SnotesExtension> {
 
     private BooleanProperty enableSingleInstance;
     private BooleanProperty rememberSizePositionProp;
-    private IntegerProperty windowStateProp;
-    private IntegerProperty windowWidthProp;
-    private IntegerProperty windowHeightProp;
-    private IntegerProperty windowLeftProp;
-    private IntegerProperty windowTopProp;
+    private ShortTextProperty windowStateProp;
+    private ShortTextProperty windowWidthProp;
+    private ShortTextProperty windowHeightProp;
+    private ShortTextProperty windowLeftProp;
+    private ShortTextProperty windowTopProp;
     private LookAndFeelProperty lookAndFeelProp;
     private DecimalProperty desktopLogoAlphaProp;
     private ColorProperty desktopGradientProp;
@@ -133,31 +132,56 @@ public class AppConfig extends AppProperties<SnotesExtension> {
     }
 
     public int getWindowState() {
-        return windowStateProp.getValue();
+        try {
+            return Integer.parseInt(windowStateProp.getValue());
+        }
+        catch (NumberFormatException ignored) {
+            return VALUE_NOT_SET;
+        }
     }
 
     public int getWindowWidth() {
-        return windowWidthProp.getValue();
+        try {
+            return Integer.parseInt(windowWidthProp.getValue());
+        }
+        catch (NumberFormatException ignored) {
+            return VALUE_NOT_SET;
+        }
     }
 
     public int getWindowHeight() {
-        return windowHeightProp.getValue();
+        try {
+            return Integer.parseInt(windowHeightProp.getValue());
+        }
+        catch (NumberFormatException ignored) {
+            return VALUE_NOT_SET;
+        }
     }
 
     public int getWindowLeft() {
-        return windowLeftProp.getValue();
+        try {
+            return Integer.parseInt(windowLeftProp.getValue());
+        }
+        catch (NumberFormatException ignored) {
+            return VALUE_NOT_SET;
+        }
     }
 
     public int getWindowTop() {
-        return windowTopProp.getValue();
+        try {
+            return Integer.parseInt(windowTopProp.getValue());
+        }
+        catch (NumberFormatException ignored) {
+            return VALUE_NOT_SET;
+        }
     }
 
     public void setWindowProps(int state, int width, int height, int left, int top) {
-        windowStateProp.setValue(state);
-        windowWidthProp.setValue(width);
-        windowHeightProp.setValue(height);
-        windowLeftProp.setValue(left);
-        windowTopProp.setValue(top);
+        windowStateProp.setValue(Integer.toString(state));
+        windowWidthProp.setValue(Integer.toString(width));
+        windowHeightProp.setValue(Integer.toString(height));
+        windowLeftProp.setValue(Integer.toString(left));
+        windowTopProp.setValue(Integer.toString(top));
         save(); // trigger an immediate save() to persist these.
     }
 
@@ -361,26 +385,30 @@ public class AppConfig extends AppProperties<SnotesExtension> {
     private List<AbstractProperty> createWindowStateProperties() {
         List<AbstractProperty> props = new ArrayList<>();
 
-        windowStateProp = new IntegerProperty("UI.Window.state", "Main window state:",
-                                              VALUE_NOT_SET, 0, Integer.MAX_VALUE, 1);
+        // Technical note: we use ShortTextProperty for these instead of IntegerProperty,
+        // because our sentinel value VALUE_NOT_SET is (deliberately) well outside
+        // the min/max range of each of these properties. That will result in an
+        // IllegalArgumentException when trying to generate SpinnerNumberModels.
+        // So, since they're not user-visible anyway, screw it, we'll just
+        // store them as String values in a text prop and convert to int as needed.
+
+        windowStateProp = new ShortTextProperty("UI.Window.state", "Window state:", Integer.toString(VALUE_NOT_SET));
         windowStateProp.setExposed(false); // not visible to the user
         props.add(windowStateProp);
 
-        windowWidthProp = new IntegerProperty("UI.Window.width", "Main window width:", VALUE_NOT_SET, 500, 10000, 1);
+        windowWidthProp = new ShortTextProperty("UI.Window.width", "Window width:", Integer.toString(VALUE_NOT_SET));
         windowWidthProp.setExposed(false); // not visible to the user
         props.add(windowWidthProp);
 
-        windowHeightProp = new IntegerProperty("UI.Window.height", "Main window height:", VALUE_NOT_SET, 400, 10000, 1);
+        windowHeightProp = new ShortTextProperty("UI.Window.height", "Window height:", Integer.toString(VALUE_NOT_SET));
         windowHeightProp.setExposed(false); // not visible to the user
         props.add(windowHeightProp);
 
-        windowLeftProp = new IntegerProperty("UI.Window.left", "Main window left position:", VALUE_NOT_SET, -10000,
-                                             10000, 1);
+        windowLeftProp = new ShortTextProperty("UI.Window.left", "Window left:", Integer.toString(VALUE_NOT_SET));
         windowLeftProp.setExposed(false); // not visible to the user
         props.add(windowLeftProp);
 
-        windowTopProp = new IntegerProperty("UI.Window.top", "Main window top position:", VALUE_NOT_SET, -10000, 10000,
-                                            1);
+        windowTopProp = new ShortTextProperty("UI.Window.top", "Window top:", Integer.toString(VALUE_NOT_SET));
         windowTopProp.setExposed(false); // not visible to the user
         props.add(windowTopProp);
 

@@ -71,9 +71,11 @@ public class MainWindow extends JFrame implements UIReloadable {
      */
     @Override
     public void setVisible(boolean visible) {
+        if (visible) {
+            restoreWindowState(); // do this BEFORE we call super.setVisible()
+        }
         super.setVisible(visible);
         if (visible) {
-            restoreWindowState();
             instance.setIconImage(Resources.getLogoIcon());
             LogConsole.getInstance().setIconImage(Resources.getLogoIcon());
             UIReloadAction.getInstance().registerReloadable(this);
