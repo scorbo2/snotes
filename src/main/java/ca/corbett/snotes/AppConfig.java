@@ -12,6 +12,7 @@ import ca.corbett.extras.properties.ColorProperty;
 import ca.corbett.extras.properties.DecimalProperty;
 import ca.corbett.extras.properties.DirectoryProperty;
 import ca.corbett.extras.properties.EnumProperty;
+import ca.corbett.extras.properties.IntegerProperty;
 import ca.corbett.extras.properties.KeyStrokeProperty;
 import ca.corbett.extras.properties.LabelProperty;
 import ca.corbett.extras.properties.LookAndFeelProperty;
@@ -26,6 +27,7 @@ import ca.corbett.snotes.ui.actions.NewNoteAction;
 import ca.corbett.snotes.ui.actions.PrefsAction;
 import com.formdev.flatlaf.FlatLightLaf;
 
+import javax.swing.JFrame;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +57,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
     private static final String PROPS_FILE_NAME = "Snotes.props";
     public static final File PROPS_FILE = new File(Version.SETTINGS_DIR, PROPS_FILE_NAME);
     private static AppConfig instance = null;
+    public static final int VALUE_NOT_SET = -9999;
 
     /**
      * Property name for enabling/disabling single-instance mode.
@@ -90,6 +93,12 @@ public class AppConfig extends AppProperties<SnotesExtension> {
     private EnhancedAction exitAction;
 
     private BooleanProperty enableSingleInstance;
+    private BooleanProperty rememberSizePositionProp;
+    private IntegerProperty windowStateProp;
+    private IntegerProperty windowWidthProp;
+    private IntegerProperty windowHeightProp;
+    private IntegerProperty windowLeftProp;
+    private IntegerProperty windowTopProp;
     private LookAndFeelProperty lookAndFeelProp;
     private DecimalProperty desktopLogoAlphaProp;
     private ColorProperty desktopGradientProp;
@@ -113,6 +122,43 @@ public class AppConfig extends AppProperties<SnotesExtension> {
      */
     public static String peek(String propName) {
         return AppProperties.peek(PROPS_FILE, propName);
+    }
+
+    public boolean isSingleInstanceEnabled() {
+        return enableSingleInstance.getValue();
+    }
+
+    public boolean isRememberSizeAndPositionEnabled() {
+        return rememberSizePositionProp.getValue();
+    }
+
+    public int getWindowState() {
+        return windowStateProp.getValue();
+    }
+
+    public int getWindowWidth() {
+        return windowWidthProp.getValue();
+    }
+
+    public int getWindowHeight() {
+        return windowHeightProp.getValue();
+    }
+
+    public int getWindowLeft() {
+        return windowLeftProp.getValue();
+    }
+
+    public int getWindowTop() {
+        return windowTopProp.getValue();
+    }
+
+    public void setWindowProps(int state, int width, int height, int left, int top) {
+        windowStateProp.setValue(state);
+        windowWidthProp.setValue(width);
+        windowHeightProp.setValue(height);
+        windowLeftProp.setValue(left);
+        windowTopProp.setValue(top);
+        save(); // trigger an immediate save() to persist these.
     }
 
     public String getLookAndFeelClassName() {
@@ -202,6 +248,11 @@ public class AppConfig extends AppProperties<SnotesExtension> {
                                                    true);
         props.add(enableSingleInstance);
 
+        rememberSizePositionProp = new BooleanProperty("UI.General.rememberSizePosition",
+                                                       "Remember main window size and position between sessions",
+                                                       true);
+        props.add(rememberSizePositionProp);
+
         // Look and feel stuff:
         lookAndFeelProp = new LookAndFeelProperty("UI.Look and Feel.Look and Feel", "Look and Feel:",
                                                   FlatLightLaf.class.getName());
@@ -220,6 +271,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         props.add(desktopLogoPlacementProp);
         props.addAll(createKeystrokeProperties());
         props.addAll(createDataProperties());
+        props.addAll(createWindowStateProperties());
 
         return props;
     }
@@ -293,6 +345,44 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         scratchSubDirProp.setHelpText("<html>The subdirectory where temporary files are stored." +
                                           "<br>Not currently configurable.</html>");
         props.add(scratchSubDirProp);
+
+        return props;
+    }
+
+    /**
+     * Our window state properties are all hidden from direct user exposure, as we will manage
+     * them internally. We use a special value of VALUE_NOT_SET for the default values for all
+     * of these properties, to allow MainWindow to size and position itself on a first time run.
+     * On all subsequent runs, MainWindow will commit its current state on a clean shutdown
+     * (even if "remember size and position" is disabled). On startup, MainWindow will check
+     * to see if there are valid values here, and use them if "remember size and position" is enabled,
+     * or ignore them if not.
+     */
+    private List<AbstractProperty> createWindowStateProperties() {
+        List<AbstractProperty> props = new ArrayList<>();
+
+        windowStateProp = new IntegerProperty("UI.Window.state", "Main window state:",
+                                              JFrame.NORMAL, 0, Integer.MAX_VALUE, 1);
+        windowStateProp.setExposed(false); // not visible to the user
+        props.add(windowStateProp);
+
+        windowWidthProp = new IntegerProperty("UI.Window.width", "Main window width:", VALUE_NOT_SET, 500, 10000, 1);
+        windowWidthProp.setExposed(false); // not visible to the user
+        props.add(windowWidthProp);
+
+        windowHeightProp = new IntegerProperty("UI.Window.height", "Main window height:", VALUE_NOT_SET, 400, 10000, 1);
+        windowHeightProp.setExposed(false); // not visible to the user
+        props.add(windowHeightProp);
+
+        windowLeftProp = new IntegerProperty("UI.Window.left", "Main window left position:", VALUE_NOT_SET, -10000,
+                                             10000, 1);
+        windowLeftProp.setExposed(false); // not visible to the user
+        props.add(windowLeftProp);
+
+        windowTopProp = new IntegerProperty("UI.Window.top", "Main window top position:", VALUE_NOT_SET, -10000, 10000,
+                                            1);
+        windowTopProp.setExposed(false); // not visible to the user
+        props.add(windowTopProp);
 
         return props;
     }
