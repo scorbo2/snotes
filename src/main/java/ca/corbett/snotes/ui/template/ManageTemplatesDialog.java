@@ -189,7 +189,7 @@ public class ManageTemplatesDialog extends JDialog {
             if (confirm == MessageUtil.YES) {
                 dataManager.delete(templateToDelete);
 
-                // Trigger a reload so the deleted query is removed from the ActionPanel:
+                // Trigger a reload so the deleted template is removed from the ActionPanel:
                 UIReloadAction.getInstance().actionPerformed(null);
 
                 // Also refresh our own list:

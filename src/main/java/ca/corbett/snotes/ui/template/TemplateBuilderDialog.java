@@ -8,7 +8,6 @@ import ca.corbett.forms.fields.ComboField;
 import ca.corbett.forms.fields.LabelField;
 import ca.corbett.forms.fields.ShortTextField;
 import ca.corbett.snotes.io.DataManager;
-import ca.corbett.snotes.model.Query;
 import ca.corbett.snotes.model.Tag;
 import ca.corbett.snotes.model.TagList;
 import ca.corbett.snotes.model.Template;
@@ -92,6 +91,7 @@ public class TemplateBuilderDialog extends JDialog {
         template.setDateOption(dateOptionField.getSelectedItem());
         template.setContext(contextField.getSelectedItem());
         TagList tagList = TagList.fromRawString(tagField.getText());
+        template.clearTags();
         for (Tag tag : tagList.getTags()) {
             template.addTag(tag.getTag());
         }
@@ -131,7 +131,7 @@ public class TemplateBuilderDialog extends JDialog {
         nameField.setAllowBlank(false);
         DataManager dataManager = MainWindow.getInstance().getDataManager();
         nameField.addFieldValidator(new UniqueNameValidator(dataManager::isTemplateNameAvailable,
-                                                            Query.NAME_LENGTH_LIMIT,
+                                                            Template.NAME_LENGTH_LIMIT,
                                                             existingName));
         formPanel.add(nameField);
 

@@ -3,7 +3,6 @@ package ca.corbett.snotes.ui;
 import ca.corbett.forms.fields.ShortTextField;
 import ca.corbett.forms.validators.FieldValidator;
 import ca.corbett.forms.validators.ValidationResult;
-import ca.corbett.snotes.model.Query;
 
 /**
  * A generic FieldValidator implementation to check to see if a user-entered name is unique.
@@ -22,7 +21,6 @@ import ca.corbett.snotes.model.Query;
 public class UniqueNameValidator implements FieldValidator<ShortTextField> {
 
     public static final String ERR_NOT_UNIQUE = "That name is already in use. Please choose a different name.";
-    public static final String ERR_TOO_LONG = "Name cannot be longer than " + Query.NAME_LENGTH_LIMIT + " characters.";
 
     /**
      * Supply an instance of this interface, and it will be used to check uniqueness
@@ -72,8 +70,12 @@ public class UniqueNameValidator implements FieldValidator<ShortTextField> {
             return ValidationResult.invalid(ERR_NOT_UNIQUE);
         }
         if (value.length() > nameLengthLimit) {
-            return ValidationResult.invalid(ERR_TOO_LONG);
+            return ValidationResult.invalid(buildNameLengthError());
         }
         return ValidationResult.valid();
+    }
+
+    private String buildNameLengthError() {
+        return "Name cannot be longer than " + nameLengthLimit + " characters.";
     }
 }
