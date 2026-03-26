@@ -64,12 +64,23 @@ public final class TagList {
      */
     public static TagList fromRawString(String tagString) {
         TagList tagList = new TagList();
-        if (tagString == null || tagString.isBlank()) {
+        if (tagString == null) {
             return tagList; // return an empty TagList
         }
-        String[] tagArray = tagString.split("[\\s,]+");
+        String trimmed = tagString.trim();
+        if (trimmed.isBlank()) {
+            return tagList; // return an empty TagList
+        }
+        String[] tagArray = trimmed.split("[\\s,]+");
         for (String tag : tagArray) {
-            tagList.addTag(tag.trim());
+            if (tag == null) {
+                continue;
+            }
+            String normalized = tag.trim();
+            if (normalized.isEmpty()) {
+                continue; // skip empty/blank tokens
+            }
+            tagList.addTag(normalized);
         }
         return tagList;
     }
