@@ -190,4 +190,54 @@ class TagListTest {
         assertEquals(1, actualTags.indexOf(new Tag("tag1")));
         assertEquals(2, actualTags.indexOf(new Tag("tag2")));
     }
+
+    @Test
+    public void fromRawString_withNullOrBlank_shouldCreateEmptyTagList() {
+        // WHEN we pass null to fromRawString:
+        TagList tagList1 = TagList.fromRawString(null);
+
+        // THEN we should get an empty TagList:
+        assertTrue(tagList1.getTags().isEmpty());
+
+        // WHEN we pass a blank string to fromRawString:
+        TagList tagList2 = TagList.fromRawString("   ");
+
+        // THEN we should also get an empty TagList:
+        assertTrue(tagList2.getTags().isEmpty());
+    }
+
+    @Test
+    public void fromRawString_withSingleTag_shouldCreateTagListWithThatTag() {
+        // WHEN we pass a single tag string to fromRawString:
+        TagList tagList = TagList.fromRawString("some-tag");
+
+        // THEN we should get a TagList with that tag:
+        assertEquals(1, tagList.size());
+        assertTrue(tagList.hasTag("some-tag"));
+    }
+
+    @Test
+    public void fromRawString_withMultipleTags_shouldCreateTagListWithThoseTags() {
+        // WHEN we pass a comma-separated string of tags to fromRawString:
+        TagList tagList = TagList.fromRawString("tag1, tag2, tag3");
+
+        // THEN we should get a TagList with those tags:
+        assertEquals(3, tagList.size());
+        assertTrue(tagList.hasTag("tag1"));
+        assertTrue(tagList.hasTag("tag2"));
+        assertTrue(tagList.hasTag("tag3"));
+    }
+
+    @Test
+    public void fromRawString_withMultipleTagsAndMixedSeparators_shouldCreateTagListWithThoseTags() {
+        // WHEN we pass a string of tags with mixed separators to fromRawString:
+        TagList tagList = TagList.fromRawString("tag1, tag2, tag3  tag4");
+
+        // THEN we should get a TagList with those tags:
+        assertEquals(4, tagList.size());
+        assertTrue(tagList.hasTag("tag1"));
+        assertTrue(tagList.hasTag("tag2"));
+        assertTrue(tagList.hasTag("tag3"));
+        assertTrue(tagList.hasTag("tag4"));
+    }
 }

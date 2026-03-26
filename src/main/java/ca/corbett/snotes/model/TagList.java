@@ -51,6 +51,77 @@ public final class TagList {
     }
 
     /**
+     * A factory method to create a new TagList instance from a comma-separated or space-separated string of tags.
+     * If the input string is null or blank, an empty TagList will be returned.
+     * <p>
+     * You can use commas or whitespace to separate tags. Both "tag1, tag2, tag3"
+     * and "tag1 tag2 tag3" are valid inputs that will produce the same TagList with
+     * three tags: "tag1", "tag2", and "tag3".
+     * The input string can also be a mix of commas and whitespace, e.g. "tag1, tag2 tag3,tag4".
+     * </p>
+     *
+     * @param tagString A comma or space separated string of tags. Null or blank gets you an empty list.
+     */
+    public static TagList fromRawString(String tagString) {
+        TagList tagList = new TagList();
+        if (tagString == null) {
+            return tagList; // return an empty TagList
+        }
+        String trimmed = tagString.trim();
+        if (trimmed.isBlank()) {
+            return tagList; // return an empty TagList
+        }
+        String[] tagArray = trimmed.split("[\\s,]+");
+        for (String tag : tagArray) {
+            if (tag == null) {
+                continue;
+            }
+            String normalized = tag.trim();
+            if (normalized.isEmpty()) {
+                continue; // skip empty/blank tokens
+            }
+            tagList.addTag(normalized);
+        }
+        return tagList;
+    }
+
+    /**
+     * Factory method to return a new TagList from a List of tag strings. Each string will be normalized
+     * using the same rules as Tag's constructor, so the resulting TagList may not match the input list exactly.
+     *
+     * @param rawTags A List of tag strings. If null, an empty TagList will be returned.
+     * @return A new TagList containing the tags from the input list, normalized according to the rules in Tag's constructor.
+     */
+    public static TagList fromStringList(List<String> rawTags) {
+        TagList tagList = new TagList();
+        if (rawTags == null) {
+            return tagList; // return an empty TagList
+        }
+        for (String rawTag : rawTags) {
+            tagList.addTag(rawTag);
+        }
+        return tagList;
+    }
+
+    /**
+     * Factory method to return a new TagList from a List of Tag objects.
+     * If the input list is null, an empty TagList will be returned.
+     *
+     * @param tags A List of Tag objects. If null, an empty TagList will be returned.
+     * @return A new TagList containing the tags from the input list.
+     */
+    public static TagList fromTagList(List<Tag> tags) {
+        TagList tagList = new TagList();
+        if (tags == null) {
+            return tagList; // return an empty TagList
+        }
+        for (Tag tag : tags) {
+            tagList.addTag(tag);
+        }
+        return tagList;
+    }
+
+    /**
      * Sets the date using the given string in yyyy-MM-dd format.
      * If badly formatted, the date will be set to today's date.
      * If null, the date for this tag list will be removed.

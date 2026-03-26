@@ -6,6 +6,7 @@ import ca.corbett.snotes.Resources;
 import ca.corbett.snotes.extensions.SnotesExtensionManager;
 import ca.corbett.snotes.io.DataManager;
 import ca.corbett.snotes.model.Query;
+import ca.corbett.snotes.model.Template;
 import ca.corbett.snotes.ui.MainWindow;
 
 import javax.swing.Icon;
@@ -111,7 +112,18 @@ public class ActionGroup {
     public static ActionGroup buildWriteGroup() {
         List<EnhancedAction> writeActions = new ArrayList<>();
         writeActions.add(AppConfig.getInstance().getNewNoteAction());
-        // TODO Template actions go here.
+
+        // Template CRUD actions:
+        writeActions.add(new NewTemplateAction());
+        writeActions.add(new ManageTemplatesAction());
+
+        // Show all Template instances as action links. Clicking one creates a new Note!
+        DataManager dataManager = MainWindow.getInstance().getDataManager();
+        List<Template> savedTemplates = dataManager.getTemplates();
+        for (Template template : savedTemplates) {
+            writeActions.add(new ExecuteTemplateAction(template));
+        }
+        
         return buildGroup(WRITE, Resources.getIconWrite(), writeActions);
     }
 

@@ -2,6 +2,7 @@ Snotes Release Notes
 Author: Steve Corbett
 
 Version 2.0 [TODO] rewrite
+  #33 - Implement UI for Template CRUD
   #31 - Add "remember size and position" option
   #28 - Implement UI for deleting Queries
   #27 - Implement UI for editing Queries

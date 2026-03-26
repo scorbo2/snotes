@@ -236,9 +236,46 @@ public class DataManager {
     }
 
     /**
+     * Returns true if the given template name is not already in use by another Template.
+     * The search is done case-insensitively, so "my template" and "My Template" would be considered the same name.
+     *
+     * @param name Any non-null name to check for availability.
+     * @return True if the given name is not already in use by another Template, false otherwise.
+     */
+    public boolean isTemplateNameAvailable(String name) {
+        return isTemplateNameAvailable(name, null);
+    }
+
+    /**
+     * Returns true if the given template name is not already in use by another Template,
+     * excluding the Template with the given name. This is handy if you are editing an
+     * existing Template and want to check if the new name is available, but you want to
+     * ignore the fact that the old name is already in use by the Template you are editing.
+     *
+     * @param name             Any non-null name to check for availability.
+     * @param excludingThisOne The name of a Template to exclude from the search. Can be null meaning "no exclusion".
+     * @return True if the given name is not already in use by another Template (other than the one with the given name).
+     */
+    public boolean isTemplateNameAvailable(String name, String excludingThisOne) {
+        if (name == null) {
+            throw new IllegalArgumentException("Template name cannot be null.");
+        }
+        for (Template template : templates) {
+            // If it matches (case-insensitively), then the name is not available:
+            if (template.getName().equalsIgnoreCase(name)) {
+                // Unless we were given one to exclude, and this is it:
+                if (template.getName().equalsIgnoreCase(excludingThisOne)) { // equalsIgnoreCase handles nulls
+                    continue; // This is the one we're excluding, so ignore this match and keep searching.
+                }
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Removes the specified Query from our in-memory cache, and deletes its source file
-     * from disk if it existed. Note that this does not affect any Notes that may have been
-     * created using this Query as a template.
+     * from disk if it existed.
      *
      * @param query The Query to delete. Must not be null.
      */
@@ -252,6 +289,27 @@ public class DataManager {
             if (!query.getSourceFile().delete()) {
                 // This is not fatal, but it is wonky... warn but proceed:
                 log.warning("Failed to delete source file for query: " + query.getSourceFile().getAbsolutePath());
+            }
+        }
+    }
+
+    /**
+     * Removes the specified Template from our in-memory cache, and deletes its source file
+     * from disk if it existed. Note that this does not affect any Notes that may have been
+     * created using this Template as a template.
+     *
+     * @param template The Template to delete. Must not be null.
+     */
+    public void delete(Template template) {
+        if (template == null) {
+            throw new IllegalArgumentException("Cannot delete null Template.");
+        }
+
+        templates.remove(template);
+        if (template.getSourceFile() != null && template.getSourceFile().exists()) {
+            if (!template.getSourceFile().delete()) {
+                // This is not fatal, but it is wonky... warn but proceed:
+                log.warning("Failed to delete source file for template: " + template.getSourceFile().getAbsolutePath());
             }
         }
     }
@@ -292,6 +350,11 @@ public class DataManager {
 
         // Now save this Template to its new location. This will update its source file and mark it clean.
         SnotesIO.saveTemplate(template, targetFile);
+
+        // If this Template wasn't already in our cache, add it now:
+        if (!templates.contains(template)) {
+            templates.add(template);
+        }
     }
 
     /**
