@@ -1,6 +1,9 @@
 package ca.corbett.snotes.model;
 
+import ca.corbett.snotes.io.DataManager;
+
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -235,5 +238,46 @@ public class Template {
      */
     public void markClean() {
         isDirty = false;
+    }
+
+    /**
+     * Uses this Template to create and return a new Note with the metadata specified in this Template.
+     * The new Note will be in a "scratch" state until it is explicitly saved.
+     * This means the Note will have a source file in the global "scratch" directory,
+     * so that it can be persisted across application restarts. But it won't be
+     * considered a "real" Note until it is explicitly saved. This means that it will
+     * not show up in any search results.
+     *
+     * @return A new "scratch" Note with the metadata specified in this Template. Never null.
+     */
+    public Note execute(DataManager dataManager) throws IOException {
+        if (dataManager == null) {
+            throw new IllegalArgumentException("dataManager cannot be null");
+        }
+        Note newNote = dataManager.newNote();
+        switch (dateOption) {
+            case YESTERDAY -> newNote.setDate(new YMDDate().getYesterday());
+            case TODAY -> newNote.setDate(new YMDDate());
+            case TOMORROW -> newNote.setDate(new YMDDate().getTomorrow());
+        }
+        for (Tag tag : tagList) {
+            newNote.tag(tag);
+        }
+
+        // Save the above metadata to disk immediately, in the scratch directory.
+        // User can save the new Note in the edit window, or abandon it.
+        dataManager.saveScratch(newNote);
+
+        return newNote;
+    }
+
+    /**
+     * Overridden here so that we can return a user-presentable name for this Template
+     * when it is displayed in a JList or a JComboBox. This will return the name of this Template,
+     * which should be unique and user-presentable.
+     */
+    @Override
+    public String toString() {
+        return name;
     }
 }

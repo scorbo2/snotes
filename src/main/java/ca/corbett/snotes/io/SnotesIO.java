@@ -164,6 +164,15 @@ class SnotesIO {
         for (Tag tag : template.getTagList()) {
             tagsArray.add(tag.getTag()); // get raw tag without the '#' prefix for cleaner JSON
         }
+
+        // The targetFile's path may not exist:
+        File parentDir = targetFile.getParentFile();
+        if (parentDir != null && !parentDir.exists()) {
+            if (!parentDir.mkdirs()) {
+                throw new IOException("Failed to create directories for target file: " + targetFile.getAbsolutePath());
+            }
+        }
+
         mapper.writerWithDefaultPrettyPrinter().writeValue(targetFile, rootNode);
 
         // If we make it here, the Template is clean, and it has a new source file:

@@ -2,6 +2,7 @@ package ca.corbett.snotes.io;
 
 import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.model.Query;
+import ca.corbett.snotes.model.Template;
 import ca.corbett.snotes.model.YMDDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -413,6 +414,99 @@ class DataManagerTest {
             boolean isAvailable = dataManager.isQueryNameAvailable(existingName, "Some Other Name");
 
             // THEN it should return false because the existing query is not being excluded:
+            assertFalse(isAvailable);
+        }
+        catch (IOException ioe) {
+            fail("Unexpected IOException during test setup: " + ioe.getMessage());
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // isTemplateNameAvailable tests
+    // -----------------------------------------------------------------------
+
+    @Test
+    void isTemplateNameAvailable_withUniqueName_shouldReturnTrue() {
+        try {
+            // GIVEN a DataManager with a couple of existing templates:
+            Template template1 = new Template();
+            template1.setName("Existing Template 1");
+            dataManager.saveTemplate(template1);
+            Template template2 = new Template();
+            template2.setName("Existing Template 2");
+            dataManager.saveTemplate(template2);
+
+            // WHEN we check for the availability of a unique template name:
+            String newName = "Unique Template Name";
+            boolean isAvailable = dataManager.isTemplateNameAvailable(newName);
+
+            // THEN it should return true:
+            assertTrue(isAvailable);
+        }
+        catch (IOException ioe) {
+            fail("Unexpected IOException during test setup: " + ioe.getMessage());
+        }
+    }
+
+    @Test
+    void isTemplateNameAvailable_withDuplicateName_shouldReturnFalse() {
+        try {
+            // GIVEN a DataManager with an existing template:
+            Template existingTemplate = new Template();
+            existingTemplate.setName("Duplicate Template Name");
+            dataManager.saveTemplate(existingTemplate);
+
+            // WHEN we check for the availability of the same name:
+            boolean isAvailable = dataManager.isTemplateNameAvailable("Duplicate Template Name");
+
+            // THEN it should return false:
+            assertFalse(isAvailable);
+        }
+        catch (IOException ioe) {
+            fail("Unexpected IOException during test setup: " + ioe.getMessage());
+        }
+    }
+
+    @Test
+    void isTemplateNameAvailable_withNullName_shouldThrow() {
+        // WHEN we check for the availability of a null name:
+        // THEN it should immediately throw IllegalArgumentException:
+        assertThrows(IllegalArgumentException.class, () -> dataManager.isTemplateNameAvailable(null));
+    }
+
+    @Test
+    void isTemplateNameAvailable_withExcludedNameMatches_shouldReturnTrue() {
+        try {
+            // GIVEN a DataManager with an existing template:
+            final String templateName = "Existing Template";
+            Template existingTemplate = new Template();
+            existingTemplate.setName(templateName);
+            dataManager.saveTemplate(existingTemplate);
+
+            // WHEN we check for the availability of the same name but exclude that very name:
+            boolean isAvailable = dataManager.isTemplateNameAvailable(templateName, templateName);
+
+            // THEN it should return true because we are excluding the existing template from the check:
+            assertTrue(isAvailable);
+        }
+        catch (IOException ioe) {
+            fail("Unexpected IOException during test setup: " + ioe.getMessage());
+        }
+    }
+
+    @Test
+    void isTemplateNameAvailable_withExcludedNameDoesNotMatch_shouldReturnFalse() {
+        try {
+            // GIVEN a DataManager with an existing template:
+            final String existingName = "Existing Template";
+            Template existingTemplate = new Template();
+            existingTemplate.setName(existingName);
+            dataManager.saveTemplate(existingTemplate);
+
+            // WHEN we check for the availability of the same name but exclude a different name:
+            boolean isAvailable = dataManager.isTemplateNameAvailable(existingName, "Some Other Name");
+
+            // THEN it should return false because the existing template is not being excluded:
             assertFalse(isAvailable);
         }
         catch (IOException ioe) {

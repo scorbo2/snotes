@@ -7,9 +7,11 @@ import ca.corbett.forms.FormPanel;
 import ca.corbett.forms.fields.ButtonField;
 import ca.corbett.forms.fields.LabelField;
 import ca.corbett.forms.fields.ShortTextField;
+import ca.corbett.snotes.io.DataManager;
 import ca.corbett.snotes.model.Query;
 import ca.corbett.snotes.model.filter.Filter;
 import ca.corbett.snotes.ui.MainWindow;
+import ca.corbett.snotes.ui.UniqueNameValidator;
 
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
@@ -169,7 +171,10 @@ public class QueryBuilderDialog extends JDialog {
         String existingName = (queryToEdit == null) ? null : queryToEdit.getName();
         nameField.setText((queryToEdit == null) ? Query.DEFAULT_NAME : existingName);
         nameField.setAllowBlank(false);
-        nameField.addFieldValidator(new QueryNameValidator(MainWindow.getInstance().getDataManager(), existingName));
+        DataManager dataManager = MainWindow.getInstance().getDataManager();
+        nameField.addFieldValidator(new UniqueNameValidator(dataManager::isQueryNameAvailable,
+                                                            Query.NAME_LENGTH_LIMIT,
+                                                            existingName));
         formPanel.add(nameField);
 
         formPanel.add(filterFields.get(0)); // Default label is "Filter:"
