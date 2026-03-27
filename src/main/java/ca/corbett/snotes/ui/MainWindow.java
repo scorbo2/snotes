@@ -17,6 +17,7 @@ import ca.corbett.snotes.ui.actions.UIReloadAction;
 import javax.swing.JFrame;
 import javax.swing.JInternalFrame;
 import javax.swing.JSplitPane;
+import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.WindowAdapter;
@@ -113,14 +114,20 @@ public class MainWindow extends JFrame implements UIReloadable {
             logger.warning("Attempted to add null internal frame to desktop pane. Ignoring.");
             return;
         }
-        desktopPane.add(frame);
-        frame.setVisible(true);
-        try {
-            frame.setSelected(true);
-        }
-        catch (PropertyVetoException e) {
-            logger.warning("Failed to select internal frame: " + e.getMessage());
-        }
+
+        // Because this can be invoked from application extensions, there's no guarantee
+        // that the caller will be on the EDT. So, let's take care to make sure this
+        // always happens on the Swing EDT, to avoid any potential threading issues:
+        SwingUtilities.invokeLater(() -> {
+            desktopPane.add(frame);
+            frame.setVisible(true);
+            try {
+                frame.setSelected(true);
+            }
+            catch (PropertyVetoException e) {
+                logger.warning("Failed to select internal frame: " + e.getMessage());
+            }
+        });
     }
 
     private void initComponents() {
