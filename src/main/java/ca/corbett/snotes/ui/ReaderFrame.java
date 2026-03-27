@@ -51,6 +51,7 @@ public class ReaderFrame extends JInternalFrame {
     private JPanel detailPanel;
     private JLabel detailLabel;
     private Note detailNote;
+    private JButton closeDetailsButton;
 
     /**
      * Creates a new ReaderFrame with the given List of Notes.
@@ -156,10 +157,10 @@ public class ReaderFrame extends JInternalFrame {
         detailPanel.add(leftPanel, BorderLayout.WEST);
 
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton closeButton = new JButton("X");
-        closeButton.addActionListener(e -> setDetailPanelVisible(false));
-        closeButton.setPreferredSize(new Dimension(24, 24));
-        rightPanel.add(closeButton);
+        closeDetailsButton = new JButton("X");
+        closeDetailsButton.addActionListener(e -> setDetailPanelVisible(false));
+        closeDetailsButton.setPreferredSize(new Dimension(24, 24));
+        rightPanel.add(closeDetailsButton);
         detailPanel.add(rightPanel, BorderLayout.EAST);
 
         detailPanel.setVisible(false); // we'll show or hide the whole thing based on whether a Note is selected
@@ -167,6 +168,8 @@ public class ReaderFrame extends JInternalFrame {
     }
 
     private void setDetailPanelVisible(boolean visible) {
+        // It is technically possible to get a Note without a source file, so let's be careful:
+        closeDetailsButton.setEnabled(detailNote != null && detailNote.getSourceFile() != null);
         detailPanel.setVisible(visible);
         detailPanel.revalidate();
         detailPanel.repaint();
@@ -210,7 +213,8 @@ public class ReaderFrame extends JInternalFrame {
      */
     private String getRelativePath(Note note) {
         File dataDir = AppConfig.getInstance().getDataDirectory();
-        String notePath = note.getSourceFile().getAbsolutePath(); // source file won't be null even for "scratch" notes.
+        File sourceFile = note.getSourceFile();
+        String notePath = sourceFile == null ? " (n/a) " : sourceFile.getAbsolutePath();
         notePath = notePath.replace(dataDir.getAbsolutePath(), "");
         return notePath.startsWith(File.separator) ? notePath.substring(1) : notePath;
     }
