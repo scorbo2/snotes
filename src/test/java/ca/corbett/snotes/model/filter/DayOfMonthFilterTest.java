@@ -11,22 +11,22 @@ class DayOfMonthFilterTest extends FilterTest {
     @Test
     public void constructor_withNullInput_shouldThrow() {
         // WHEN we give garbage to the constructor, THEN it should immediately throw:
-        assertThrows(IllegalArgumentException.class, () -> new DayOfMonthFilter(33, DayOfMonthFilter.FilterType.IS));
+        assertThrows(IllegalArgumentException.class, () -> new DayOfMonthFilter(33, BooleanFilterType.IS));
         assertThrows(IllegalArgumentException.class, () -> new DayOfMonthFilter(1, null));
-        assertThrows(IllegalArgumentException.class, () -> new DayOfMonthFilter(-1, DayOfMonthFilter.FilterType.IS));
-        assertThrows(IllegalArgumentException.class, () -> new DayOfMonthFilter(0, DayOfMonthFilter.FilterType.IS));
+        assertThrows(IllegalArgumentException.class, () -> new DayOfMonthFilter(-1, BooleanFilterType.IS));
+        assertThrows(IllegalArgumentException.class, () -> new DayOfMonthFilter(0, BooleanFilterType.IS));
     }
 
     @Test
     public void isFiltered_withUndatedNote_shouldFilter() {
         // WHEN we use an undated Note, THEN it should automatically be filtered:
-        assertTrue(new DayOfMonthFilter(1, DayOfMonthFilter.FilterType.IS).isFiltered(NOTE_UNDATED_UNTAGGED));
+        assertTrue(new DayOfMonthFilter(1, BooleanFilterType.IS).isFiltered(NOTE_UNDATED_UNTAGGED));
     }
 
     @Test
     public void isFiltered_ISwithMatchingDayOfMonth_shouldNotFilter() {
         // GIVEN a DayOfMonthFilter with IS type and a target day of month that matches our test note:
-        DayOfMonthFilter filter = new DayOfMonthFilter(1, DayOfMonthFilter.FilterType.IS);
+        DayOfMonthFilter filter = new DayOfMonthFilter(1, BooleanFilterType.IS);
 
         // WHEN we try to filter the note:
         boolean actual = filter.isFiltered(NOTE_JAN_1_2020);
@@ -38,7 +38,7 @@ class DayOfMonthFilterTest extends FilterTest {
     @Test
     public void isFiltered_ISwithNonMatchingDayOfMonth_shouldFilter() {
         // GIVEN a DayOfMonthFilter with IS type and a target day of month that does not match our test note:
-        DayOfMonthFilter filter = new DayOfMonthFilter(2, DayOfMonthFilter.FilterType.IS);
+        DayOfMonthFilter filter = new DayOfMonthFilter(2, BooleanFilterType.IS);
 
         // WHEN we try to filter the note:
         boolean actual = filter.isFiltered(NOTE_JAN_1_2020);
@@ -51,7 +51,7 @@ class DayOfMonthFilterTest extends FilterTest {
     public void isFiltered_IS_NOTwithMatchingDayOfMonth_shouldFilter() {
         // GIVEN a DayOfMonthFilter with IS_NOT type and a target day of month that
         // matches our test note:
-        DayOfMonthFilter filter = new DayOfMonthFilter(1, DayOfMonthFilter.FilterType.IS_NOT);
+        DayOfMonthFilter filter = new DayOfMonthFilter(1, BooleanFilterType.IS_NOT);
 
         // WHEN we try to filter the note:
         boolean actual = filter.isFiltered(NOTE_JAN_1_2020);
@@ -64,7 +64,7 @@ class DayOfMonthFilterTest extends FilterTest {
     public void isFiltered_IS_NOTwithNonMatchingDayOfMonth_shouldNotFilter() {
         // GIVEN a DayOfMonthFilter with IS_NOT type and a target day of month that
         // does not match our test note:
-        DayOfMonthFilter filter = new DayOfMonthFilter(2, DayOfMonthFilter.FilterType.IS_NOT);
+        DayOfMonthFilter filter = new DayOfMonthFilter(2, BooleanFilterType.IS_NOT);
 
         // WHEN we try to filter the note:
         boolean actual = filter.isFiltered(NOTE_JAN_1_2020);

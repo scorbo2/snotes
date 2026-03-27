@@ -2,6 +2,7 @@ package ca.corbett.snotes.model.filter;
 
 import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.model.Tag;
+import ca.corbett.snotes.model.TagList;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -72,5 +73,12 @@ public class TagFilter extends Filter {
             case ANY -> tagsToFilter.stream().noneMatch(noteTags::contains);
             case NONE -> tagsToFilter.stream().anyMatch(noteTags::contains);
         };
+    }
+
+    @Override
+    public String toString() {
+        TagList tagList = TagList.fromTagList(tagsToFilter);
+        String prettyPrinted = "[ " + tagList.getPersistenceString().replaceAll("#", "") + " ]";
+        return "Tags have " + filterType.toString().toLowerCase() + " of: " + prettyPrinted;
     }
 }

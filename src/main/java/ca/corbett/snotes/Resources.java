@@ -64,10 +64,21 @@ public class Resources {
     }
 
     /**
-     * Returns a small, square icon version of the Snotes logo, suitable for window icons or such.
+     * Returns the Snotes logo at native size.
      */
     public static Image getLogoIcon() {
         return logoIcon;
+    }
+
+    /**
+     * Returns a scaled version of the Snotes logo icon at the requested square dimensions.
+     */
+    public static ImageIcon getLogoIcon(int size) {
+        if (logoIcon == null) {
+            return null;
+        }
+        Image scaled = logoIcon.getScaledInstance(size, size, Image.SCALE_SMOOTH);
+        return new ImageIcon(scaled);
     }
 
     /**

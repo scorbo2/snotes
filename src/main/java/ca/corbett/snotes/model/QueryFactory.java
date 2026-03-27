@@ -1,6 +1,8 @@
 package ca.corbett.snotes.model;
 
+import ca.corbett.snotes.model.filter.BooleanFilterType;
 import ca.corbett.snotes.model.filter.DateFilter;
+import ca.corbett.snotes.model.filter.DateFilterType;
 import ca.corbett.snotes.model.filter.DayOfMonthFilter;
 import ca.corbett.snotes.model.filter.MonthFilter;
 import ca.corbett.snotes.model.filter.TagFilter;
@@ -31,8 +33,8 @@ public class QueryFactory {
      */
     public static Query between(YMDDate startDate, YMDDate endDate) {
         return new Query()
-            .addFilter(new DateFilter(startDate, DateFilter.FilterType.AFTER_INCLUSIVE))
-            .addFilter(new DateFilter(endDate, DateFilter.FilterType.BEFORE_INCLUSIVE));
+            .addFilter(new DateFilter(startDate, DateFilterType.AFTER_INCLUSIVE))
+            .addFilter(new DateFilter(endDate, DateFilterType.BEFORE_INCLUSIVE));
     }
 
     /**
@@ -40,8 +42,8 @@ public class QueryFactory {
      */
     public static Query between(YMDDate startDate, YMDDate endDate, String tag) {
         return new Query()
-            .addFilter(new DateFilter(startDate, DateFilter.FilterType.AFTER_INCLUSIVE))
-            .addFilter(new DateFilter(endDate, DateFilter.FilterType.BEFORE_INCLUSIVE))
+            .addFilter(new DateFilter(startDate, DateFilterType.AFTER_INCLUSIVE))
+            .addFilter(new DateFilter(endDate, DateFilterType.BEFORE_INCLUSIVE))
             .addFilter(new TagFilter(List.of(new Tag(tag)), TagFilter.FilterType.ALL));
     }
 
@@ -51,8 +53,8 @@ public class QueryFactory {
      */
     public static Query specificDateAnyYear(int month, int day) {
         return new Query()
-            .addFilter(new MonthFilter(month, MonthFilter.FilterType.IS))
-            .addFilter(new DayOfMonthFilter(day, DayOfMonthFilter.FilterType.IS));
+            .addFilter(new MonthFilter(month, BooleanFilterType.IS))
+            .addFilter(new DayOfMonthFilter(day, BooleanFilterType.IS));
     }
 
     /**

@@ -71,4 +71,9 @@ public class TextFilter extends Filter {
         }
         return !candidateText.contains(toFind);
     }
+
+    @Override
+    public String toString() {
+        return "Text contains " + (caseSensitive ? "(exactly) " : "") + "\"" + contains + "\"";
+    }
 }

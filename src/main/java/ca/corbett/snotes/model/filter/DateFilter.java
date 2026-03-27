@@ -21,16 +21,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class DateFilter extends Filter {
 
-    public enum FilterType {
-        BEFORE_EXCLUSIVE, BEFORE_INCLUSIVE, ON, AFTER_INCLUSIVE, AFTER_EXCLUSIVE
-    }
-
     private final YMDDate targetDate;
-    private final FilterType filterType;
+    private final DateFilterType filterType;
 
     @JsonCreator
     public DateFilter(@JsonProperty("targetDate") YMDDate targetDate,
-                      @JsonProperty("filterType") FilterType filterType) {
+                      @JsonProperty("filterType") DateFilterType filterType) {
         if (targetDate == null || filterType == null) {
             throw new IllegalArgumentException("targetDate and filterType cannot be null");
         }
@@ -42,7 +38,7 @@ public class DateFilter extends Filter {
         return targetDate;
     }
 
-    public FilterType getFilterType() {
+    public DateFilterType getFilterType() {
         return filterType;
     }
 
@@ -65,5 +61,13 @@ public class DateFilter extends Filter {
             case AFTER_INCLUSIVE -> comparison < 0;
             case AFTER_EXCLUSIVE -> comparison <= 0;
         };
+    }
+
+    /**
+     * Returns a human-readable summary of this filter.
+     */
+    @Override
+    public String toString() {
+        return "Date is " + filterType.toString().toLowerCase() + " " + targetDate.toString();
     }
 }

@@ -11,21 +11,21 @@ class MonthFilterTest extends FilterTest {
     @Test
     public void constructor_withNullInput_shouldThrow() {
         // WHEN we give garbage to the constructor, THEN it should immediately throw:
-        assertThrows(IllegalArgumentException.class, () -> new MonthFilter(13, MonthFilter.FilterType.IS));
-        assertThrows(IllegalArgumentException.class, () -> new MonthFilter(0, MonthFilter.FilterType.IS));
+        assertThrows(IllegalArgumentException.class, () -> new MonthFilter(13, BooleanFilterType.IS));
+        assertThrows(IllegalArgumentException.class, () -> new MonthFilter(0, BooleanFilterType.IS));
         assertThrows(IllegalArgumentException.class, () -> new MonthFilter(1, null));
     }
 
     @Test
     public void isFiltered_withUndatedNote_shouldFilter() {
         // WHEN we use an undated Note, THEN it should automatically be filtered:
-        assertTrue(new MonthFilter(1, MonthFilter.FilterType.IS).isFiltered(NOTE_UNDATED_UNTAGGED));
+        assertTrue(new MonthFilter(1, BooleanFilterType.IS).isFiltered(NOTE_UNDATED_UNTAGGED));
     }
 
     @Test
     public void isFiltered_ISwithMatchingMonth_shouldNotFilter() {
         // GIVEN a MonthFilter with IS type and a target month that matches our test note:
-        MonthFilter filter = new MonthFilter(1, MonthFilter.FilterType.IS);
+        MonthFilter filter = new MonthFilter(1, BooleanFilterType.IS);
 
         // WHEN we try to filter the note:
         boolean actual = filter.isFiltered(NOTE_JAN_1_2020);
@@ -37,7 +37,7 @@ class MonthFilterTest extends FilterTest {
     @Test
     public void isFiltered_ISwithNonMatchingMonth_shouldFilter() {
         // GIVEN a MonthFilter with IS type and a target month that does not match our test note:
-        MonthFilter filter = new MonthFilter(2, MonthFilter.FilterType.IS);
+        MonthFilter filter = new MonthFilter(2, BooleanFilterType.IS);
 
         // WHEN we try to filter the note:
         boolean actual = filter.isFiltered(NOTE_JAN_1_2020);
@@ -50,7 +50,7 @@ class MonthFilterTest extends FilterTest {
     public void isFiltered_IS_NOTwithMatchingMonth_shouldFilter() {
         // GIVEN a MonthFilter with IS_NOT type and a target month that
         // matches our test note:
-        MonthFilter filter = new MonthFilter(1, MonthFilter.FilterType.IS_NOT);
+        MonthFilter filter = new MonthFilter(1, BooleanFilterType.IS_NOT);
 
         // WHEN we try to filter the note:
         boolean actual = filter.isFiltered(NOTE_JAN_1_2020);
@@ -63,7 +63,7 @@ class MonthFilterTest extends FilterTest {
     public void isFiltered_IS_NOTwithNonMatchingMonth_shouldNotFilter() {
         // GIVEN a MonthFilter with IS_NOT type and a target month that
         // does not match our test note:
-        MonthFilter filter = new MonthFilter(2, MonthFilter.FilterType.IS_NOT);
+        MonthFilter filter = new MonthFilter(2, BooleanFilterType.IS_NOT);
 
         // WHEN we try to filter the note:
         boolean actual = filter.isFiltered(NOTE_JAN_1_2020);

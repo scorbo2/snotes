@@ -20,12 +20,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class YearFilter extends Filter {
 
-    public enum FilterType {
-        BEFORE_EXCLUSIVE, BEFORE_INCLUSIVE, ON, AFTER_INCLUSIVE, AFTER_EXCLUSIVE
-    }
-
     private final int targetYear;
-    private final FilterType filterType;
+    private final DateFilterType filterType;
 
     /**
      * Creates a YearFilter for the given target year and filter type.
@@ -34,7 +30,7 @@ public class YearFilter extends Filter {
      */
     @JsonCreator
     public YearFilter(@JsonProperty("targetYear") int targetYear,
-                       @JsonProperty("filterType") FilterType filterType) {
+                      @JsonProperty("filterType") DateFilterType filterType) {
         if (filterType == null) {
             throw new IllegalArgumentException("filterType cannot be null");
         }
@@ -46,7 +42,7 @@ public class YearFilter extends Filter {
         return targetYear;
     }
 
-    public FilterType getFilterType() {
+    public DateFilterType getFilterType() {
         return filterType;
     }
 
@@ -69,5 +65,13 @@ public class YearFilter extends Filter {
             case AFTER_INCLUSIVE -> noteYear < targetYear;
             case AFTER_EXCLUSIVE -> noteYear <= targetYear;
         };
+    }
+
+    /**
+     * Returns a human-readable summary of this filter.
+     */
+    @Override
+    public String toString() {
+        return "Year is " + filterType.toString().toLowerCase() + " " + targetYear;
     }
 }
