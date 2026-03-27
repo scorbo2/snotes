@@ -63,6 +63,6 @@ public class MonthFilter extends Filter {
 
     @Override
     public String toString() {
-        return "Month is " + filterType.toString().toLowerCase(Locale.ROOT) + " " + targetMonth;
+        return "Month " + filterType.toString().toLowerCase(Locale.ROOT) + " " + targetMonth;
     }
 }
