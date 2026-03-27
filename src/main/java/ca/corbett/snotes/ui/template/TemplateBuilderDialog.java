@@ -42,6 +42,7 @@ public class TemplateBuilderDialog extends JDialog {
     private ComboField<Template.Context> contextField;
     private ShortTextField tagField;
     private MessageUtil messageUtil;
+    private boolean blankWarningIssued;
 
     public TemplateBuilderDialog(Window owner) {
         this(owner, null);
@@ -59,6 +60,7 @@ public class TemplateBuilderDialog extends JDialog {
         initKeyBindings();
         initComponents();
         wasOkayed = false;
+        blankWarningIssued = false;
     }
 
     /**
@@ -103,6 +105,21 @@ public class TemplateBuilderDialog extends JDialog {
             if (!formPanel.isFormValid()) {
                 return; // dialog stays open until form is valid or user cancels
             }
+
+            // Check for "blank" templates:
+            if (dateOptionField.getSelectedIndex() == 0 && tagField.getText().isBlank()) {
+                // There's nothing technically wrong with this configuration, so let's not
+                // treat it as a hard validation failure. But, it's at least worth a warning:
+                if (!blankWarningIssued) {
+                    blankWarningIssued = true; // only warn once for this
+                    if (getMessageUtil().askYesNo("Confirm",
+                                                  "Are you sure you wish to create a blank template?"
+                                                      + "\nAll notes created from this Template will be empty.") == MessageUtil.NO) {
+                        return;
+                    }
+                }
+            }
+
             wasOkayed = true;
         }
 
