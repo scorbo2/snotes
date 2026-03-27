@@ -6,7 +6,9 @@ import ca.corbett.snotes.model.Query;
 import ca.corbett.snotes.model.Tag;
 import ca.corbett.snotes.model.Template;
 import ca.corbett.snotes.model.YMDDate;
+import ca.corbett.snotes.model.filter.BooleanFilterType;
 import ca.corbett.snotes.model.filter.DateFilter;
+import ca.corbett.snotes.model.filter.DateFilterType;
 import ca.corbett.snotes.model.filter.DayOfMonthFilter;
 import ca.corbett.snotes.model.filter.DayOfWeekFilter;
 import ca.corbett.snotes.model.filter.MonthFilter;
@@ -45,12 +47,12 @@ class SnotesIOTest {
         // GIVEN a Query with some filters and a name:
         Query query = new Query();
         query.setName("My Test Query");
-        query.addFilter(new YearFilter(1997, YearFilter.FilterType.ON));
-        query.addFilter(new MonthFilter(4, MonthFilter.FilterType.IS));
+        query.addFilter(new YearFilter(1997, DateFilterType.ON));
+        query.addFilter(new MonthFilter(4, BooleanFilterType.IS));
         query.addFilter(new TextFilter("test"));
-        query.addFilter(new DateFilter(JAN_1_2020, DateFilter.FilterType.AFTER_INCLUSIVE));
-        query.addFilter(new DayOfWeekFilter(DayOfWeek.MONDAY, DayOfWeekFilter.FilterType.IS));
-        query.addFilter(new DayOfMonthFilter(21, DayOfMonthFilter.FilterType.IS));
+        query.addFilter(new DateFilter(JAN_1_2020, DateFilterType.AFTER_INCLUSIVE));
+        query.addFilter(new DayOfWeekFilter(DayOfWeek.MONDAY, BooleanFilterType.IS));
+        query.addFilter(new DayOfMonthFilter(21, BooleanFilterType.IS));
         query.addFilter(new TagFilter(List.of(new Tag("test-tag")), TagFilter.FilterType.ALL));
         query.addFilter(new UndatedFilter());
 
@@ -71,26 +73,26 @@ class SnotesIOTest {
             assertInstanceOf(YearFilter.class, loadedQuery.getFilters().get(0));
             YearFilter loadedYearFilter = (YearFilter)loadedQuery.getFilters().get(0);
             assertEquals(1997, loadedYearFilter.getTargetYear());
-            assertEquals(YearFilter.FilterType.ON, loadedYearFilter.getFilterType());
+            assertEquals(DateFilterType.ON, loadedYearFilter.getFilterType());
             assertInstanceOf(MonthFilter.class, loadedQuery.getFilters().get(1));
             MonthFilter loadedMonthFilter = (MonthFilter)loadedQuery.getFilters().get(1);
             assertEquals(4, loadedMonthFilter.getTargetMonth());
-            assertEquals(MonthFilter.FilterType.IS, loadedMonthFilter.getFilterType());
+            assertEquals(BooleanFilterType.IS, loadedMonthFilter.getFilterType());
             assertInstanceOf(TextFilter.class, loadedQuery.getFilters().get(2));
             TextFilter loadedTextFilter = (TextFilter)loadedQuery.getFilters().get(2);
             assertEquals("test", loadedTextFilter.getContains());
             assertInstanceOf(DateFilter.class, loadedQuery.getFilters().get(3));
             DateFilter loadedDateFilter = (DateFilter)loadedQuery.getFilters().get(3);
             assertEquals(JAN_1_2020, loadedDateFilter.getTargetDate());
-            assertEquals(DateFilter.FilterType.AFTER_INCLUSIVE, loadedDateFilter.getFilterType());
+            assertEquals(DateFilterType.AFTER_INCLUSIVE, loadedDateFilter.getFilterType());
             assertInstanceOf(DayOfWeekFilter.class, loadedQuery.getFilters().get(4));
             DayOfWeekFilter loadedDayOfWeekFilter = (DayOfWeekFilter)loadedQuery.getFilters().get(4);
             assertEquals(DayOfWeek.MONDAY, loadedDayOfWeekFilter.getDayOfWeek());
-            assertEquals(DayOfWeekFilter.FilterType.IS, loadedDayOfWeekFilter.getFilterType());
+            assertEquals(BooleanFilterType.IS, loadedDayOfWeekFilter.getFilterType());
             assertInstanceOf(DayOfMonthFilter.class, loadedQuery.getFilters().get(5));
             DayOfMonthFilter loadedDayOfMonthFilter = (DayOfMonthFilter)loadedQuery.getFilters().get(5);
             assertEquals(21, loadedDayOfMonthFilter.getDayOfMonth());
-            assertEquals(DayOfMonthFilter.FilterType.IS, loadedDayOfMonthFilter.getFilterType());
+            assertEquals(BooleanFilterType.IS, loadedDayOfMonthFilter.getFilterType());
             assertInstanceOf(TagFilter.class, loadedQuery.getFilters().get(6));
             TagFilter loadedTagFilter = (TagFilter)loadedQuery.getFilters().get(6);
             assertEquals(1, loadedTagFilter.getTagsToFilter().size());
@@ -108,7 +110,7 @@ class SnotesIOTest {
         // GIVEN a Query saved with a valid DateFilter:
         Query query = new Query();
         query.setName("Malformed Date Test");
-        query.addFilter(new DateFilter(JAN_1_2020, DateFilter.FilterType.ON));
+        query.addFilter(new DateFilter(JAN_1_2020, DateFilterType.ON));
         File savedFile = File.createTempFile("test-malformed", ".query", tempDir);
         SnotesIO.saveQuery(query, savedFile);
 

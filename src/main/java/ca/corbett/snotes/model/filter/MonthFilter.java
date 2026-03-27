@@ -4,6 +4,8 @@ import ca.corbett.snotes.model.Note;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Locale;
+
 /**
  * This Filter can be used to filter Notes by their month, regardless of year.
  * For example, "I want to see all notes that were written in March, in any year".
@@ -19,16 +21,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class MonthFilter extends Filter {
 
-    public enum FilterType {
-        IS, IS_NOT
-    }
-
     private final int targetMonth;
-    private final FilterType filterType;
+    private final BooleanFilterType filterType;
 
     @JsonCreator
     public MonthFilter(@JsonProperty("targetMonth") int targetMonth,
-                        @JsonProperty("filterType") FilterType filterType) {
+                       @JsonProperty("filterType") BooleanFilterType filterType) {
         if (targetMonth < 1 || targetMonth > 12) {
             throw new IllegalArgumentException("targetMonth must be between 1 and 12");
         }
@@ -43,7 +41,7 @@ public class MonthFilter extends Filter {
         return targetMonth;
     }
 
-    public FilterType getFilterType() {
+    public BooleanFilterType getFilterType() {
         return filterType;
     }
 
@@ -58,8 +56,13 @@ public class MonthFilter extends Filter {
             // All date filters automatically filter out non-dated notes.
             return true;
         }
-        return filterType == FilterType.IS ?
+        return filterType == BooleanFilterType.IS ?
             note.getDate().getMonth() != targetMonth
             : note.getDate().getMonth() == targetMonth;
+    }
+
+    @Override
+    public String toString() {
+        return "Month is " + filterType.toString().toLowerCase(Locale.ROOT) + " " + targetMonth;
     }
 }

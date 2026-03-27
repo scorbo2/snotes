@@ -18,4 +18,9 @@ public class UndatedFilter extends Filter {
         // Filter out null notes, and anything that has a date.
         return note == null || note.hasDate() || note.getDate() != null;
     }
+
+    @Override
+    public String toString() {
+        return getDescription();
+    }
 }

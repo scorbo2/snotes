@@ -4,6 +4,8 @@ import ca.corbett.snotes.model.Note;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Locale;
+
 /**
  * This filter can be used to filter by day of month, regardless which specific month or year the note is from.
  * For example, "I want to see all notes that were written on the 15th of any month, in any year".
@@ -18,19 +20,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class DayOfMonthFilter extends Filter {
 
-    public enum FilterType {
-        IS, IS_NOT
-    }
-
     private final int dayOfMonth;
-    private final FilterType filterType;
+    private final BooleanFilterType filterType;
 
     /**
      * Creates a DayOfMonthFilter for the given 1-based day of month (1-31) and filter type.
      */
     @JsonCreator
     public DayOfMonthFilter(@JsonProperty("dayOfMonth") int dayOfMonth,
-                             @JsonProperty("filterType") FilterType filterType) {
+                            @JsonProperty("filterType") BooleanFilterType filterType) {
         if (dayOfMonth < 1 || dayOfMonth > 31) {
             throw new IllegalArgumentException("dayOfMonth must be between 1 and 31");
         }
@@ -45,7 +43,7 @@ public class DayOfMonthFilter extends Filter {
         return dayOfMonth;
     }
 
-    public FilterType getFilterType() {
+    public BooleanFilterType getFilterType() {
         return filterType;
     }
 
@@ -60,8 +58,13 @@ public class DayOfMonthFilter extends Filter {
             // All date filters automatically filter out non-dated notes.
             return true;
         }
-        return filterType == FilterType.IS ?
+        return filterType == BooleanFilterType.IS ?
             note.getDate().getDayOfMonth() != dayOfMonth
             : note.getDate().getDayOfMonth() == dayOfMonth;
+    }
+
+    @Override
+    public String toString() {
+        return "Day of month " + filterType.toString().toLowerCase(Locale.ROOT) + " " + dayOfMonth;
     }
 }

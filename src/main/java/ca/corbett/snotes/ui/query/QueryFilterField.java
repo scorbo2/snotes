@@ -5,7 +5,9 @@ import ca.corbett.forms.validators.FieldValidator;
 import ca.corbett.forms.validators.ValidationResult;
 import ca.corbett.snotes.model.Tag;
 import ca.corbett.snotes.model.YMDDate;
+import ca.corbett.snotes.model.filter.BooleanFilterType;
 import ca.corbett.snotes.model.filter.DateFilter;
+import ca.corbett.snotes.model.filter.DateFilterType;
 import ca.corbett.snotes.model.filter.DayOfMonthFilter;
 import ca.corbett.snotes.model.filter.DayOfWeekFilter;
 import ca.corbett.snotes.model.filter.Filter;
@@ -165,6 +167,14 @@ public class QueryFilterField extends FormField {
         }
     }
 
+    @Override
+    public FormField setEnabled(boolean isEnabled) {
+        super.setEnabled(isEnabled);
+        filterTypeCombo.setEnabled(isEnabled);
+        filterValueField.setEnabled(isEnabled);
+        return this;
+    }
+
     /**
      * Builds a Filter object based on the current state of this QueryFilterField.
      * Note: this UI presents a subset of the available filter options. For example,
@@ -186,20 +196,19 @@ public class QueryFilterField extends FormField {
                                             .map(Tag::new)
                                             .toList(), TagFilter.FilterType.ALL);
 
-            case DATE -> new DateFilter(new YMDDate(filterValueField.getText().trim()), DateFilter.FilterType.ON);
+            case DATE -> new DateFilter(new YMDDate(filterValueField.getText().trim()), DateFilterType.ON);
 
             case DAY_OF_MONTH -> new DayOfMonthFilter(Integer.parseInt(filterValueField.getText().trim()),
-                                                      DayOfMonthFilter.FilterType.IS);
+                                                      BooleanFilterType.IS);
 
             case DAY_OF_WEEK ->
                 // Note: assuming English locale for now, which is probably good enough for V2 release.
                 new DayOfWeekFilter(DayOfWeek.valueOf(filterValueField.getText().toUpperCase(Locale.ROOT).trim()),
-                                    DayOfWeekFilter.FilterType.IS);
+                                    BooleanFilterType.IS);
 
-            case MONTH ->
-                new MonthFilter(Integer.parseInt(filterValueField.getText().trim()), MonthFilter.FilterType.IS);
+            case MONTH -> new MonthFilter(Integer.parseInt(filterValueField.getText().trim()), BooleanFilterType.IS);
 
-            case YEAR -> new YearFilter(Integer.parseInt(filterValueField.getText().trim()), YearFilter.FilterType.ON);
+            case YEAR -> new YearFilter(Integer.parseInt(filterValueField.getText().trim()), DateFilterType.ON);
 
             case UNDATED -> new UndatedFilter();
 

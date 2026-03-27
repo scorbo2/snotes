@@ -1,6 +1,8 @@
 package ca.corbett.snotes.model;
 
+import ca.corbett.snotes.model.filter.BooleanFilterType;
 import ca.corbett.snotes.model.filter.DateFilter;
+import ca.corbett.snotes.model.filter.DateFilterType;
 import ca.corbett.snotes.model.filter.DayOfMonthFilter;
 import ca.corbett.snotes.model.filter.DayOfWeekFilter;
 import ca.corbett.snotes.model.filter.FilterTest;
@@ -40,7 +42,7 @@ public class QueryTest extends FilterTest {
     public void execute_singleDateFilterMatches_shouldSucceed() {
         // GIVEN a query with a single DateFilter that is matched in our test set:
         Query query = new Query();
-        query.addFilter(new DateFilter(SPECIAL_DATE, DateFilter.FilterType.ON));
+        query.addFilter(new DateFilter(SPECIAL_DATE, DateFilterType.ON));
 
         // WHEN we try to filter our test list:
         List<Note> results = query.execute(unfilteredList);
@@ -56,8 +58,8 @@ public class QueryTest extends FilterTest {
     public void execute_YearAndMonthFilterMatches_shouldSucceed() {
         // GIVEN a query with a YearFilter and a MonthFilter that are matched in our test set:
         Query query = new Query();
-        query.addFilter(new YearFilter(1997, YearFilter.FilterType.ON));
-        query.addFilter(new MonthFilter(4, MonthFilter.FilterType.IS));
+        query.addFilter(new YearFilter(1997, DateFilterType.ON));
+        query.addFilter(new MonthFilter(4, BooleanFilterType.IS));
 
         // WHEN we try to filter our test list:
         List<Note> results = query.execute(unfilteredList);
@@ -73,8 +75,8 @@ public class QueryTest extends FilterTest {
     public void execute_YearAndMonthFilterMatchesTextFilterNoMatch_shouldReturnNothing() {
         // GIVEN a query with a YearFilter and a MonthFilter that are matched in our test set:
         Query query = new Query();
-        query.addFilter(new YearFilter(1997, YearFilter.FilterType.ON));
-        query.addFilter(new MonthFilter(4, MonthFilter.FilterType.IS));
+        query.addFilter(new YearFilter(1997, DateFilterType.ON));
+        query.addFilter(new MonthFilter(4, BooleanFilterType.IS));
 
         // AND GIVEN a text filter that does NOT match any of our test notes:
         query.addFilter(new TextFilter("blah de blah blah"));
@@ -91,8 +93,8 @@ public class QueryTest extends FilterTest {
     public void execute_betweenInclusiveWithMatches_shouldSucceed() {
         // GIVEN a query with two DateFilters that describe a BETWEEN condition:
         Query query = new Query();
-        query.addFilter(new DateFilter(JAN_1_2020, DateFilter.FilterType.AFTER_INCLUSIVE));
-        query.addFilter(new DateFilter(FEB_15_2020, DateFilter.FilterType.BEFORE_INCLUSIVE));
+        query.addFilter(new DateFilter(JAN_1_2020, DateFilterType.AFTER_INCLUSIVE));
+        query.addFilter(new DateFilter(FEB_15_2020, DateFilterType.BEFORE_INCLUSIVE));
 
         // WHEN we try to filter our test list:
         List<Note> results = query.execute(unfilteredList);
@@ -115,8 +117,8 @@ public class QueryTest extends FilterTest {
     public void execute_betweenExclusiveWithoutMatches_shouldSucceed() {
         // GIVEN a query with two DateFilters that describe a BETWEEN condition:
         Query query = new Query();
-        query.addFilter(new DateFilter(JAN_1_2020, DateFilter.FilterType.AFTER_EXCLUSIVE));
-        query.addFilter(new DateFilter(FEB_15_2020, DateFilter.FilterType.BEFORE_EXCLUSIVE));
+        query.addFilter(new DateFilter(JAN_1_2020, DateFilterType.AFTER_EXCLUSIVE));
+        query.addFilter(new DateFilter(FEB_15_2020, DateFilterType.BEFORE_EXCLUSIVE));
 
         // WHEN we try to filter our test list:
         List<Note> results = query.execute(unfilteredList);
@@ -131,10 +133,10 @@ public class QueryTest extends FilterTest {
         // GIVEN a ridiculous setup with four filters that specify an exact date:
         //   (obviously it would be easier to use a single DateFilter, but let's just try it)
         Query query = new Query();
-        query.addFilter(new YearFilter(1997, YearFilter.FilterType.ON));
-        query.addFilter(new MonthFilter(4, MonthFilter.FilterType.IS));
-        query.addFilter(new DayOfMonthFilter(21, DayOfMonthFilter.FilterType.IS));
-        query.addFilter(new DayOfWeekFilter(DayOfWeek.MONDAY, DayOfWeekFilter.FilterType.IS));
+        query.addFilter(new YearFilter(1997, DateFilterType.ON));
+        query.addFilter(new MonthFilter(4, BooleanFilterType.IS));
+        query.addFilter(new DayOfMonthFilter(21, BooleanFilterType.IS));
+        query.addFilter(new DayOfWeekFilter(DayOfWeek.MONDAY, BooleanFilterType.IS));
 
         // WHEN we try to filter our test list:
         List<Note> results = query.execute(unfilteredList);

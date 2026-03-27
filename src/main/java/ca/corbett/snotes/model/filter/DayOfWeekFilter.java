@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.DayOfWeek;
+import java.util.Locale;
 
 /**
  * This filter can be used to filter Notes based on the day of the week of their date, regardless
@@ -21,16 +22,12 @@ import java.time.DayOfWeek;
  */
 public class DayOfWeekFilter extends Filter {
 
-    public enum FilterType {
-        IS, IS_NOT
-    }
-
     private final DayOfWeek dayOfWeek;
-    private final FilterType filterType;
+    private final BooleanFilterType filterType;
 
     @JsonCreator
     public DayOfWeekFilter(@JsonProperty("dayOfWeek") DayOfWeek dayOfWeek,
-                            @JsonProperty("filterType") FilterType filterType) {
+                           @JsonProperty("filterType") BooleanFilterType filterType) {
         if (dayOfWeek == null || filterType == null) {
             throw new IllegalArgumentException("dayOfWeek and filterType cannot be null");
         }
@@ -42,7 +39,7 @@ public class DayOfWeekFilter extends Filter {
         return dayOfWeek;
     }
 
-    public FilterType getFilterType() {
+    public BooleanFilterType getFilterType() {
         return filterType;
     }
 
@@ -57,8 +54,13 @@ public class DayOfWeekFilter extends Filter {
             // All date filters automatically filter out non-dated notes.
             return true;
         }
-        return filterType == FilterType.IS ?
+        return filterType == BooleanFilterType.IS ?
             note.getDate().getDayOfWeek() != dayOfWeek
             : note.getDate().getDayOfWeek() == dayOfWeek;
+    }
+
+    @Override
+    public String toString() {
+        return "Day of week " + filterType.toString().toLowerCase(Locale.ROOT) + " " + dayOfWeek;
     }
 }

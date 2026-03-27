@@ -17,13 +17,13 @@ class YearFilterTest extends FilterTest {
     @Test
     public void isFiltered_withUndatedNote_shouldFilter() {
         // WHEN we use an undated Note, THEN it should automatically be filtered:
-        assertTrue(new YearFilter(2020, YearFilter.FilterType.ON).isFiltered(NOTE_UNDATED_UNTAGGED));
+        assertTrue(new YearFilter(2020, DateFilterType.ON).isFiltered(NOTE_UNDATED_UNTAGGED));
     }
 
     @Test
     public void isFiltered_ONwithDifferentYear_shouldFilter() {
         // GIVEN a YearFilter with ON type and a target year different from our test note:
-        YearFilter filter = new YearFilter(2020, YearFilter.FilterType.ON);
+        YearFilter filter = new YearFilter(2020, DateFilterType.ON);
 
         // WHEN we try to filter a note from a different year:
         boolean actual = filter.isFiltered(NOTE_DATED_TAGGED);
@@ -35,7 +35,7 @@ class YearFilterTest extends FilterTest {
     @Test
     public void isFiltered_ONwithExactYearMatch_shouldNotFilter() {
         // GIVEN a YearFilter with ON type and the exact year of our test note:
-        YearFilter filter = new YearFilter(2020, YearFilter.FilterType.ON);
+        YearFilter filter = new YearFilter(2020, DateFilterType.ON);
 
         // WHEN we try to filter the note:
         boolean actual = filter.isFiltered(NOTE_JAN_1_2020);
@@ -47,7 +47,7 @@ class YearFilterTest extends FilterTest {
     @Test
     public void isFiltered_BEFORE_EXCLUSIVEwithYearBeforeTarget_shouldNotFilter() {
         // GIVEN a YearFilter with BEFORE_EXCLUSIVE type:
-        YearFilter filter = new YearFilter(2020, YearFilter.FilterType.BEFORE_EXCLUSIVE);
+        YearFilter filter = new YearFilter(2020, DateFilterType.BEFORE_EXCLUSIVE);
 
         // WHEN we try to filter a note whose year is before the target year:
         boolean actual = filter.isFiltered(NOTE_VERY_OLD);
@@ -59,7 +59,7 @@ class YearFilterTest extends FilterTest {
     @Test
     public void isFiltered_BEFORE_EXCLUSIVEwithYearOnTarget_shouldFilter() {
         // GIVEN a YearFilter with BEFORE_EXCLUSIVE type:
-        YearFilter filter = new YearFilter(2020, YearFilter.FilterType.BEFORE_EXCLUSIVE);
+        YearFilter filter = new YearFilter(2020, DateFilterType.BEFORE_EXCLUSIVE);
 
         // WHEN we try to filter a note whose year is exactly the target year:
         boolean actual = filter.isFiltered(NOTE_FEB_15_2020);
@@ -71,7 +71,7 @@ class YearFilterTest extends FilterTest {
     @Test
     public void isFiltered_BEFORE_INCLUSIVEwithYearOnTarget_shouldNotFilter() {
         // GIVEN a YearFilter with BEFORE_INCLUSIVE type:
-        YearFilter filter = new YearFilter(2020, YearFilter.FilterType.BEFORE_INCLUSIVE);
+        YearFilter filter = new YearFilter(2020, DateFilterType.BEFORE_INCLUSIVE);
 
         // WHEN we try to filter a note whose year is exactly the target year:
         boolean actual = filter.isFiltered(NOTE_JAN_1_2020);
@@ -83,7 +83,7 @@ class YearFilterTest extends FilterTest {
     @Test
     public void isFiltered_BEFORE_INCLUSIVEwithYearAfterTarget_shouldFilter() {
         // GIVEN a YearFilter with BEFORE_INCLUSIVE type:
-        YearFilter filter = new YearFilter(2020, YearFilter.FilterType.BEFORE_INCLUSIVE);
+        YearFilter filter = new YearFilter(2020, DateFilterType.BEFORE_INCLUSIVE);
 
         // WHEN we try to filter a note whose year is after the target year:
         boolean actual = filter.isFiltered(NOTE_VERY_FUTURE);
@@ -95,7 +95,7 @@ class YearFilterTest extends FilterTest {
     @Test
     public void isFiltered_AFTER_INCLUSIVEwithYearOnTarget_shouldNotFilter() {
         // GIVEN a YearFilter with AFTER_INCLUSIVE type:
-        YearFilter filter = new YearFilter(2020, YearFilter.FilterType.AFTER_INCLUSIVE);
+        YearFilter filter = new YearFilter(2020, DateFilterType.AFTER_INCLUSIVE);
 
         // WHEN we try to filter a note whose year is exactly the target year:
         boolean actual = filter.isFiltered(NOTE_FEB_15_2020);
@@ -107,7 +107,7 @@ class YearFilterTest extends FilterTest {
     @Test
     public void isFiltered_AFTER_INCLUSIVEwithYearBeforeTarget_shouldFilter() {
         // GIVEN a YearFilter with AFTER_INCLUSIVE type:
-        YearFilter filter = new YearFilter(2020, YearFilter.FilterType.AFTER_INCLUSIVE);
+        YearFilter filter = new YearFilter(2020, DateFilterType.AFTER_INCLUSIVE);
 
         // WHEN we try to filter a note whose year is before the target year:
         boolean actual = filter.isFiltered(NOTE_VERY_OLD);
@@ -119,7 +119,7 @@ class YearFilterTest extends FilterTest {
     @Test
     public void isFiltered_AFTER_EXCLUSIVEwithYearAfterTarget_shouldNotFilter() {
         // GIVEN a YearFilter with AFTER_EXCLUSIVE type:
-        YearFilter filter = new YearFilter(2020, YearFilter.FilterType.AFTER_EXCLUSIVE);
+        YearFilter filter = new YearFilter(2020, DateFilterType.AFTER_EXCLUSIVE);
 
         // WHEN we try to filter a note whose year is after the target year:
         boolean actual = filter.isFiltered(NOTE_VERY_FUTURE);
@@ -131,7 +131,7 @@ class YearFilterTest extends FilterTest {
     @Test
     public void isFiltered_AFTER_EXCLUSIVEwithYearOnTarget_shouldFilter() {
         // GIVEN a YearFilter with AFTER_EXCLUSIVE type:
-        YearFilter filter = new YearFilter(2020, YearFilter.FilterType.AFTER_EXCLUSIVE);
+        YearFilter filter = new YearFilter(2020, DateFilterType.AFTER_EXCLUSIVE);
 
         // WHEN we try to filter a note whose year is exactly the target year:
         boolean actual = filter.isFiltered(NOTE_JAN_1_2020);

@@ -15,11 +15,13 @@ import ca.corbett.snotes.io.DataManager;
 import ca.corbett.snotes.ui.actions.UIReloadAction;
 
 import javax.swing.JFrame;
+import javax.swing.JInternalFrame;
 import javax.swing.JSplitPane;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.util.logging.Logger;
 
@@ -99,6 +101,26 @@ public class MainWindow extends JFrame implements UIReloadable {
 
     public void processStartArgs(java.util.List<String> args) {
         // TODO implement argument processing - is there any for this app?
+    }
+
+    /**
+     * Can be invoked by application code or by application extensions to add a new internal frame to the desktop pane.
+     *
+     * @param frame The JInternalFrame to add to the desktop pane. Will be made visible and selected immediately.
+     */
+    public void addInternalFrame(JInternalFrame frame) {
+        if (frame == null) {
+            logger.warning("Attempted to add null internal frame to desktop pane. Ignoring.");
+            return;
+        }
+        desktopPane.add(frame);
+        frame.setVisible(true);
+        try {
+            frame.setSelected(true);
+        }
+        catch (PropertyVetoException e) {
+            logger.warning("Failed to select internal frame: " + e.getMessage());
+        }
     }
 
     private void initComponents() {
