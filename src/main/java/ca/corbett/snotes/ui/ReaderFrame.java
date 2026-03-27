@@ -117,6 +117,12 @@ public class ReaderFrame extends JInternalFrame {
         textPane.setEditable(false);
 
         if (notes.isEmpty()) {
+            if (query == null) {
+                // A query returning an empty list is no big deal - the filters are just too strict.
+                // However... if we were created without a Query, and we were given no notes,
+                // it's not technically an error, but it is kind of suspicious, so let's log it:
+                log.warning("ReaderFrame created with an empty list of notes!");
+            }
             textPane.setText("(no content)");
             return ScrollUtil.buildScrollPane(textPane);
         }
