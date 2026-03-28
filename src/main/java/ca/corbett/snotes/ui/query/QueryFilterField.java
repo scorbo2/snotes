@@ -122,6 +122,17 @@ public class QueryFilterField extends FormField {
     }
 
     /**
+     * Returns the JTextField representing the filter's value.
+     * Note that some field types (like UNDATED) don't use this
+     * field, and in fact hide it from view, so the field may or
+     * may not be visible. The field also may or may not be enabled,
+     * depending on our current enabled state.
+     */
+    public JTextField getFilterValueField() {
+        return filterValueField;
+    }
+
+    /**
      * Given a Filter object, sets the values of this QueryFilterField to match the filter.
      * Any previous values are lost.
      *
@@ -213,6 +224,16 @@ public class QueryFilterField extends FormField {
             case UNDATED -> new UndatedFilter();
 
         };
+    }
+
+    /**
+     * Changes this filter field to be of the given type.
+     * This will reset any existing values in this field, so use with caution!
+     *
+     * @param newType the new filter type for this field.
+     */
+    public void setFilterType(FilterType newType) {
+        filterTypeCombo.setSelectedItem(newType);
     }
 
     /**

@@ -25,6 +25,7 @@ import ca.corbett.snotes.ui.actions.ExtensionManagerAction;
 import ca.corbett.snotes.ui.actions.LogConsoleAction;
 import ca.corbett.snotes.ui.actions.NewNoteAction;
 import ca.corbett.snotes.ui.actions.PrefsAction;
+import ca.corbett.snotes.ui.actions.SearchAction;
 import com.formdev.flatlaf.FlatLightLaf;
 
 import java.io.File;
@@ -80,6 +81,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
     public static final String KEY_LOG_CONSOLE = KEYSTROKE_PREFIX + "General.logConsole";
     public static final String KEY_NEW_NOTE = KEYSTROKE_PREFIX + "General.newNote";
     public static final String KEY_PREFERENCES = KEYSTROKE_PREFIX + "General.preferences";
+    public static final String KEY_SEARCH = KEYSTROKE_PREFIX + "General.search";
     public static final String KEY_EXIT = KEYSTROKE_PREFIX + "General.exit";
 
     // We centralize these here so that KeyStrokeManager can handle updating
@@ -89,6 +91,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
     private EnhancedAction logConsoleAction;
     private EnhancedAction newNoteAction;
     private EnhancedAction preferencesAction;
+    private EnhancedAction searchAction;
     private EnhancedAction exitAction;
 
     private BooleanProperty enableSingleInstance;
@@ -233,6 +236,10 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         return newNoteAction;
     }
 
+    public EnhancedAction getSearchAction() {
+        return searchAction;
+    }
+
     public EnhancedAction getPreferencesAction() {
         return preferencesAction;
     }
@@ -254,6 +261,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_LOG_CONSOLE));
         keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_NEW_NOTE));
         keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_PREFERENCES));
+        keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_SEARCH));
         keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_EXIT));
 
         // And now ask our extension manager:
@@ -306,6 +314,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         logConsoleAction = new LogConsoleAction();
         newNoteAction = new NewNoteAction();
         preferencesAction = new PrefsAction();
+        searchAction = new SearchAction();
         exitAction = new ExitAction();
 
         List<AbstractProperty> props = new ArrayList<>();
@@ -324,6 +333,9 @@ public class AppConfig extends AppProperties<SnotesExtension> {
                       .setAllowBlank(true));
         props.add(new KeyStrokeProperty(KEY_PREFERENCES, "Preferences:",
                                         KeyStrokeManager.parseKeyStroke("Ctrl+P"), preferencesAction)
+                      .setAllowBlank(true));
+        props.add(new KeyStrokeProperty(KEY_SEARCH, "Search:",
+                                        KeyStrokeManager.parseKeyStroke("Ctrl+F"), searchAction)
                       .setAllowBlank(true));
         props.add(new KeyStrokeProperty(KEY_EXIT, "Exit:",
                                         KeyStrokeManager.parseKeyStroke("Ctrl+Q"), exitAction)
