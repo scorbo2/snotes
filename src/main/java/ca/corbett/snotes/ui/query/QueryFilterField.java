@@ -234,6 +234,7 @@ public class QueryFilterField extends FormField {
      */
     public void setFilterType(FilterType newType) {
         filterTypeCombo.setSelectedItem(newType);
+        filterValueField.setText("");
     }
 
     /**

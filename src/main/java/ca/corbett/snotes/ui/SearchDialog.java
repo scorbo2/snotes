@@ -139,14 +139,12 @@ public class SearchDialog extends JDialog {
         tabPane = new JTabbedPane();
         tabPane.addTab("Simple Search", buildSimpleSearchPanel());
         tabPane.addTab("Advanced Search", ScrollUtil.buildScrollPane(buildAdvancedSearchPanel()));
-        add(tabPane);
-
         tabPane.addChangeListener(e -> {
             // When switching tabs, we want to give focus to the first text field in that tab.
             if (tabPane.getSelectedComponent() == simpleSearchForm) {
                 SwingUtilities.invokeLater(() -> simpleTextField.getTextField().requestFocusInWindow());
             }
-            else if (tabPane.getSelectedComponent() == advancedSearchForm) {
+            else {
                 SwingUtilities.invokeLater(() -> advancedSearchForm.requestKeyboardFocus());
             }
         });
