@@ -4,16 +4,14 @@ import ca.corbett.extras.MessageUtil;
 import ca.corbett.extras.io.KeyStrokeManager;
 import ca.corbett.forms.Alignment;
 import ca.corbett.forms.FormPanel;
-import ca.corbett.forms.fields.ButtonField;
 import ca.corbett.forms.fields.LabelField;
+import ca.corbett.forms.fields.PanelField;
 import ca.corbett.forms.fields.ShortTextField;
 import ca.corbett.snotes.io.DataManager;
 import ca.corbett.snotes.model.Query;
-import ca.corbett.snotes.model.filter.Filter;
 import ca.corbett.snotes.ui.MainWindow;
 import ca.corbett.snotes.ui.UniqueNameValidator;
 
-import javax.swing.AbstractAction;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JPanel;
@@ -21,9 +19,6 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Window;
-import java.awt.event.ActionEvent;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -36,19 +31,11 @@ public class QueryBuilderDialog extends JDialog {
 
     private static final Logger log = Logger.getLogger(QueryBuilderDialog.class.getName());
 
-    /**
-     * An arbitrary limit on the number of filters you can define
-     * for a single Query. The Query class itself doesn't actually
-     * have a limit, but the UI gets clunky if we allow limitless filters.
-     */
-    private static final int MAX_FILTERS = 8;
-
     private final Query queryToEdit; // null if we're creating a new Query
-    private final List<QueryFilterField> filterFields;
     private final KeyStrokeManager keyManager;
     private FormPanel formPanel;
+    private QueryFilterPanel queryFilterPanel;
     private ShortTextField nameField;
-    private int filterCount;
     private MessageUtil messageUtil;
     private boolean wasOkayed;
 
@@ -78,15 +65,7 @@ public class QueryBuilderDialog extends JDialog {
         setLocationRelativeTo((owner != null) ? owner : MainWindow.getInstance());
         this.queryToEdit = query;
         keyManager = new KeyStrokeManager(this);
-        filterFields = new ArrayList<>(MAX_FILTERS);
-        List<Filter> filters = (queryToEdit == null) ? List.of() : queryToEdit.getFilters();
-        for (int i = 0; i < MAX_FILTERS; i++) {
-            QueryFilterField filterField = new QueryFilterField();
-            if (i < filters.size()) {
-                filterField.setValuesFrom(filters.get(i));
-            }
-            filterFields.add(filterField);
-        }
+        queryFilterPanel = new QueryFilterPanel(queryToEdit);
         initKeyBindings();
         initComponents();
         wasOkayed = false;
@@ -99,6 +78,12 @@ public class QueryBuilderDialog extends JDialog {
      */
     public boolean wasOkayed() {
         return wasOkayed;
+    }
+
+    @Override
+    public void dispose() {
+        keyManager.dispose();
+        super.dispose();
     }
 
     /**
@@ -114,41 +99,24 @@ public class QueryBuilderDialog extends JDialog {
             return null;
         }
 
-        List<Filter> filters = new ArrayList<>(filterCount);
-        for (int i = 0; i < filterCount; i++) {
-            filters.add(filterFields.get(i).getFilter());
-        }
-        Query query;
-        if (queryToEdit == null) {
-            // This is a new Query:
-            query = new Query();
-            query.setName(nameField.getText());
-            for (Filter filter : filters) {
-                query.addFilter(filter);
-            }
-        }
-        else {
-            // We're editing an existing query, let's return the same instance with the updated values:
-            query = queryToEdit;
-            query.setName(nameField.getText()); // User may have renamed it
-            query.clear(); // nuke and pave all filters to ensure we have what the user specified
-            for (Filter filter : filters) {
-                query.addFilter(filter);
-            }
-        }
-
+        Query query = queryFilterPanel.getQuery();
+        query.setName(nameField.getText()); // User may have renamed it.
         return query;
     }
 
     private void buttonHandler(boolean isOkay) {
         if (isOkay) {
-            if (!formPanel.isFormValid()) {
-                return; // dialog stays open until form is valid or user cancels
+            boolean isNameOkay = formPanel.isFormValid();
+            boolean areFiltersOkay = queryFilterPanel.isFormValid();
+            if (!isNameOkay || !areFiltersOkay) {
+                // isFormValid() will display validation errors inline as a side effect.
+                // So, the user can see what's wrong and can fix it before trying again.
+                // We return here so that the dialog stays open until the form is good or the user cancels.
+                return;
             }
             wasOkayed = true;
         }
 
-        keyManager.dispose();
         dispose();
     }
 
@@ -177,22 +145,10 @@ public class QueryBuilderDialog extends JDialog {
                                                             existingName));
         formPanel.add(nameField);
 
-        formPanel.add(filterFields.get(0)); // Default label is "Filter:"
-        filterCount = (queryToEdit == null)
-            ? 1 // There's always at least one filter visible, even if blank
-            : Math.max(1, Math.min(queryToEdit.size(), MAX_FILTERS)); // keep between 1 and MAX_FILTERS, inclusive
-        for (int i = 1; i < filterFields.size(); i++) {
-            QueryFilterField filterField = filterFields.get(i);
-            filterField.getFieldLabel().setText("AND:"); // only supported option currently, so make it the label.
-            if (i >= filterCount) {
-                filterField.setVisible(false); // we'll show them as the user hits "add filter"
-            }
-            formPanel.add(filterField);
-        }
-        ButtonField buttonField = new ButtonField();
-        buttonField.addButton(new AddFilterAction());
-        buttonField.addButton(new RemoveFilterAction());
-        formPanel.add(buttonField);
+        PanelField panelField = new PanelField(new BorderLayout());
+        panelField.getPanel().add(queryFilterPanel, BorderLayout.CENTER);
+        panelField.setShouldExpand(true);
+        formPanel.add(panelField);
 
         return formPanel;
     }
@@ -215,39 +171,5 @@ public class QueryBuilderDialog extends JDialog {
             messageUtil = new MessageUtil(this, log);
         }
         return messageUtil;
-    }
-
-    private class AddFilterAction extends AbstractAction {
-
-        public AddFilterAction() {
-            super("Add Filter");
-        }
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            if (filterCount >= MAX_FILTERS) {
-                getMessageUtil().info("Maximum filters reached",
-                                      "You can only have " + MAX_FILTERS + " filters in a query.");
-                return;
-            }
-            filterFields.get(filterCount++).setVisible(true);
-        }
-    }
-
-    private class RemoveFilterAction extends AbstractAction {
-
-        public RemoveFilterAction() {
-            super("Remove Filter");
-        }
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            if (filterCount <= 1) {
-                getMessageUtil().info("Minimum filters reached",
-                                      "A query must have at least one filter.");
-                return;
-            }
-            filterFields.get(--filterCount).setVisible(false);
-        }
     }
 }

@@ -95,6 +95,8 @@ public class ActionGroup {
     public static ActionGroup buildReadGroup() {
         List<EnhancedAction> queryActions = new ArrayList<>();
 
+        queryActions.add(AppConfig.getInstance().getSearchAction());
+
         // Query CRUD actions:
         queryActions.add(new NewQueryAction());
         queryActions.add(new ManageQueriesAction());
