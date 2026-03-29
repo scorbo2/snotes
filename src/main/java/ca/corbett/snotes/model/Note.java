@@ -1,5 +1,7 @@
 package ca.corbett.snotes.model;
 
+import ca.corbett.snotes.AppConfig;
+
 import java.io.File;
 import java.util.List;
 
@@ -269,5 +271,38 @@ public final class Note {
      */
     public void markClean() {
         isDirty = false;
+    }
+
+    /**
+     * Given a Note, and the currently-configured data directory from AppConfig,
+     * this method will return the path of this note's source file relative to the
+     * data directory. For example, if the data directory is "/home/user/snotes-data",
+     * and this Note's source file is "/home/user/snotes-data/2024/06/15/note1.txt",
+     * then this method will return "2024/06/15/note1.txt".
+     * <p>
+     * If the Note's source file is not located within the data directory,
+     * this method will return the absolute path of the source file instead.
+     * <p>
+     * <p>
+     * If the given Note is null, or has no source file, an empty string is returned.
+     * </p>
+     *
+     * @param note Any Note object. If this is null, or if note.getSourceFile() is null, an empty string is returned.
+     * @return A relative path string for the given Note, if it is within our data directory. Full path otherwise.
+     */
+    public static String getRelativePath(Note note) {
+        File dataDir = AppConfig.getInstance().getDataDirectory();
+        if (note == null || note.getSourceFile() == null) {
+            return "";
+        }
+        File sourceFile = note.getSourceFile();
+        String dataDirPath = dataDir.getAbsolutePath();
+        String sourceFilePath = sourceFile.getAbsolutePath();
+        if (sourceFilePath.startsWith(dataDirPath)) {
+            return sourceFilePath.substring(dataDirPath.length() + 1); // +1 to remove the separator
+        }
+        else {
+            return sourceFilePath;
+        }
     }
 }

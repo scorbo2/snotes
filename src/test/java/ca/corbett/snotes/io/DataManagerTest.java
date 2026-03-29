@@ -84,6 +84,157 @@ class DataManagerTest {
     }
 
     @Test
+    void isScratchNote_withScratchNote_shouldReturnTrue() {
+        // GIVEN a new scratch note:
+        Note note = dataManager.newNote();
+        File scratchFile = note.getSourceFile();
+        assertNotNull(scratchFile);
+
+        // WHEN we check if its source file is a scratch file:
+        boolean isScratch = dataManager.isScratchNote(note);
+
+        // THEN it should return true:
+        assertTrue(isScratch);
+    }
+
+    @Test
+    void isScratchNote_withNonScratchNotes_shouldReturnFalse() throws IOException {
+        // GIVEN a couple of notes that have been promoted to real notes:
+        Note note1 = dataManager.newNote();
+        note1.tag("real-note-1");
+        note1.setText("Real note 1 content");
+        dataManager.save(note1);
+
+        Note note2 = dataManager.newNote();
+        note2.tag("real-note-2");
+        note2.setText("Real note 2 content");
+        dataManager.save(note2);
+
+        // WHEN we check if their source files are scratch files:
+        boolean isScratch1 = dataManager.isScratchNote(note1);
+        boolean isScratch2 = dataManager.isScratchNote(note2);
+
+        // THEN it should return false for both:
+        assertFalse(isScratch1, "Expected note1 to not be a scratch note");
+        assertFalse(isScratch2, "Expected note2 to not be a scratch note");
+
+        // Also, null notes and notes with no source file should return false:
+        assertFalse(dataManager.isScratchNote(null), "Expected null note to not be a scratch note");
+        Note emptyNote = new Note();
+        assertFalse(dataManager.isScratchNote(emptyNote), "Expected note with no source file to not be a scratch note");
+    }
+
+    @Test
+    void hasCollision_withNoCollision_shouldReturnFalse() throws IOException {
+        // GIVEN a note that has already been saved:
+        Note note = dataManager.newNote();
+        note.tag("collision-test");
+        note.setText("I am the only one with this tag");
+        dataManager.save(note);
+
+        // WHEN we check for a collision with the same tag:
+        boolean hasCollision = dataManager.hasCollision(note);
+
+        // THEN it should return false because there is no other file with the same computed save path:
+        assertFalse(hasCollision);
+    }
+
+    @Test
+    void hasCollision_withCollision_shouldReturnTrue() throws IOException {
+        // GIVEN a note that has already been saved:
+        Note firstNote = dataManager.newNote();
+        firstNote.tag("collision-test");
+        firstNote.setText("I am the first one with this tag");
+        dataManager.save(firstNote);
+
+        // GIVEN a second scratch note with the same tag (same computed save path):
+        Note secondNote = dataManager.newNote();
+        secondNote.tag("collision-test");
+        secondNote.setText("I will collide with the first one");
+
+        // WHEN we check for a collision with the same tag:
+        boolean hasCollision = dataManager.hasCollision(secondNote);
+
+        // THEN it should return true because there is already a file with the same computed save path:
+        assertTrue(hasCollision);
+    }
+
+    @Test
+    void saveNote_withCollisionAndABORT_shouldThrow() throws IOException {
+        // GIVEN a note that has already been saved:
+        Note firstNote = dataManager.newNote();
+        firstNote.tag("collision-abort-test");
+        firstNote.setText("I am the first one with this tag");
+        dataManager.save(firstNote);
+
+        // GIVEN a second scratch note with the same tag (same computed save path):
+        Note secondNote = dataManager.newNote();
+        secondNote.tag("collision-abort-test");
+        secondNote.setText("I will collide with the first one");
+
+        // WHEN we try to save the second note to the same location:
+        // THEN it should throw an IOException because of the collision, and should not overwrite the existing file:
+        assertThrows(IOException.class, () -> dataManager.save(secondNote));
+
+        // AND the original file should still contain the original content:
+        String content = Files.readString(firstNote.getSourceFile().toPath());
+        assertTrue(content.contains("I am the first one with this tag"));
+    }
+
+    @Test
+    void saveNote_withCollisionAndOVERWRITE_shouldOverwrite() throws IOException {
+        // GIVEN a note that has already been saved:
+        Note firstNote = dataManager.newNote();
+        firstNote.tag("collision-overwrite-test");
+        firstNote.setText("I am the first one with this tag");
+        dataManager.save(firstNote);
+
+        // GIVEN a second scratch note with the same tag (same computed save path):
+        Note secondNote = dataManager.newNote();
+        secondNote.tag("collision-overwrite-test");
+        secondNote.setText("I will overwrite the first one");
+        assertTrue(dataManager.hasCollision(secondNote));
+
+        // WHEN we try to save the second note to the same location with an overwrite option:
+        // THEN it should overwrite the existing file without throwing an exception:
+        assertDoesNotThrow(() -> dataManager.save(secondNote, DataManager.CollisionStrategy.OVERWRITE));
+
+        // AND the original file should now contain the content of the second note:
+        String content = Files.readString(firstNote.getSourceFile().toPath());
+        assertTrue(content.contains("I will overwrite the first one"));
+
+        // AND now trying to save the original note should throw, because it has been removed from cache:
+        assertThrows(IOException.class, () -> dataManager.save(firstNote));
+    }
+
+    @Test
+    void saveNote_withCollisionAndAPPEND_shouldAppendTo() throws IOException {
+        // GIVEN a note that has already been saved:
+        Note firstNote = dataManager.newNote();
+        firstNote.tag("collision-overwrite-test");
+        firstNote.setText("I am the first one with this tag");
+        dataManager.save(firstNote);
+
+        // GIVEN a second scratch note with the same tag (same computed save path):
+        Note secondNote = dataManager.newNote();
+        secondNote.tag("collision-overwrite-test");
+        secondNote.setText("I will append to the first one");
+        assertTrue(dataManager.hasCollision(secondNote));
+
+        // WHEN we try to save the second note to the same location with an append option:
+        // THEN it should append to the existing file without throwing an exception:
+        assertDoesNotThrow(() -> dataManager.save(secondNote, DataManager.CollisionStrategy.APPEND));
+
+        // AND the original file should now contain the content of both notes:
+        String content = Files.readString(firstNote.getSourceFile().toPath());
+        assertTrue(content.contains("I am the first one with this tag"));
+        assertTrue(content.contains("I will append to the first one"));
+
+        // AND now trying to save the original note should throw, because it has been removed from cache:
+        assertThrows(IOException.class, () -> dataManager.save(firstNote));
+    }
+
+    @Test
     void save_modifiedNote_shouldOverwriteFileInPlace() throws IOException {
         // GIVEN a note that has already been saved (promoted):
         Note note = dataManager.newNote();
@@ -276,7 +427,8 @@ class DataManagerTest {
     void loadAll_withNullDir_shouldThrowIOException() {
         // WHEN we try to load from a null directory:
         // THEN it should throw an IOException immediately:
-        assertThrows(IOException.class, () -> dataManager.loadAll(null));
+        DataManager manager = new DataManager(null);
+        assertThrows(IOException.class, () -> manager.loadAll(null));
     }
 
     @Test
@@ -284,10 +436,11 @@ class DataManagerTest {
         // GIVEN a regular file (not a directory):
         File notADirectory = File.createTempFile("not-a-dir", ".txt", tempDir);
         assertTrue(notADirectory.isFile());
+        DataManager manager = new DataManager(notADirectory);
 
         // WHEN we try to load from it:
         // THEN it should throw an IOException:
-        assertThrows(IOException.class, () -> dataManager.loadAll(notADirectory));
+        assertThrows(IOException.class, () -> manager.loadAll());
     }
 
     @Test
@@ -297,10 +450,11 @@ class DataManagerTest {
         assertTrue(dataDir.mkdirs());
         File metadataAsFile = new File(dataDir, DataManager.METADATA_DIR);
         assertTrue(metadataAsFile.createNewFile());
+        DataManager manager = new DataManager(dataDir);
 
         // WHEN we try to load from that directory:
         // THEN it should throw an IOException because the metadata dir is not a directory:
-        assertThrows(IOException.class, () -> dataManager.loadAll(dataDir));
+        assertThrows(IOException.class, () -> manager.loadAll());
     }
 
     @Test
@@ -310,10 +464,11 @@ class DataManagerTest {
         assertTrue(dataDir.mkdirs());
         File staticAsFile = new File(dataDir, DataManager.STATIC_DIR);
         assertTrue(staticAsFile.createNewFile());
+        DataManager manager = new DataManager(dataDir);
 
         // WHEN we try to load from that directory:
         // THEN it should throw an IOException because the static dir is not a directory:
-        assertThrows(IOException.class, () -> dataManager.loadAll(dataDir));
+        assertThrows(IOException.class, () -> manager.loadAll());
     }
 
     @Test
@@ -321,6 +476,7 @@ class DataManagerTest {
         // GIVEN a data directory where the expected scratch subdirectory already exists as a plain file:
         File dataDir = new File(tempDir, "data-scratch-file");
         assertTrue(dataDir.mkdirs());
+        DataManager manager = new DataManager(dataDir);
         // The metadata and static dirs must exist as real directories first so we reach the scratch check:
         assertTrue(new File(dataDir, DataManager.METADATA_DIR).mkdirs());
         assertTrue(new File(dataDir, DataManager.STATIC_DIR).mkdirs());
@@ -329,7 +485,7 @@ class DataManagerTest {
 
         // WHEN we try to load from that directory:
         // THEN it should throw an IOException because the scratch dir is not a directory:
-        assertThrows(IOException.class, () -> dataManager.loadAll(dataDir));
+        assertThrows(IOException.class, () -> manager.loadAll());
     }
 
     @Test

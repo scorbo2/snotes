@@ -12,6 +12,7 @@ import ca.corbett.snotes.Resources;
 import ca.corbett.snotes.Version;
 import ca.corbett.snotes.extensions.SnotesExtensionManager;
 import ca.corbett.snotes.io.DataManager;
+import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.ui.actions.UIReloadAction;
 
 import javax.swing.JFrame;
@@ -42,6 +43,8 @@ public class MainWindow extends JFrame implements UIReloadable {
     private final KeyStrokeManager keyStrokeManager;
     private final DataManager dataManager;
     private boolean cleanupComplete;
+    private boolean initialLoad;
+    private int internalFrameAddPosition;
 
     private CustomizableDesktopPane desktopPane;
 
@@ -52,6 +55,7 @@ public class MainWindow extends JFrame implements UIReloadable {
         setMinimumSize(new Dimension(500, 400));
         setLocationRelativeTo(null); // center on default display
         isSingleInstanceModeEnabled = AppConfig.getInstance().isSingleInstanceEnabled();
+        internalFrameAddPosition = 0;
         messageUtil = new MessageUtil(this, logger);
         dataManager = new DataManager();
         keyStrokeManager = new KeyStrokeManager(this);
@@ -85,7 +89,8 @@ public class MainWindow extends JFrame implements UIReloadable {
 
             // Tell our DataManager to load everything (background thread), and then trigger a UI reload when finished:
             try {
-                dataManager.loadAll(AppConfig.getInstance().getDataDirectory(), e -> reloadUI());
+                initialLoad = true;
+                dataManager.loadAll(e -> reloadUI());
             }
             catch (IOException ioe) {
                 messageUtil.error("Load error", "An error occurred while loading data: " + ioe.getMessage(), ioe);
@@ -105,6 +110,23 @@ public class MainWindow extends JFrame implements UIReloadable {
     }
 
     /**
+     * This is sent to us from DataManager when a note is deleted.
+     * We can't prevent the deletion at this point, but we can notify
+     * any open frames that are displaying this note, so they can close
+     * themselves or update their display as needed.
+     */
+    public void noteDeleted(Note note) {
+        for (JInternalFrame frame : desktopPane.getAllFrames()) {
+            if (frame instanceof WriterFrame) {
+                WriterFrame writerFrame = (WriterFrame)frame;
+                if (writerFrame.getNote() == note) {
+                    writerFrame.noteDeleted();
+                }
+            }
+        }
+    }
+
+    /**
      * Can be invoked by application code or by application extensions to add a new internal frame to the desktop pane.
      *
      * @param frame The JInternalFrame to add to the desktop pane. Will be made visible and selected immediately.
@@ -120,6 +142,11 @@ public class MainWindow extends JFrame implements UIReloadable {
         // always happens on the Swing EDT, to avoid any potential threading issues:
         SwingUtilities.invokeLater(() -> {
             desktopPane.add(frame);
+            frame.setLocation(internalFrameAddPosition, internalFrameAddPosition);
+            internalFrameAddPosition += 20; // offset the next frame a bit, so they don't stack directly on top of each other
+            if (internalFrameAddPosition > 300) {
+                internalFrameAddPosition = 0; // reset the offset after a certain point, to avoid running out of screen space
+            }
             frame.setVisible(true);
             try {
                 frame.setSelected(true);
@@ -128,6 +155,19 @@ public class MainWindow extends JFrame implements UIReloadable {
                 logger.warning("Failed to select internal frame: " + e.getMessage());
             }
         });
+    }
+
+    /**
+     * Saves all open notes by invoking the save() method on all WriterFrames.
+     * Scratch notes will be saved in-place in the scratch directory.
+     * This does NOT promote them to real notes.
+     */
+    public void saveAll() {
+        for (JInternalFrame frame : desktopPane.getAllFrames()) {
+            if (frame instanceof WriterFrame writerFrame) {
+                writerFrame.save();
+            }
+        }
     }
 
     private void initComponents() {
@@ -170,6 +210,17 @@ public class MainWindow extends JFrame implements UIReloadable {
      */
     @Override
     public void reloadUI() {
+        // If this is the initial load, pop a WriterFrame for any scratch files
+        // that were loaded. This is possibly a bit annoying, but it's a way to
+        // remind the user to either explicitly save these files or explicitly discard them:
+        if (initialLoad) {
+            initialLoad = false; // only do this once
+            for (Note scratchNote : dataManager.getScratchNotes()) {
+                WriterFrame writerFrame = new WriterFrame(scratchNote);
+                addInternalFrame(writerFrame);
+            }
+        }
+
         // Single instance mode may have changed, so check that:
         if (isSingleInstanceModeEnabled != AppConfig.getInstance().isSingleInstanceEnabled()) {
             toggleSingleInstanceMode();

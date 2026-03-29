@@ -5,7 +5,6 @@ import ca.corbett.extras.ScrollUtil;
 import ca.corbett.forms.Alignment;
 import ca.corbett.forms.FormPanel;
 import ca.corbett.forms.fields.LabelField;
-import ca.corbett.snotes.AppConfig;
 import ca.corbett.snotes.Resources;
 import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.model.Query;
@@ -28,7 +27,6 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -190,9 +188,9 @@ public class ReaderFrame extends JInternalFrame {
             return;
         }
 
-        // Here's where we would pop a WriterFrame for the selected Note, if we had one.
-        // For now, we'll just show a message:
-        getMessageUtil().info("Editing note: " + detailNote.getHumanTagLine());
+        // Show a new WriterFrame for the selected Note.
+        WriterFrame writerFrame = new WriterFrame(detailNote);
+        MainWindow.getInstance().addInternalFrame(writerFrame);
     }
 
     /**
@@ -211,18 +209,6 @@ public class ReaderFrame extends JInternalFrame {
         Style noteStyle = textPane.addStyle("note", defaultStyle);
         StyleConstants.setFontFamily(noteStyle, Font.SERIF);
         StyleConstants.setFontSize(noteStyle, 14);
-    }
-
-    /**
-     * Given any Note, will return a String with a path that is relevant to the
-     * configured data directory.
-     */
-    private String getRelativePath(Note note) {
-        File dataDir = AppConfig.getInstance().getDataDirectory();
-        File sourceFile = note.getSourceFile();
-        String notePath = sourceFile == null ? " (n/a) " : sourceFile.getAbsolutePath();
-        notePath = notePath.replace(dataDir.getAbsolutePath(), "");
-        return notePath.startsWith(File.separator) ? notePath.substring(1) : notePath;
     }
 
     private MessageUtil getMessageUtil() {
@@ -246,7 +232,8 @@ public class ReaderFrame extends JInternalFrame {
                 if (clickPosition >= offset) {
                     // This is the Note that was clicked:
                     detailNote = notes.get(i);
-                    detailLabel.setText(getRelativePath(detailNote));
+                    String path = Note.getRelativePath(detailNote);
+                    detailLabel.setText(path.isBlank() ? " (n/a) " : path);
                     setDetailPanelVisible(true);
                 }
             }
