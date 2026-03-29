@@ -1,7 +1,6 @@
 package ca.corbett.snotes.ui;
 
 import ca.corbett.extras.MessageUtil;
-import ca.corbett.extras.ScrollUtil;
 import ca.corbett.forms.Alignment;
 import ca.corbett.forms.FormPanel;
 import ca.corbett.forms.fields.LabelField;
@@ -16,18 +15,9 @@ import javax.swing.JComponent;
 import javax.swing.JInternalFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JTextPane;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.Document;
-import javax.swing.text.Style;
-import javax.swing.text.StyleConstants;
-import javax.swing.text.StyleContext;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -43,10 +33,9 @@ public class ReaderFrame extends JInternalFrame {
     private static final Logger log = Logger.getLogger(ReaderFrame.class.getName());
 
     private MessageUtil messageUtil;
-    private final List<Integer> positionOffsets;
     private final List<Note> notes;
     private final Query query;
-    private JTextPane textPane;
+    private MultiNoteViewer noteViewer;
     private JPanel detailPanel;
     private JLabel detailLabel;
     private Note detailNote;
@@ -68,9 +57,8 @@ public class ReaderFrame extends JInternalFrame {
      */
     public ReaderFrame(List<Note> notes, Query query) {
         super(query == null ? "(untitled)" : query.getName(), true, true, true, true);
-        this.notes = notes == null ? List.of() : notes;
+        this.notes = notes == null ? List.of() : new ArrayList<>(notes);
         this.query = query; // fine if null
-        this.positionOffsets = new ArrayList<>(this.notes.size());
         setSize(new Dimension(500, 400));
         setMinimumSize(new Dimension(500, 400));
         setDefaultCloseOperation(JInternalFrame.DISPOSE_ON_CLOSE);
@@ -112,9 +100,7 @@ public class ReaderFrame extends JInternalFrame {
      * Builds our custom JTextPane and populates it with our content.
      */
     private JComponent buildTextPane() {
-        textPane = new JTextPane();
-        textPane.setEditable(false);
-
+        noteViewer = new MultiNoteViewer(notes);
         if (notes.isEmpty()) {
             if (query == null) {
                 // A query returning an empty list is no big deal - the filters are just too strict.
@@ -122,26 +108,9 @@ public class ReaderFrame extends JInternalFrame {
                 // it's not technically an error, but it is kind of suspicious, so let's log it:
                 log.warning("ReaderFrame created with an empty list of notes!");
             }
-            textPane.setText("(no content)");
-            return ScrollUtil.buildScrollPane(textPane);
         }
-
-        setStyles();
-        textPane.addMouseListener(new TextFieldMouseListener());
-        Document doc = textPane.getDocument();
-        for (Note note : notes) {
-            positionOffsets.add(doc.getLength());
-            try {
-                doc.insertString(doc.getLength(), note.getHumanTagLine() + "\n", textPane.getStyle("tag"));
-                doc.insertString(doc.getLength(), note.getText() + "\n\n", textPane.getStyle("note"));
-            }
-            catch (BadLocationException ble) {
-                // Should never happen, but let's not ignore it:
-                log.warning("ReaderFrame: unexpected BadLocationException: " + ble.getMessage());
-            }
-        }
-
-        return ScrollUtil.buildScrollPane(textPane);
+        noteViewer.addNoteSelectedListener(this::onNoteSelected);
+        return noteViewer;
     }
 
     /**
@@ -195,21 +164,15 @@ public class ReaderFrame extends JInternalFrame {
     }
 
     /**
-     * A future ticket will make font colors, faces, and other styles customizable.
-     * For now, we will go with a hard-coded style set.
-     * <p>
-     *  TODO when this gets wired up to AppConfig, we'll have to respond to UIReload events...
-     * </p>
+     * Invoked from our MultiNoteViewer when the user selects a note.
+     * We'll show its location in the detail panel, and enable the "Edit" button if it has a source file.
      */
-    private void setStyles() {
-        Style defaultStyle = StyleContext.getDefaultStyleContext().getStyle(StyleContext.DEFAULT_STYLE);
-        Style tagStyle = textPane.addStyle("tag", defaultStyle);
-        StyleConstants.setFontFamily(tagStyle, Font.MONOSPACED);
-        StyleConstants.setFontSize(tagStyle, 16);
-        StyleConstants.setBold(tagStyle, true);
-        Style noteStyle = textPane.addStyle("note", defaultStyle);
-        StyleConstants.setFontFamily(noteStyle, Font.SERIF);
-        StyleConstants.setFontSize(noteStyle, 14);
+    private void onNoteSelected(Note note) {
+        detailNote = note;
+        // getRelativePath() handles null Notes:
+        String path = Note.getRelativePath(detailNote, AppConfig.getInstance().getDataDirectory());
+        detailLabel.setText(path.isBlank() ? " (n/a) " : path);
+        setDetailPanelVisible(note != null);
     }
 
     private MessageUtil getMessageUtil() {
@@ -217,27 +180,5 @@ public class ReaderFrame extends JInternalFrame {
             messageUtil = new MessageUtil(this, log);
         }
         return messageUtil;
-    }
-
-    /**
-     * When the user clicks anywhere in the text of a given Note, we'll figure out exactly
-     * which Note in the list was clicked, and then show its details in the detailPanel.
-     * The user will have the ability to pop a WriterFrame for that Note.
-     */
-    private class TextFieldMouseListener extends MouseAdapter {
-        @Override
-        public void mouseClicked(MouseEvent e) {
-            int clickPosition = textPane.viewToModel2D(e.getPoint());
-            for (int i = 0; i < positionOffsets.size(); i++) {
-                int offset = positionOffsets.get(i);
-                if (clickPosition >= offset) {
-                    // This is the Note that was clicked:
-                    detailNote = notes.get(i);
-                    String path = Note.getRelativePath(detailNote, AppConfig.getInstance().getDataDirectory());
-                    detailLabel.setText(path.isBlank() ? " (n/a) " : path);
-                    setDetailPanelVisible(true);
-                }
-            }
-        }
     }
 }

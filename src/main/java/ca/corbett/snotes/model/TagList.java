@@ -321,6 +321,24 @@ public final class TagList {
     }
 
     /**
+     * Returns a comma-separated String representation of this TagList, without the # character on each tag.
+     * The date tag is NOT returned in this string. The returned string may be empty if there are no
+     * non-date tags here.
+     */
+    public String getNonDateTagsAsCommaSeparatedString() {
+        StringBuilder sb = new StringBuilder();
+        List<Tag> nonDateTags = getNonDateTags();
+        for (int i = 0; i < nonDateTags.size(); i++) {
+            Tag tag = nonDateTags.get(i);
+            sb.append(tag.getTag()); // without the #
+            if (i < tags.size() - 1) {
+                sb.append(", ");
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
      * Returns a human-presentable String representation of this TagList.
      * If a date tag is present, it is presented first, with the day name in parentheses.
      * All other tags follow, in alphabetical order. For example, given a date

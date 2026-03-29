@@ -64,22 +64,28 @@ public class Template {
      * most recent Notes with any tags will be retrieved.
      */
     public enum Context {
-        NONE("No context"),
-        ALL("All"),
-        MOST_RECENT1("1 most recent"),
-        MOST_RECENT3("3 most recent"),
-        MOST_RECENT5("5 most recent"),
-        MOST_RECENT10("10 most recent");
+        NONE("No context", 0),
+        ALL("All", Integer.MAX_VALUE),
+        MOST_RECENT1("1 most recent", 1),
+        MOST_RECENT3("3 most recent", 3),
+        MOST_RECENT5("5 most recent", 5),
+        MOST_RECENT10("10 most recent", 10);
 
         private final String label;
+        private final int limit;
 
-        Context(String label) {
+        Context(String label, int limit) {
             this.label = label;
+            this.limit = limit;
         }
 
         @Override
         public String toString() {
             return label;
+        }
+
+        public int getLimit() {
+            return limit;
         }
     }
 
