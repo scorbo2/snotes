@@ -775,8 +775,9 @@ public class DataManager {
         switch (strategy) {
             case OVERWRITE:
                 if (existingNote != null) {
+                    String sourcePath = note.getSourceFile() != null ? note.getSourceFile().getAbsolutePath() : "null";
                     log.warning("Overwriting existing note file at " + savePath.getAbsolutePath()
-                                    + " with note from " + note.getSourceFile().getAbsolutePath());
+                                    + " with note from " + sourcePath);
                     delete(existingNote); // this will remove it from our cache and delete the file from disk.
                     fireNoteDeletedEvent(existingNote); // close any open WriterFrame for this guy
                     break; // we found the one we were looking for, so we can stop searching.
@@ -784,8 +785,9 @@ public class DataManager {
                 break;
             case APPEND:
                 if (existingNote != null) {
+                    String sourcePath = note.getSourceFile() != null ? note.getSourceFile().getAbsolutePath() : "null";
                     log.warning("Appending to existing note file at " + savePath.getAbsolutePath()
-                                    + " with note from " + note.getSourceFile().getAbsolutePath());
+                                    + " with note from " + sourcePath);
                     String existingText = existingNote.getText();
                     if (!existingText.isBlank()) {
                         // We want exactly one blank line between old content and new content:
