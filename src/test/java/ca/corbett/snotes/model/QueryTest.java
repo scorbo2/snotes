@@ -18,6 +18,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class QueryTest extends FilterTest {
@@ -234,29 +235,26 @@ public class QueryTest extends FilterTest {
     }
 
     @Test
-    public void execute_withZeroLimit_shouldReturnAll() {
-        // GIVEN an empty Query that will return all notes:
+    public void execute_withZeroLimit_shouldReturnNoResults() {
+        // GIVEN an empty Query that would return all notes:
         Query query = new Query();
 
-        // WHEN we execute with a limit of 0 (meaning no limit):
+        // WHEN we execute with a limit of 0:
         List<Note> results = query.execute(unfilteredList, 0);
 
-        // THEN all notes should be returned, just as if no limit was specified:
+        // THEN no results should be returned:
         assertNotNull(results);
-        assertEquals(unfilteredList.size(), results.size());
+        assertTrue(results.isEmpty());
     }
 
     @Test
-    public void execute_withNegativeLimit_shouldReturnAll() {
-        // GIVEN an empty Query that will return all notes:
+    public void execute_withNegativeLimit_shouldThrowException() {
+        // GIVEN an empty Query:
         Query query = new Query();
 
-        // WHEN we execute with a negative limit (meaning no limit):
-        List<Note> results = query.execute(unfilteredList, -1);
-
-        // THEN all notes should be returned, just as if no limit was specified:
-        assertNotNull(results);
-        assertEquals(unfilteredList.size(), results.size());
+        // WHEN we execute with a negative limit:
+        // THEN an IllegalArgumentException should be thrown:
+        assertThrows(IllegalArgumentException.class, () -> query.execute(unfilteredList, -1));
     }
 }
 
