@@ -209,7 +209,7 @@ public class DataManager {
             notes.add(note); // the note is now "real" and will show up in Query results.
         }
 
-        log.info("Saved note: " + Note.getRelativePath(note));
+        log.info("Saved note: " + Note.getRelativePath(note, dataDir));
     }
 
     /**
@@ -370,13 +370,13 @@ public class DataManager {
         // It's possible we were given a Note that was not in our cache.
         // This is very strange, but whatever:
         if (!wasRealNote && !wasScratchNote) {
-            log.warning("Deleted uncached note: " + Note.getRelativePath(note));
+            log.warning("Deleted uncached note: " + Note.getRelativePath(note, dataDir));
             return;
         }
 
         // Otherwise, just log it:
         String noteType = wasRealNote ? "note" : "scratch note";
-        log.info("Deleted " + noteType + ": " + Note.getRelativePath(note));
+        log.info("Deleted " + noteType + ": " + Note.getRelativePath(note, dataDir));
     }
 
     /**

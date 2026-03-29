@@ -5,6 +5,7 @@ import ca.corbett.extras.ScrollUtil;
 import ca.corbett.forms.Alignment;
 import ca.corbett.forms.FormPanel;
 import ca.corbett.forms.fields.LabelField;
+import ca.corbett.snotes.AppConfig;
 import ca.corbett.snotes.Resources;
 import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.model.Query;
@@ -232,7 +233,7 @@ public class ReaderFrame extends JInternalFrame {
                 if (clickPosition >= offset) {
                     // This is the Note that was clicked:
                     detailNote = notes.get(i);
-                    String path = Note.getRelativePath(detailNote);
+                    String path = Note.getRelativePath(detailNote, AppConfig.getInstance().getDataDirectory());
                     detailLabel.setText(path.isBlank() ? " (n/a) " : path);
                     setDetailPanelVisible(true);
                 }

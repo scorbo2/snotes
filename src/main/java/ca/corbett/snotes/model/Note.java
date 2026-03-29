@@ -1,7 +1,5 @@
 package ca.corbett.snotes.model;
 
-import ca.corbett.snotes.AppConfig;
-
 import java.io.File;
 import java.util.List;
 
@@ -284,8 +282,8 @@ public final class Note {
     }
 
     /**
-     * Given a Note, and the currently-configured data directory from AppConfig,
-     * this method will return the path of this note's source file relative to the
+     * Given a Note, and the given data directory,
+     * this method will return the path of this note's source file relative to that
      * data directory. For example, if the data directory is "/home/user/snotes-data",
      * and this Note's source file is "/home/user/snotes-data/2024/06/15/note1.txt",
      * then this method will return "2024/06/15/note1.txt".
@@ -298,10 +296,13 @@ public final class Note {
      * </p>
      *
      * @param note Any Note object. If this is null, or if note.getSourceFile() is null, an empty string is returned.
+     * @param dataDir The data directory to which the returned path should be relative, if applicable. This should not be null.
      * @return A relative path string for the given Note, if it is within our data directory. Full path otherwise.
      */
-    public static String getRelativePath(Note note) {
-        File dataDir = AppConfig.getInstance().getDataDirectory();
+    public static String getRelativePath(Note note, File dataDir) {
+        if (dataDir == null) {
+            throw new IllegalArgumentException("dataDir cannot be null");
+        }
         if (note == null || note.getSourceFile() == null) {
             return "";
         }

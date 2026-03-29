@@ -5,6 +5,7 @@ import ca.corbett.extras.ScrollUtil;
 import ca.corbett.forms.Alignment;
 import ca.corbett.forms.FormPanel;
 import ca.corbett.forms.fields.ShortTextField;
+import ca.corbett.snotes.AppConfig;
 import ca.corbett.snotes.Resources;
 import ca.corbett.snotes.io.DataManager;
 import ca.corbett.snotes.model.Note;
@@ -63,12 +64,13 @@ public class WriterFrame extends JInternalFrame {
      * If the given Note is null, a scratch Note will be created.
      */
     public WriterFrame(Note note) {
-        super(Note.getRelativePath(note), true, true, true, true);
+        super(Note.getRelativePath(note, AppConfig.getInstance().getDataDirectory()),
+              true, true, true, true);
         this.dataManager = MainWindow.getInstance().getDataManager();
         if (note == null) {
             log.warning("WriterFrame created with null note. Creating new scratch note.");
             note = dataManager.newNote();
-            setTitle(Note.getRelativePath(note));
+            setTitle(Note.getRelativePath(note, AppConfig.getInstance().getDataDirectory()));
         }
         this.note = note;
         setSize(new Dimension(500, 400));
@@ -164,13 +166,15 @@ public class WriterFrame extends JInternalFrame {
      * The save path for the note will be determined by its tags and date.
      * This means that existing notes may move within our data directory as a result of this save.
      * Collisions are handled intelligently by data manager.
+     *
+     * @return true if the save completed successfully, false otherwise (user canceled collision dialog, validation failed)
      */
-    private void saveInternal(boolean disposeIfSuccessful) {
+    private boolean saveInternal(boolean disposeIfSuccessful) {
         if (!headerForm.isFormValid()) {
-            return; // Validation errors will show on the form (invalid date or missing tags).
+            return false; // Validation errors will show on the form (invalid date or missing tags).
         }
         if (!isDirty) {
-            return;
+            return true; // counts as successful save, since there are no changes to save!
         }
 
         note.clearAllTags(); // we will nuke and pave to overwrite old settings
@@ -189,7 +193,7 @@ public class WriterFrame extends JInternalFrame {
                                                           new String[]{"Overwrite it", "Append to it", "Cancel"},
                                                           "Append to it");
             if (selection == null || "Cancel".equals(selection)) {
-                return; // User canceled the save, so we do nothing.
+                return false; // User canceled the save, so we do nothing.
             }
             strategy = "Overwrite it".equals(selection)
                 ? DataManager.CollisionStrategy.OVERWRITE
@@ -198,7 +202,7 @@ public class WriterFrame extends JInternalFrame {
 
         try {
             dataManager.save(note, strategy);
-            setTitle(Note.getRelativePath(note)); // Update the title in case the note was moved
+            setTitle(Note.getRelativePath(note, AppConfig.getInstance().getDataDirectory())); // path may have changed
             isDirty = false;
             if (disposeIfSuccessful) {
                 dispose();
@@ -208,7 +212,10 @@ public class WriterFrame extends JInternalFrame {
             getMessageUtil().error("Save error",
                                    "An error occurred while saving the note: " + ioe.getMessage(),
                                    ioe);
+            return false;
         }
+
+        return true;
     }
 
     /**
@@ -315,7 +322,12 @@ public class WriterFrame extends JInternalFrame {
                 else if (result == MessageUtil.YES) {
                     // User wants to save, so we save the note and allow the frame to close.
                     setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-                    saveInternal(true);
+                    if (!saveInternal(true)) {
+                        // If the save failed (for example, due to a collision that the user canceled),
+                        // we need to prevent the frame from closing.
+                        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+                        return;
+                    }
                 }
             }
             else {
