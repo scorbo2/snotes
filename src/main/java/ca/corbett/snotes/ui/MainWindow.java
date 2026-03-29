@@ -193,6 +193,19 @@ public class MainWindow extends JFrame implements UIReloadable {
             return;
         }
 
+        // Go through all internal frames and dispose them.
+        // If any of them (like WriterFrame) have a save prompt on close,
+        // this will trigger that, giving the user a chance to save their work before we exit.
+        for (JInternalFrame frame : desktopPane.getAllFrames()) {
+            try {
+                frame.toFront();
+                frame.setClosed(true); // don't call dispose()! It bypasses the frame close listener.
+            }
+            catch (PropertyVetoException ignored) {
+                // Just ignore it - application exit can't be canceled at this point
+            }
+        }
+
         // Always save window state, even if "remember state" is disabled:
         AppConfig.getInstance().setWindowProps(getExtendedState(), getWidth(), getHeight(), getX(), getY());
 
