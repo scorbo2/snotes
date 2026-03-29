@@ -197,7 +197,8 @@ public class Query {
         filteredNotes.sort(Note::compareTo);
 
         if (filteredNotes.size() > limit) {
-            return filteredNotes.subList(filteredNotes.size() - limit, filteredNotes.size());
+            // Return a defensive copy of the tail so callers receive a new, independent list
+            return new ArrayList<>(filteredNotes.subList(filteredNotes.size() - limit, filteredNotes.size()));
         }
 
         return filteredNotes;
