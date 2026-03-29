@@ -2,6 +2,7 @@ Snotes Release Notes
 Author: Steve Corbett
 
 Version 2.0 [TODO] rewrite
+  #40 - Implement WriterFrame, add collision handling
   #37 - Read-only multi-Note viewer
   #35 - Template builder: add warning for blank template
   #33 - Implement UI for Template CRUD

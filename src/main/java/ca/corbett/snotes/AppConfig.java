@@ -25,6 +25,7 @@ import ca.corbett.snotes.ui.actions.ExtensionManagerAction;
 import ca.corbett.snotes.ui.actions.LogConsoleAction;
 import ca.corbett.snotes.ui.actions.NewNoteAction;
 import ca.corbett.snotes.ui.actions.PrefsAction;
+import ca.corbett.snotes.ui.actions.SaveAction;
 import ca.corbett.snotes.ui.actions.SearchAction;
 import com.formdev.flatlaf.FlatLightLaf;
 
@@ -77,6 +78,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
     public static final String KEYSTROKE_PREFIX = "Keystrokes.";
 
     public static final String KEY_ABOUT = KEYSTROKE_PREFIX + "General.about";
+    public static final String KEY_SAVE = KEYSTROKE_PREFIX + "General.save";
     public static final String KEY_EXT_MANAGER = KEYSTROKE_PREFIX + "General.extensionManager";
     public static final String KEY_LOG_CONSOLE = KEYSTROKE_PREFIX + "General.logConsole";
     public static final String KEY_NEW_NOTE = KEYSTROKE_PREFIX + "General.newNote";
@@ -87,6 +89,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
     // We centralize these here so that KeyStrokeManager can handle updating
     // their keyboard accelerators when the user changes them in the properties dialog:
     private EnhancedAction aboutAction;
+    private EnhancedAction saveAction;
     private EnhancedAction extensionManagerAction;
     private EnhancedAction logConsoleAction;
     private EnhancedAction newNoteAction;
@@ -224,6 +227,10 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         return aboutAction;
     }
 
+    public EnhancedAction getSaveAction() {
+        return saveAction;
+    }
+
     public EnhancedAction getExtensionManagerAction() {
         return extensionManagerAction;
     }
@@ -257,6 +264,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
 
         // Add the ones we control:
         keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_ABOUT));
+        keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_SAVE));
         keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_EXT_MANAGER));
         keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_LOG_CONSOLE));
         keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_NEW_NOTE));
@@ -310,6 +318,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
 
     private List<AbstractProperty> createKeystrokeProperties() {
         aboutAction = new AboutAction();
+        saveAction = new SaveAction();
         extensionManagerAction = new ExtensionManagerAction();
         logConsoleAction = new LogConsoleAction();
         newNoteAction = new NewNoteAction();
@@ -321,6 +330,9 @@ public class AppConfig extends AppProperties<SnotesExtension> {
 
         props.add(new KeyStrokeProperty(KEY_ABOUT, "About dialog:",
                                         KeyStrokeManager.parseKeyStroke("Ctrl+A"), aboutAction)
+                      .setAllowBlank(true));
+        props.add(new KeyStrokeProperty(KEY_SAVE, "Save:",
+                                        KeyStrokeManager.parseKeyStroke("Ctrl+S"), saveAction)
                       .setAllowBlank(true));
         props.add(new KeyStrokeProperty(KEY_EXT_MANAGER, "Extension Manager:",
                                         KeyStrokeManager.parseKeyStroke("Ctrl+E"), extensionManagerAction)

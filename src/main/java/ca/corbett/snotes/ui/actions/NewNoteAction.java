@@ -1,6 +1,8 @@
 package ca.corbett.snotes.ui.actions;
 
 import ca.corbett.extras.EnhancedAction;
+import ca.corbett.snotes.ui.MainWindow;
+import ca.corbett.snotes.ui.WriterFrame;
 
 import java.awt.event.ActionEvent;
 
@@ -18,6 +20,6 @@ public class NewNoteAction extends EnhancedAction {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        // TODO
+        MainWindow.getInstance().addInternalFrame(new WriterFrame());
     }
 }

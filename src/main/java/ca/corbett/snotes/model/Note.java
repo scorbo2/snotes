@@ -1,7 +1,10 @@
 package ca.corbett.snotes.model;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Represents a combination of some text and a list of tags that categorize that text.
@@ -10,6 +13,8 @@ import java.util.List;
  * @since Snotes 1.0
  */
 public final class Note {
+
+    private static final Logger log = Logger.getLogger(Note.class.getName());
 
     private final TagList tagList;
     private String text;
@@ -219,6 +224,16 @@ public final class Note {
     }
 
     /**
+     * Removes all tags, including the date tag if present, from this Note.
+     */
+    public void clearAllTags() {
+        if (tagList.size() != 0) {
+            tagList.clear();
+            isDirty = true;
+        }
+    }
+
+    /**
      * Indicates whether or not the given tag value exists for this Note.
      *
      * @param tag The tag value to look for.
@@ -269,5 +284,46 @@ public final class Note {
      */
     public void markClean() {
         isDirty = false;
+    }
+
+    /**
+     * Given a Note, and the given data directory,
+     * this method will return the path of this note's source file relative to that
+     * data directory. For example, if the data directory is "/home/user/snotes-data",
+     * and this Note's source file is "/home/user/snotes-data/2024/06/15/note1.txt",
+     * then this method will return "2024/06/15/note1.txt".
+     * <p>
+     * If the Note's source file is not located within the data directory,
+     * this method will return the absolute path of the source file instead.
+     * <p>
+     * <p>
+     * If the given Note is null, or has no source file, an empty string is returned.
+     * </p>
+     *
+     * @param note Any Note object. If this is null, or if note.getSourceFile() is null, an empty string is returned.
+     * @param dataDir The data directory to which the returned path should be relative, if applicable. This should not be null.
+     * @return A relative path string for the given Note, if it is within our data directory. Full path otherwise.
+     */
+    public static String getRelativePath(Note note, File dataDir) {
+        if (dataDir == null) {
+            throw new IllegalArgumentException("dataDir cannot be null");
+        }
+        if (note == null || note.getSourceFile() == null) {
+            return "";
+        }
+        try {
+            Path dataDirPath = dataDir.toPath().toAbsolutePath().normalize();
+            Path sourceFilePath = note.getSourceFile().toPath().toAbsolutePath().normalize();
+            if (sourceFilePath.startsWith(dataDirPath)) {
+                return dataDirPath.relativize(sourceFilePath).toString();
+            }
+            else {
+                return sourceFilePath.toString();
+            }
+        }
+        catch (Exception e) {
+            log.log(Level.WARNING, "getRelativePath: could not resolve paths", e);
+            return "";
+        }
     }
 }

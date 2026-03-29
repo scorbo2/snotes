@@ -1,5 +1,6 @@
 package ca.corbett.snotes.io;
 
+import ca.corbett.extras.io.FileSystemUtil;
 import ca.corbett.extras.progress.MultiProgressDialog;
 import ca.corbett.extras.progress.SimpleProgressAdapter;
 import ca.corbett.snotes.AppConfig;
@@ -34,6 +35,12 @@ public class DataManager {
     private static final Logger log = Logger.getLogger(DataManager.class.getName());
 
     /**
+     * Can be used with save(Note) to decide what to do if a Note has
+     * a collision with an existing Note.
+     */
+    public enum CollisionStrategy {OVERWRITE, APPEND, ABORT}
+
+    /**
      * Callers can implement this to be notified when loadAll() completes.
      */
     @FunctionalInterface
@@ -44,13 +51,31 @@ public class DataManager {
         void onLoadComplete(DataManager dataManager);
     }
 
+    /**
+     * Callers can implement this to be notified when a Note is deleted from the DataManager.
+     */
+    public interface NoteDeletionListener {
+        /**
+         * The given Note has been deleted from the DataManager.
+         * This is informational only - the delete can't be overridden by callers.
+         * The given Note is now "dead" - attempting to save() it will throw an IOException.
+         *
+         * @param note The Note that was deleted. This Note is now effectively "dead" and should not be used for anything.
+         */
+        void onNoteDeleted(Note note);
+    }
+
+    private final List<NoteDeletionListener> noteDeletionListeners;
     private final List<Note> notes;
     private final List<Query> queries;
     private final List<Template> templates;
     private final List<Note> scratchNotes;
     private final AtomicInteger loadProgress;
 
-    private File dataDir;
+    private final File dataDir;
+    private final File metadataDir;
+    private final File staticDir;
+    private final File scratchDir;
 
     /**
      * Creates a new DataManager with empty caches and a data directory
@@ -65,12 +90,17 @@ public class DataManager {
      * directly, bypassing AppConfig entirely so that the full application need not be initialized.
      */
     DataManager(File dataDir) {
+        this.noteDeletionListeners = new CopyOnWriteArrayList<>();
         this.notes = new CopyOnWriteArrayList<>();
         this.queries = new CopyOnWriteArrayList<>();
         this.templates = new CopyOnWriteArrayList<>();
         this.scratchNotes = new CopyOnWriteArrayList<>();
         loadProgress = new AtomicInteger(0);
         this.dataDir = dataDir;
+        // These directories may not exist, but that's okay... loadAll() will deal with it:
+        this.metadataDir = new File(dataDir, METADATA_DIR);
+        this.staticDir = new File(dataDir, STATIC_DIR);
+        this.scratchDir = new File(dataDir, SCRATCH_DIR);
     }
 
     /**
@@ -93,10 +123,28 @@ public class DataManager {
     }
 
     /**
+     * Reports whether the given Note has a filename collision with an existing Note.
+     * This can happen when changing the date or the tags for a given Note.
+     * The changes result in the given Note moving to a new save location, which may
+     * already be in use, resulting in a collision.
+     *
+     * @param note Any Note that we want to check for collisions. Must not be null.
+     * @return True if the given Note has a filename collision with an existing Note, false otherwise.
+     */
+    public boolean hasCollision(Note note) {
+        File savePath = SnotesIO.computeFile(dataDir, note);
+        return savePath.exists()
+            && (note.getSourceFile() == null || !savePath.equals(note.getSourceFile()));
+    }
+
+    /**
      * Saves the given Note to disk. The save location is determined dynamically based
-     * on the metadata of the Note. This may mean that an existing Note is moved within the data
-     * directory as a result of this save. If the given Note is a scratch note, it will
-     * be moved from the scratch directory to its proper home in the data directory.
+     * on the metadata of the Note. If a file collision results from this save,
+     * an IOException is thrown and the save is aborted. To handle collisions
+     * differently, use the overloaded save(Note, CollisionStrategy) method and specify a CollisionStrategy.
+     * <p>
+     * If the given Note is a scratch note, it will be moved from the scratch directory
+     * to its proper home in the data directory.
      * <p>
      * The idea here is that the caller never has to specify (or care about) where
      * the Note will be saved. The Note itself, and this Manager class, figure that out.
@@ -105,24 +153,37 @@ public class DataManager {
      * @param note The Note object to save.
      */
     public void save(Note note) throws IOException {
+        save(note, CollisionStrategy.ABORT);
+    }
+
+    /**
+     * Saves the given Note to disk. The save location is determined dynamically based
+     * on the metadata of the Note. Collisions are handled according to the given strategy.
+     * <p>
+     * If the given Note is a scratch note, it will be moved from the scratch directory
+     * to its proper home in the data directory.
+     * <p>
+     * The idea here is that the caller never has to specify (or care about) where
+     * the Note will be saved. The Note itself, and this Manager class, figure that out.
+     * </p>
+     *
+     * @param note The Note object to save.
+     */
+    public void save(Note note, CollisionStrategy collisionStrategy) throws IOException {
+        // If the given note is not in our cache, something is wrong (it was deleted?)
+        if (!notes.contains(note) && !scratchNotes.contains(note)) {
+            throw new IOException("Request to save a Note that is not in cache: " + note);
+        }
+
         File savePath = SnotesIO.computeFile(dataDir, note);
-        // Files.isSameFile() requires both paths to exist; if the computed target doesn't exist yet
-        // it is always a new save location, so we only call it when both sides are present:
-        boolean isSameFile = savePath.exists()
-            && note.getSourceFile() != null
-            && note.getSourceFile().exists()
-            && Files.isSameFile(note.getSourceFile().toPath(), savePath.toPath());
-        if (!isSameFile) {
+        if (hasCollision(note)) {
             if (savePath.exists()) {
-                // Now we have a problem...
-                // We're moving a Note to a new save location, but there's already something there.
-                // Do we overwrite? Do we merge this note with that one? Do we give up and throw an IOException?
-                // TODO sort this out... it's a wonky case, but it could absolutely happen.
-                // For now, we'll throw, but we need a better strategy here.
-                throw new IOException("Save failed: won't overwrite existing file at " + savePath.getAbsolutePath());
+                handleNoteCollision(note, savePath, collisionStrategy);
             }
 
-            // If we get here, it's a new save location, but there's no existing file... so just move it.
+            // At this point, there's either no existing file to worry about, or the collision
+            // has been dealt with above. Either way, we can proceed with the save.
+
             // Ensure the target directory exists before attempting to write:
             File targetDir = savePath.getParentFile();
             if (targetDir != null && !targetDir.exists() && !targetDir.mkdirs()) {
@@ -137,16 +198,18 @@ public class DataManager {
                     log.warning("Failed to delete old source file for note: " + oldSourceFile.getAbsolutePath());
                 }
             }
-
-            // If this was a scratch note, move it from the scratch list to the main notes list:
-            if (scratchNotes.remove(note)) {
-                notes.add(note); // the note is now "real" and will show up in Query results.
-            }
         }
         else {
             // The Note's source file is the same as the computed save path, so we can just overwrite it.
             SnotesIO.saveNote(note, savePath);
         }
+
+        // If this was a scratch note, move it from the scratch list to the main notes list:
+        if (scratchNotes.remove(note)) {
+            notes.add(note); // the note is now "real" and will show up in Query results.
+        }
+
+        log.info("Saved note: " + Note.getRelativePath(note, dataDir));
     }
 
     /**
@@ -171,6 +234,7 @@ public class DataManager {
         }
 
         SnotesIO.saveNote(note, note.getSourceFile()); // save in-place in the scratch directory
+        log.info("Saved scratch note: " + note.getSourceFile().getName());
     }
     
     /**
@@ -179,6 +243,14 @@ public class DataManager {
      */
     public List<Note> getNotes() {
         return new ArrayList<>(notes);
+    }
+
+    /**
+     * Returns a List of all scratch notes currently loaded.
+     * Modifying this list will not affect the DataManager's internal state.
+     */
+    public List<Note> getScratchNotes() {
+        return new ArrayList<>(scratchNotes);
     }
 
     /**
@@ -271,6 +343,40 @@ public class DataManager {
             }
         }
         return true;
+    }
+
+    /**
+     * Deletes the given Note's source file (if it had one) and removes it from our internal cache.
+     *
+     * @param note Any Note instance.
+     */
+    public void delete(Note note) {
+        if (note == null) {
+            throw new IllegalArgumentException("Cannot delete null Note.");
+        }
+        boolean wasRealNote = notes.remove(note);
+        boolean wasScratchNote = scratchNotes.remove(note);
+        if (note.getSourceFile() != null) {
+            if (!note.getSourceFile().delete()) {
+                // This is not fatal, but it is wonky... warn but proceed:
+                log.warning("Failed to delete source file for note: " + note.getSourceFile().getAbsolutePath());
+            }
+        }
+        else {
+            log.warning("Note has no source file to delete: " + note);
+            return;
+        }
+
+        // It's possible we were given a Note that was not in our cache.
+        // This is very strange, but whatever:
+        if (!wasRealNote && !wasScratchNote) {
+            log.warning("Deleted uncached note: " + Note.getRelativePath(note, dataDir));
+            return;
+        }
+
+        // Otherwise, just log it:
+        String noteType = wasRealNote ? "note" : "scratch note";
+        log.info("Deleted " + noteType + ": " + Note.getRelativePath(note, dataDir));
     }
 
     /**
@@ -443,14 +549,14 @@ public class DataManager {
 
     /**
      * Loads all Notes, Queries, and Templates from the given data directory, without specifying
-     * a callback listener. TODO do we need this? When would you ever do this without a callback?
+     * a callback listener. This is for unit tests.
      */
-    public void loadAll(File dataDir) throws IOException {
-        loadAll(dataDir, null);
+    void loadAll() throws IOException {
+        loadAll(null);
     }
 
     /**
-     * Loads all Notes, Queries, and Templates from the given directory, and reports to the
+     * Loads all Notes, Queries, and Templates from our directory, and reports to the
      * given LoadListener when complete. The loading is done in parallel in several worker threads.
      * The listener is not notified until ALL worker threads have completed. Long-running threads
      * will show a progress dialog as needed. The user has the option of canceling via the "cancel"
@@ -461,11 +567,10 @@ public class DataManager {
      * so it's safe to update the UI from the listener.
      * </p>
      *
-     * @param dataDir  The directory to load from. Must not be null. Will be created if it doesn't exist.
      * @param listener The LoadListener to be notified when loading is complete. Can be null.
      * @throws IOException If something is wrong with the given dataDir.
      */
-    public void loadAll(File dataDir, LoadListener listener) throws IOException {
+    public void loadAll(LoadListener listener) throws IOException {
         if (dataDir == null) {
             throw new IOException("Data directory is null.");
         }
@@ -478,7 +583,6 @@ public class DataManager {
             throw new IOException("Data directory is not a directory: " + dataDir.getAbsolutePath());
         }
 
-        File metadataDir = new File(dataDir, METADATA_DIR);
         if (!metadataDir.exists()) {
             if (!metadataDir.mkdirs()) {
                 throw new IOException("Failed to create metadata directory: " + metadataDir.getAbsolutePath());
@@ -488,7 +592,6 @@ public class DataManager {
             throw new IOException("Metadata directory is not a directory: " + metadataDir.getAbsolutePath());
         }
 
-        File staticDir = new File(dataDir, STATIC_DIR);
         if (!staticDir.exists()) {
             if (!staticDir.mkdirs()) {
                 throw new IOException("Failed to create static directory: " + staticDir.getAbsolutePath());
@@ -498,7 +601,6 @@ public class DataManager {
             throw new IOException("Static directory is not a directory: " + staticDir.getAbsolutePath());
         }
 
-        File scratchDir = new File(dataDir, SCRATCH_DIR);
         if (!scratchDir.exists()) {
             if (!scratchDir.mkdirs()) {
                 throw new IOException("Failed to create scratch directory: " + scratchDir.getAbsolutePath());
@@ -506,6 +608,16 @@ public class DataManager {
         }
         else if (!scratchDir.isDirectory()) {
             throw new IOException("Scratch directory is not a directory: " + scratchDir.getAbsolutePath());
+        }
+
+        // Do a quick pre-check of the scratch directory, and delete any completely empty files (length==0).
+        List<File> scratchFiles = FileSystemUtil.findFiles(scratchDir, false, "txt");
+        for (File scratchFile : scratchFiles) {
+            if (scratchFile.length() == 0) {
+                if (!scratchFile.delete()) {
+                    log.warning("Failed to delete empty scratch file: " + scratchFile.getAbsolutePath());
+                }
+            }
         }
 
         // This is our countdown latch for tracking our four worker threads:
@@ -539,6 +651,36 @@ public class DataManager {
         MultiProgressDialog dialog4 = new MultiProgressDialog(MainWindow.getInstance(), "Loading templates...");
         dialog4.setInitialShowDelayMS(500);
         dialog4.runWorker(templateThread, true);
+    }
+
+    public void addNoteDeletionListener(NoteDeletionListener listener) {
+        if (listener == null) {
+            throw new IllegalArgumentException("NoteDeletionListener cannot be null.");
+        }
+        noteDeletionListeners.add(listener);
+    }
+
+    public void removeNoteDeletionListener(NoteDeletionListener listener) {
+        if (listener == null) {
+            throw new IllegalArgumentException("NoteDeletionListener cannot be null.");
+        }
+        noteDeletionListeners.remove(listener);
+    }
+
+    /**
+     * Reports whether the given Note has a source file in our "scratch" directory.
+     * Such "scratch" notes are persisted across application restarts, but they don't count
+     * as "real" notes, and will not appear in any search results. The user must explicitly
+     * save them to promote them to "real" notes.
+     *
+     * @param note Any candidate Note instance.
+     * @return true if and only if the source file is non-null and exists within our scratch directory.
+     */
+    public boolean isScratchNote(Note note) {
+        if (note == null || note.getSourceFile() == null) {
+            return false;
+        }
+        return note.getSourceFile().getAbsolutePath().startsWith(scratchDir.getAbsolutePath());
     }
 
     /**
@@ -609,6 +751,73 @@ public class DataManager {
         catch (IOException e) {
             log.warning("Failed to create scratch file: " + e.getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Invoked internally to handle a Note collision according to the given strategy.
+     * This method does not save the given Note! We just deal with the conflicting Note.
+     *
+     * @param note     The Note that we're trying to save.
+     * @param savePath The computed save path for this Note.
+     * @param strategy The strategy to use for handling this collision.
+     * @throws IOException if strategy is ABORT, or if an error occurs while handling the collision.
+     */
+    private void handleNoteCollision(Note note, File savePath, CollisionStrategy strategy) throws IOException {
+        Note existingNote = null;
+        for (Note toCheck : notes) {
+            if (toCheck.getSourceFile() != null && toCheck.getSourceFile().equals(savePath)) {
+                existingNote = toCheck;
+                break;
+            }
+        }
+
+        switch (strategy) {
+            case OVERWRITE:
+                if (existingNote != null) {
+                    String sourcePath = note.getSourceFile() != null ? note.getSourceFile().getAbsolutePath() : "null";
+                    log.warning("Overwriting existing note file at " + savePath.getAbsolutePath()
+                                    + " with note from " + sourcePath);
+                    delete(existingNote); // this will remove it from our cache and delete the file from disk.
+                    fireNoteDeletedEvent(existingNote); // close any open WriterFrame for this guy
+                    break; // we found the one we were looking for, so we can stop searching.
+                }
+                break;
+            case APPEND:
+                if (existingNote != null) {
+                    String sourcePath = note.getSourceFile() != null ? note.getSourceFile().getAbsolutePath() : "null";
+                    log.warning("Appending to existing note file at " + savePath.getAbsolutePath()
+                                    + " with note from " + sourcePath);
+                    String existingText = existingNote.getText();
+                    if (!existingText.isBlank()) {
+                        // We want exactly one blank line between old content and new content:
+                        if (existingText.endsWith("\n\n")) {
+                            note.setText(existingText + note.getText());
+                        }
+                        else if (existingText.endsWith("\n")) {
+                            note.setText(existingText + "\n" + note.getText());
+                        }
+                        else {
+                            note.setText(existingText + "\n\n" + note.getText());
+                        }
+                    }
+
+                    // We'll treat it as a deletion of the existing one, just to get it out of our cache:
+                    delete(existingNote);
+                    fireNoteDeletedEvent(existingNote);
+                }
+                return; // we're done - no need to move the source file or update the Note's source file reference.
+            case ABORT:
+                throw new IOException("Note filename collision detected at " + savePath.getAbsolutePath()
+                                          + " for note: " + note);
+            default:
+                throw new IllegalArgumentException("Unknown collision strategy: " + strategy);
+        }
+    }
+
+    private void fireNoteDeletedEvent(Note note) {
+        for (NoteDeletionListener listener : new ArrayList<>(noteDeletionListeners)) {
+            listener.onNoteDeleted(note);
         }
     }
 
