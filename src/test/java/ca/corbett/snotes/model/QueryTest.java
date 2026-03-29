@@ -18,6 +18,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class QueryTest extends FilterTest {
@@ -203,6 +204,57 @@ public class QueryTest extends FilterTest {
 
         // THEN the name should be set correctly:
         assertEquals(validName, query.getName());
+    }
+
+    @Test
+    public void execute_withLimit_shouldReturnMostRecentN() {
+        // GIVEN an empty Query that will return all notes from the unfiltered list:
+        Query query = new Query();
+
+        // WHEN we execute with a limit of 1:
+        List<Note> results = query.execute(unfilteredList, 1);
+
+        // THEN we should get back only the single most recent Note (NOTE_VERY_FUTURE):
+        assertNotNull(results);
+        assertEquals(1, results.size());
+        assertEquals(VERY_FUTURE_DATE, results.get(0).getDate());
+    }
+
+    @Test
+    public void execute_withLimitLargerThanResults_shouldReturnAll() {
+        // GIVEN a Query with a date filter that returns exactly 2 notes:
+        Query query = new Query();
+        query.addFilter(new DateFilter(SPECIAL_DATE, DateFilterType.ON));
+
+        // WHEN we execute with a limit larger than the number of matching notes:
+        List<Note> results = query.execute(unfilteredList, 100);
+
+        // THEN all matching notes should be returned (no truncation):
+        assertNotNull(results);
+        assertEquals(2, results.size());
+    }
+
+    @Test
+    public void execute_withZeroLimit_shouldReturnNoResults() {
+        // GIVEN an empty Query that would return all notes:
+        Query query = new Query();
+
+        // WHEN we execute with a limit of 0:
+        List<Note> results = query.execute(unfilteredList, 0);
+
+        // THEN no results should be returned:
+        assertNotNull(results);
+        assertTrue(results.isEmpty());
+    }
+
+    @Test
+    public void execute_withNegativeLimit_shouldThrowException() {
+        // GIVEN an empty Query:
+        Query query = new Query();
+
+        // WHEN we execute with a negative limit:
+        // THEN an IllegalArgumentException should be thrown:
+        assertThrows(IllegalArgumentException.class, () -> query.execute(unfilteredList, -1));
     }
 }
 
