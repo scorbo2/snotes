@@ -287,6 +287,25 @@ public final class Note {
     }
 
     /**
+     * A comparison between Notes will focus on the date of each Note. If a Note
+     * is dated, its date will be used for comparison. Otherwise, the last modified
+     * time of its source file is used. Undated Notes with no source file are treated
+     * as having a date of 0 (the epoch).
+     *
+     * @param other The Note to compare this Note to.
+     * @return negative, zero, or positive as this Note is less than, equal to, or greater than the specified Note.
+     */
+    public int compareTo(Note other) {
+        if (other == null) {
+            return 1; // Non-null Notes are considered greater than null Notes
+        }
+        long thisTime = hasDate() ? getDate().toEpochMilli() : (getSourceFile() != null ? getSourceFile().lastModified() : 0);
+        long otherTime = other.hasDate() ? other.getDate().toEpochMilli() : (other.getSourceFile() != null ? other
+            .getSourceFile().lastModified() : 0);
+        return Long.compare(thisTime, otherTime);
+    }
+
+    /**
      * Given a Note, and the given data directory,
      * this method will return the path of this note's source file relative to that
      * data directory. For example, if the data directory is "/home/user/snotes-data",

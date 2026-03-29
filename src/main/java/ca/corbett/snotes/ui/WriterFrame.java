@@ -2,6 +2,7 @@ package ca.corbett.snotes.ui;
 
 import ca.corbett.extras.MessageUtil;
 import ca.corbett.extras.ScrollUtil;
+import ca.corbett.extras.ToggleableTabbedPane;
 import ca.corbett.forms.Alignment;
 import ca.corbett.forms.FormPanel;
 import ca.corbett.forms.fields.ShortTextField;
@@ -29,6 +30,8 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,6 +48,8 @@ public class WriterFrame extends JInternalFrame {
 
     private final DataManager dataManager;
     private final Note note;
+    private final List<Note> context;
+    private ToggleableTabbedPane tabPane;
     private FormPanel headerForm;
     private ShortTextField dateField;
     private ShortTextField tagField;
@@ -53,7 +58,7 @@ public class WriterFrame extends JInternalFrame {
     private final Timer autoSaveTimer;
 
     /**
-     * Creates a new WriterFrame with a new, blank scratch Note.
+     * Creates a new WriterFrame with a new, blank scratch Note, and no context.
      */
     public WriterFrame() {
         this(MainWindow.getInstance().getDataManager().newNote());
@@ -62,11 +67,27 @@ public class WriterFrame extends JInternalFrame {
     /**
      * Creates a new WriterFrame for the given Note.
      * If the given Note is null, a scratch Note will be created.
+     * No context will be shown.
      */
     public WriterFrame(Note note) {
+        this(note, null);
+    }
+
+    /**
+     * Creates a new WriterFrame for the given Note, with the given context.
+     * If the given Note is null, a scratch Note will be created.
+     *
+     * @param note    the Note to edit in this frame. If null, a new scratch Note will be created.
+     * @param context an optional List of other Notes to show in the context panel. Can be null or empty.
+     */
+    public WriterFrame(Note note, List<Note> context) {
         super(Note.getRelativePath(note, AppConfig.getInstance().getDataDirectory()),
               true, true, true, true);
         this.dataManager = MainWindow.getInstance().getDataManager();
+        this.context = new ArrayList<>();
+        if (context != null) {
+            this.context.addAll(context);
+        }
         if (note == null) {
             log.warning("WriterFrame created with null note. Creating new scratch note.");
             note = dataManager.newNote();
@@ -256,12 +277,23 @@ public class WriterFrame extends JInternalFrame {
         tagField.setAllowBlank(false);
         tagField.addValueChangedListener(f -> isDirty = true);
         tagField.setHelpText("Comma or space-separated list of tags. At least one tag is required.");
-        tagField.setText(note.getPersistenceTagLine().replaceAll("#", ""));
+        tagField.setText(TagList.fromTagList(note.getTags()).getNonDateTagsAsCommaSeparatedString());
         headerForm.add(tagField);
         return headerForm;
     }
 
+    /**
+     * Builds and returns a tabbed pane for the main edit text pane, and an
+     * optional context tab if there is context to show.
+     */
     private JComponent buildTextPanel() {
+        tabPane = new ToggleableTabbedPane();
+        int selectedTab = 0;
+        if (!context.isEmpty()) {
+            tabPane.addTab("Context", new MultiNoteViewer(context));
+            selectedTab = 1; // start on the edit tab, always
+        }
+
         textPane = new JTextPane();
         textPane.setText(note.getText());
         isDirty = false;
@@ -284,7 +316,12 @@ public class WriterFrame extends JInternalFrame {
             }
         });
 
-        return ScrollUtil.buildScrollPane(textPane);
+        tabPane.addTab("Edit", ScrollUtil.buildScrollPane(textPane));
+        if (context.isEmpty()) {
+            tabPane.setTabHeaderVisible(false);
+        }
+        tabPane.setSelectedIndex(selectedTab);
+        return tabPane;
     }
 
     private JPanel buildButtonPanel() {
@@ -309,6 +346,12 @@ public class WriterFrame extends JInternalFrame {
      * unsaved changes.
      */
     private class FrameCloseListener extends InternalFrameAdapter {
+
+        @Override
+        public void internalFrameOpened(InternalFrameEvent e) {
+            SwingUtilities.invokeLater(() -> textPane.requestFocusInWindow());
+        }
+
         @Override
         public void internalFrameClosing(InternalFrameEvent e) {
             if (isDirty) {

@@ -89,6 +89,13 @@ public class YMDDate implements Comparable<YMDDate> {
     }
 
     /**
+     * Returns this YMDDate as the number of milliseconds since the Unix epoch (January 1, 1970, 00:00:00 UTC).
+     */
+    public long toEpochMilli() {
+        return date.atStartOfDay().toInstant(java.time.ZoneOffset.UTC).toEpochMilli();
+    }
+
+    /**
      * Returns the day prior to this date.
      */
     public YMDDate getYesterday() {

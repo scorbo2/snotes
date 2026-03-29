@@ -166,9 +166,10 @@ public class TemplateBuilderDialog extends JDialog {
 
         tagField = new ShortTextField("Tags:", 20);
         tagField.setHelpText("<html>Enter tags separated by commas or spaces." +
-                                 "<br>Example: <i>work, personal, todo</i></html>");
+                                 "<br>Example: <i>work, personal, todo</i>" +
+                                 "<br><br>These tags are used to gather context, if context is to be shown.</html>");
         if (templateToEdit != null) {
-            tagField.setText(TagList.fromTagList(templateToEdit.getTagList()).getPersistenceString());
+            tagField.setText(TagList.fromTagList(templateToEdit.getTagList()).getNonDateTagsAsCommaSeparatedString());
         }
         formPanel.add(tagField);
 

@@ -144,6 +144,7 @@ public class Query {
      * Applies our chain of filters to the provided list of Notes, returning a new list that only contains
      * Notes that were not filtered out by any of the filters in this Query.
      * The resulting list may be empty if the filters are too strict, but it will never be null.
+     * The returned list is ordered by date, with most recent items last.
      *
      * @param notes The list of Notes to filter. This list is not modified by this method.
      * @return A new list of Notes that passed through all the filters in this Query. May be empty, but never null.
@@ -165,6 +166,12 @@ public class Query {
                 filteredNotes.add(note);
             }
         }
+
+        // Sort the list by date. For Notes that are dated, we'll use that date. For Notes that are
+        // undated, we'll use the sourceFile's lastModified time. Undated Notes that have no
+        // source file will be treated as having a date of 0 (the epoch), so they will be sorted before all dated Notes.
+        filteredNotes.sort(Note::compareTo);
+
         return filteredNotes;
     }
 

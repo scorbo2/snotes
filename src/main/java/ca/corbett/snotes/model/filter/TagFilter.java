@@ -78,7 +78,7 @@ public class TagFilter extends Filter {
     @Override
     public String toString() {
         TagList tagList = TagList.fromTagList(tagsToFilter);
-        String prettyPrinted = "[ " + tagList.getPersistenceString().replaceAll("#", "") + " ]";
+        String prettyPrinted = "[ " + tagList.getNonDateTagsAsCommaSeparatedString() + " ]";
         return "Tags have " + filterType.toString().toLowerCase() + " of: " + prettyPrinted;
     }
 }
