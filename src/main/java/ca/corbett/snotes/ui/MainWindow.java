@@ -58,6 +58,7 @@ public class MainWindow extends JFrame implements UIReloadable {
         internalFrameAddPosition = 0;
         messageUtil = new MessageUtil(this, logger);
         dataManager = new DataManager();
+        dataManager.addNoteDeletionListener(this::noteDeleted);
         keyStrokeManager = new KeyStrokeManager(this);
         actionPanelManager = new ActionPanelManager();
         initComponents();

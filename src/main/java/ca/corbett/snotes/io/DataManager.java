@@ -51,6 +51,21 @@ public class DataManager {
         void onLoadComplete(DataManager dataManager);
     }
 
+    /**
+     * Callers can implement this to be notified when a Note is deleted from the DataManager.
+     */
+    public interface NoteDeletionListener {
+        /**
+         * The given Note has been deleted from the DataManager.
+         * This is informational only - the delete can't be overridden by callers.
+         * The given Note is now "dead" - attempting to save() it will throw an IOException.
+         *
+         * @param note The Note that was deleted. This Note is now effectively "dead" and should not be used for anything.
+         */
+        void onNoteDeleted(Note note);
+    }
+
+    private final List<NoteDeletionListener> noteDeletionListeners;
     private final List<Note> notes;
     private final List<Query> queries;
     private final List<Template> templates;
@@ -75,6 +90,7 @@ public class DataManager {
      * directly, bypassing AppConfig entirely so that the full application need not be initialized.
      */
     DataManager(File dataDir) {
+        this.noteDeletionListeners = new CopyOnWriteArrayList<>();
         this.notes = new CopyOnWriteArrayList<>();
         this.queries = new CopyOnWriteArrayList<>();
         this.templates = new CopyOnWriteArrayList<>();
@@ -637,6 +653,20 @@ public class DataManager {
         dialog4.runWorker(templateThread, true);
     }
 
+    public void addNoteDeletionListener(NoteDeletionListener listener) {
+        if (listener == null) {
+            throw new IllegalArgumentException("NoteDeletionListener cannot be null.");
+        }
+        noteDeletionListeners.add(listener);
+    }
+
+    public void removeNoteDeletionListener(NoteDeletionListener listener) {
+        if (listener == null) {
+            throw new IllegalArgumentException("NoteDeletionListener cannot be null.");
+        }
+        noteDeletionListeners.remove(listener);
+    }
+
     /**
      * Reports whether the given Note has a source file in our "scratch" directory.
      * Such "scratch" notes are persisted across application restarts, but they don't count
@@ -748,7 +778,7 @@ public class DataManager {
                     log.warning("Overwriting existing note file at " + savePath.getAbsolutePath()
                                     + " with note from " + note.getSourceFile().getAbsolutePath());
                     delete(existingNote); // this will remove it from our cache and delete the file from disk.
-                    MainWindow.getInstance().noteDeleted(existingNote); // close any open WriterFrame for this guy
+                    fireNoteDeletedEvent(existingNote); // close any open WriterFrame for this guy
                     break; // we found the one we were looking for, so we can stop searching.
                 }
                 break;
@@ -772,7 +802,7 @@ public class DataManager {
 
                     // We'll treat it as a deletion of the existing one, just to get it out of our cache:
                     delete(existingNote);
-                    MainWindow.getInstance().noteDeleted(existingNote);
+                    fireNoteDeletedEvent(existingNote);
                 }
                 return; // we're done - no need to move the source file or update the Note's source file reference.
             case ABORT:
@@ -780,6 +810,12 @@ public class DataManager {
                                           + " for note: " + note);
             default:
                 throw new IllegalArgumentException("Unknown collision strategy: " + strategy);
+        }
+    }
+
+    private void fireNoteDeletedEvent(Note note) {
+        for (NoteDeletionListener listener : new ArrayList<>(noteDeletionListeners)) {
+            listener.onNoteDeleted(note);
         }
     }
 
