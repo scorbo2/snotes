@@ -68,6 +68,7 @@ public class MultiNoteViewer extends JPanel {
      * If the given list is empty or null, the MultiNoteViewer will be cleared and show "(no content)".
      */
     public void setNotes(List<Note> notes) {
+        this.textPane.setText("");
         this.notes.clear();
         this.positionOffsets.clear();
         if (notes != null) {

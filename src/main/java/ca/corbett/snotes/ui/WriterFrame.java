@@ -290,7 +290,7 @@ public class WriterFrame extends JInternalFrame {
         tabPane = new ToggleableTabbedPane();
         int selectedTab = 0;
         if (!context.isEmpty()) {
-            tabPane.addTab("Context", buildContextPanel());
+            tabPane.addTab("Context", new MultiNoteViewer(context));
             selectedTab = 1; // start on the edit tab, always
         }
 
@@ -322,11 +322,6 @@ public class WriterFrame extends JInternalFrame {
         }
         tabPane.setSelectedIndex(selectedTab);
         return tabPane;
-    }
-
-    private JComponent buildContextPanel() {
-        MultiNoteViewer viewer = new MultiNoteViewer(context);
-        return ScrollUtil.buildScrollPane(viewer);
     }
 
     private JPanel buildButtonPanel() {

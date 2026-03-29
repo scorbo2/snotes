@@ -60,8 +60,8 @@ public class Template {
      * For optionally retrieving and displaying context in the edit window when
      * writing a new Note. The Query for retrieving context will be generated
      * at the time the Note is created, and is driven from the tags specified
-     * in this Template. If no tags are specified in this Template, then the
-     * most recent Notes with any tags will be retrieved.
+     * in this Template. If no tags are specified in this Template,
+     * then no context will be retrieved.
      */
     public enum Context {
         NONE("No context", 0),
