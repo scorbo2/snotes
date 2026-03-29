@@ -70,8 +70,11 @@ public class ExecuteTemplateAction extends EnhancedAction {
         Query contextQuery = new Query();
         contextQuery.addFilter(new TagFilter(template.getTagList(), TagFilter.FilterType.ANY));
         List<Note> results = contextQuery.execute(MainWindow.getInstance().getDataManager().getNotes());
-        if (results.size() > template.getContext().getLimit()) {
-            results = results.subList(0, template.getContext().getLimit());
+
+        // Query will return the notes from oldest to newest.
+        int limit = template.getContext().getLimit();
+        if (results.size() > limit) {
+            results = results.subList(results.size() - limit, results.size());
         }
         return results;
     }
