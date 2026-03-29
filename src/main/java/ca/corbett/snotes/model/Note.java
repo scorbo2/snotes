@@ -1,7 +1,10 @@
 package ca.corbett.snotes.model;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Represents a combination of some text and a list of tags that categorize that text.
@@ -10,6 +13,8 @@ import java.util.List;
  * @since Snotes 1.0
  */
 public final class Note {
+
+    private static final Logger log = Logger.getLogger(Note.class.getName());
 
     private final TagList tagList;
     private String text;
@@ -306,14 +311,19 @@ public final class Note {
         if (note == null || note.getSourceFile() == null) {
             return "";
         }
-        File sourceFile = note.getSourceFile();
-        String dataDirPath = dataDir.getAbsolutePath();
-        String sourceFilePath = sourceFile.getAbsolutePath();
-        if (sourceFilePath.startsWith(dataDirPath)) {
-            return sourceFilePath.substring(dataDirPath.length() + 1); // +1 to remove the separator
+        try {
+            Path dataDirPath = dataDir.toPath().toAbsolutePath().normalize();
+            Path sourceFilePath = note.getSourceFile().toPath().toAbsolutePath().normalize();
+            if (sourceFilePath.startsWith(dataDirPath)) {
+                return dataDirPath.relativize(sourceFilePath).toString();
+            }
+            else {
+                return sourceFilePath.toString();
+            }
         }
-        else {
-            return sourceFilePath;
+        catch (Exception e) {
+            log.log(Level.WARNING, "getRelativePath: could not resolve paths", e);
+            return "";
         }
     }
 }
