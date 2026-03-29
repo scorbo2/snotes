@@ -171,6 +171,9 @@ public class Query {
         if (limit < 0) {
             throw new IllegalArgumentException("limit must be >= 0");
         }
+        if (limit == 0) {
+            return new ArrayList<>(); // limit of zero means no results
+        }
         if (notes == null) {
             return new ArrayList<>();
         }
