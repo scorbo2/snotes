@@ -204,5 +204,59 @@ public class QueryTest extends FilterTest {
         // THEN the name should be set correctly:
         assertEquals(validName, query.getName());
     }
+
+    @Test
+    public void execute_withLimit_shouldReturnMostRecentN() {
+        // GIVEN an empty Query that will return all notes from the unfiltered list:
+        Query query = new Query();
+
+        // WHEN we execute with a limit of 1:
+        List<Note> results = query.execute(unfilteredList, 1);
+
+        // THEN we should get back only the single most recent Note (NOTE_VERY_FUTURE):
+        assertNotNull(results);
+        assertEquals(1, results.size());
+        assertEquals(VERY_FUTURE_DATE, results.get(0).getDate());
+    }
+
+    @Test
+    public void execute_withLimitLargerThanResults_shouldReturnAll() {
+        // GIVEN a Query with a date filter that returns exactly 2 notes:
+        Query query = new Query();
+        query.addFilter(new DateFilter(SPECIAL_DATE, DateFilterType.ON));
+
+        // WHEN we execute with a limit larger than the number of matching notes:
+        List<Note> results = query.execute(unfilteredList, 100);
+
+        // THEN all matching notes should be returned (no truncation):
+        assertNotNull(results);
+        assertEquals(2, results.size());
+    }
+
+    @Test
+    public void execute_withZeroLimit_shouldReturnAll() {
+        // GIVEN an empty Query that will return all notes:
+        Query query = new Query();
+
+        // WHEN we execute with a limit of 0 (meaning no limit):
+        List<Note> results = query.execute(unfilteredList, 0);
+
+        // THEN all notes should be returned, just as if no limit was specified:
+        assertNotNull(results);
+        assertEquals(unfilteredList.size(), results.size());
+    }
+
+    @Test
+    public void execute_withNegativeLimit_shouldReturnAll() {
+        // GIVEN an empty Query that will return all notes:
+        Query query = new Query();
+
+        // WHEN we execute with a negative limit (meaning no limit):
+        List<Note> results = query.execute(unfilteredList, -1);
+
+        // THEN all notes should be returned, just as if no limit was specified:
+        assertNotNull(results);
+        assertEquals(unfilteredList.size(), results.size());
+    }
 }
 

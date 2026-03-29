@@ -150,6 +150,21 @@ public class Query {
      * @return A new list of Notes that passed through all the filters in this Query. May be empty, but never null.
      */
     public List<Note> execute(List<Note> notes) {
+        return execute(notes, 0);
+    }
+
+    /**
+     * Applies our chain of filters to the provided list of Notes, returning a new list that only contains
+     * Notes that were not filtered out by any of the filters in this Query.
+     * The resulting list may be empty if the filters are too strict, but it will never be null.
+     * The returned list is ordered by date, with most recent items last.
+     * If limit is greater than zero, only the most recent N results from the sorted result set are returned.
+     *
+     * @param notes The list of Notes to filter. This list is not modified by this method.
+     * @param limit The maximum number of results to return, taking the most recent. Pass 0 (or any value less than 1) for no limit.
+     * @return A new list of Notes that passed through all the filters in this Query. May be empty, but never null.
+     */
+    public List<Note> execute(List<Note> notes, int limit) {
         if (notes == null) {
             return new ArrayList<>();
         }
@@ -171,6 +186,10 @@ public class Query {
         // undated, we'll use the sourceFile's lastModified time. Undated Notes that have no
         // source file will be treated as having a date of 0 (the epoch), so they will be sorted before all dated Notes.
         filteredNotes.sort(Note::compareTo);
+
+        if (limit > 0 && filteredNotes.size() > limit) {
+            return filteredNotes.subList(filteredNotes.size() - limit, filteredNotes.size());
+        }
 
         return filteredNotes;
     }
