@@ -756,7 +756,7 @@ public class DataManager {
                 if (existingNote != null) {
                     log.warning("Appending to existing note file at " + savePath.getAbsolutePath()
                                     + " with note from " + note.getSourceFile().getAbsolutePath());
-                    String existingText = existingNote.getText().trim();
+                    String existingText = existingNote.getText();
                     if (!existingText.isBlank()) {
                         // We want exactly one blank line between old content and new content:
                         if (existingText.endsWith("\n\n")) {

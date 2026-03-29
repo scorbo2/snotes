@@ -221,6 +221,16 @@ public final class Note {
     }
 
     /**
+     * Removes all tags, including the date tag if present, from this Note.
+     */
+    public void clearAllTags() {
+        if (tagList.size() != 0) {
+            tagList.clear();
+            isDirty = true;
+        }
+    }
+
+    /**
      * Indicates whether or not the given tag value exists for this Note.
      *
      * @param tag The tag value to look for.

@@ -18,6 +18,7 @@ import javax.swing.JComponent;
 import javax.swing.JInternalFrame;
 import javax.swing.JPanel;
 import javax.swing.JTextPane;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -78,7 +79,8 @@ public class WriterFrame extends JInternalFrame {
         initComponents();
         if (dataManager.isScratchNote(note)) {
             // For scratch notes, we want to auto-save every minute, so we set up a timer to do that.
-            autoSaveTimer = new Timer(60 * 1000, e -> save());
+            autoSaveTimer = new Timer(60 * 1000, e -> SwingUtilities.invokeLater(this::save));
+            autoSaveTimer.setRepeats(true);
             autoSaveTimer.start();
         }
         else {
@@ -170,6 +172,8 @@ public class WriterFrame extends JInternalFrame {
         if (!isDirty) {
             return;
         }
+
+        note.clearAllTags(); // we will nuke and pave to overwrite old settings
         note.setDate(getDate());
         TagList tagList = TagList.fromRawString(tagField.getText());
         for (Tag tag : tagList.getTags()) {
@@ -306,6 +310,7 @@ public class WriterFrame extends JInternalFrame {
                 if (result == MessageUtil.CANCEL) {
                     // User canceled the close, so we need to prevent the frame from closing.
                     setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+                    return;
                 }
                 else if (result == MessageUtil.YES) {
                     // User wants to save, so we save the note and allow the frame to close.
