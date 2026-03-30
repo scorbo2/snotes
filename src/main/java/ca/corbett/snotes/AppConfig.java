@@ -3,6 +3,8 @@ package ca.corbett.snotes;
 import ca.corbett.extensions.AppProperties;
 import ca.corbett.extras.CustomizableDesktopPane;
 import ca.corbett.extras.EnhancedAction;
+import ca.corbett.extras.LookAndFeelManager;
+import ca.corbett.extras.actionpanel.ColorTheme;
 import ca.corbett.extras.gradient.ColorSelectionType;
 import ca.corbett.extras.gradient.Gradient;
 import ca.corbett.extras.io.KeyStrokeManager;
@@ -12,13 +14,20 @@ import ca.corbett.extras.properties.ColorProperty;
 import ca.corbett.extras.properties.DecimalProperty;
 import ca.corbett.extras.properties.DirectoryProperty;
 import ca.corbett.extras.properties.EnumProperty;
+import ca.corbett.extras.properties.FontProperty;
 import ca.corbett.extras.properties.KeyStrokeProperty;
 import ca.corbett.extras.properties.LabelProperty;
 import ca.corbett.extras.properties.LookAndFeelProperty;
+import ca.corbett.extras.properties.PropertyFormFieldValueChangedEvent;
 import ca.corbett.extras.properties.ShortTextProperty;
+import ca.corbett.forms.fields.CheckBoxField;
+import ca.corbett.forms.fields.ColorField;
+import ca.corbett.forms.fields.ComboField;
+import ca.corbett.forms.fields.FormField;
 import ca.corbett.snotes.extensions.SnotesExtension;
 import ca.corbett.snotes.extensions.SnotesExtensionManager;
 import ca.corbett.snotes.io.DataManager;
+import ca.corbett.snotes.ui.EditorTheme;
 import ca.corbett.snotes.ui.actions.AboutAction;
 import ca.corbett.snotes.ui.actions.ExitAction;
 import ca.corbett.snotes.ui.actions.ExtensionManagerAction;
@@ -29,9 +38,13 @@ import ca.corbett.snotes.ui.actions.SaveAction;
 import ca.corbett.snotes.ui.actions.SearchAction;
 import com.formdev.flatlaf.FlatLightLaf;
 
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Frame;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * Manages application configuration properties for Snotes.
@@ -54,6 +67,8 @@ import java.util.List;
  * @since Snotes 2.0
  */
 public class AppConfig extends AppProperties<SnotesExtension> {
+
+    private static final Logger log = Logger.getLogger(AppConfig.class.getName());
 
     private static final String PROPS_FILE_NAME = "Snotes.props";
     public static final File PROPS_FILE = new File(Version.SETTINGS_DIR, PROPS_FILE_NAME);
@@ -110,6 +125,17 @@ public class AppConfig extends AppProperties<SnotesExtension> {
     private EnumProperty<CustomizableDesktopPane.LogoPlacement> desktopLogoPlacementProp;
     private DirectoryProperty dataDirProp;
 
+    private BooleanProperty overrideLafEditorProp;
+    private EnumProperty<EditorTheme> editorThemeProp;
+    private ColorProperty editorBgColorProp;
+    private ColorProperty tagFontColorProp;
+    private ColorProperty noteFontColorProp;
+    private FontProperty tagFontProp;
+    private FontProperty noteFontProp;
+
+    private BooleanProperty overrideLafActionPanelProp;
+    private EnumProperty<ColorTheme> actionPanelThemeProp;
+
     private AppConfig() {
         super(Version.FULL_NAME, PROPS_FILE, SnotesExtensionManager.getInstance());
     }
@@ -127,6 +153,23 @@ public class AppConfig extends AppProperties<SnotesExtension> {
      */
     public static String peek(String propName) {
         return AppProperties.peek(PROPS_FILE, propName);
+    }
+
+    /**
+     * Overridden so we can set the initial enabled/disabled state our properties.
+     */
+    @Override
+    public boolean showPropertiesDialog(Frame owner) {
+        boolean isCustomEditor = overrideLafEditorProp.getValue();
+        editorThemeProp.setInitiallyEditable(isCustomEditor);
+        editorBgColorProp.setInitiallyEditable(isCustomEditor);
+        tagFontColorProp.setInitiallyEditable(isCustomEditor);
+        noteFontColorProp.setInitiallyEditable(isCustomEditor);
+
+        boolean isCustomActionPanel = overrideLafActionPanelProp.getValue();
+        actionPanelThemeProp.setInitiallyEditable(isCustomActionPanel);
+
+        return super.showPropertiesDialog(owner);
     }
 
     public boolean isSingleInstanceEnabled() {
@@ -255,6 +298,62 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         return exitAction;
     }
 
+    public Font getTagFont() {
+        return tagFontProp.getFont();
+    }
+
+    public Font getNoteFont() {
+        return noteFontProp.getFont();
+    }
+
+    /**
+     * Returns the currently configured editor background color, or the default
+     * background color from the current Look and Feel, depending on whether
+     * the user has opted to override the Look and Feel for the editor or not.
+     */
+    public Color getEditorBgColor() {
+        if (overrideLafEditorProp.getValue()) {
+            return editorBgColorProp.getSolidColor();
+        }
+        else {
+            return LookAndFeelManager.getLafColor("TextPane.background", Color.WHITE);
+        }
+    }
+
+    /**
+     * Returns the currently configured tag font color, or the default foreground color from the current
+     * Look and Feel, depending on whether the user has opted to override the Look and Feel for the editor or not.
+     */
+    public Color getTagFontColor() {
+        if (overrideLafEditorProp.getValue()) {
+            return tagFontColorProp.getSolidColor();
+        }
+        else {
+            return LookAndFeelManager.getLafColor("TextPane.foreground", Color.BLUE);
+        }
+    }
+
+    /**
+     * Returns the currently configured note font color, or the default foreground color from the current
+     * Look and Feel, depending on whether the user has opted to override the Look and Feel for the editor or not.
+     */
+    public Color getNoteFontColor() {
+        if (overrideLafEditorProp.getValue()) {
+            return noteFontColorProp.getSolidColor();
+        }
+        else {
+            return LookAndFeelManager.getLafColor("TextPane.foreground", Color.BLACK);
+        }
+    }
+
+    public boolean isOverrideLafForActionPanel() {
+        return overrideLafActionPanelProp.getValue();
+    }
+
+    public ColorTheme getActionPanelColorTheme() {
+        return actionPanelThemeProp.getSelectedItem();
+    }
+
     /**
      * Returns all KeyStrokeProperty instances defined in the application config,
      * or offered by any currently-enabled extension.
@@ -294,7 +393,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         props.add(rememberSizePositionProp);
 
         // Look and feel stuff:
-        lookAndFeelProp = new LookAndFeelProperty("UI.Look and Feel.Look and Feel", "Look and Feel:",
+        lookAndFeelProp = new LookAndFeelProperty("UI.General.Look and Feel", "Look and Feel:",
                                                   FlatLightLaf.class.getName());
         props.add(lookAndFeelProp);
 
@@ -309,11 +408,141 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         props.add(desktopLogoAlphaProp);
         props.add(desktopGradientProp);
         props.add(desktopLogoPlacementProp);
+        props.addAll(createEditorThemeProperties());
+        props.addAll(createActionPanelThemeProperties());
         props.addAll(createKeystrokeProperties());
         props.addAll(createDataProperties());
         props.addAll(createWindowStateProperties());
 
         return props;
+    }
+
+    private List<AbstractProperty> createEditorThemeProperties() {
+        List<AbstractProperty> props = new ArrayList<>();
+
+        tagFontProp = new FontProperty("UI.Editor.tagFont", "Tag font:", new Font(Font.MONOSPACED, Font.BOLD, 16));
+        noteFontProp = new FontProperty("UI.Editor.noteFont", "Note font:", new Font(Font.MONOSPACED, Font.PLAIN, 14));
+        overrideLafEditorProp = new BooleanProperty("UI.Editor.overrideLaf", "Override Look and Feel", false);
+        overrideLafEditorProp.addFormFieldChangeListener(this::updateEditorProps);
+
+        editorThemeProp = new EnumProperty<>("UI.Editor.theme", "Set from theme:", EditorTheme.PAPER);
+        editorThemeProp.addLeftPadding(12);
+        editorThemeProp.addFormFieldChangeListener(evt -> setEditorTheme(evt));
+
+        editorBgColorProp = new ColorProperty("UI.Editor.bgColor", "Background:",
+                                              ColorSelectionType.SOLID)
+            .setSolidColor(Color.WHITE);
+        editorBgColorProp.addLeftPadding(12);
+
+        tagFontColorProp = new ColorProperty("UI.Editor.tagFontColor", "Tag text:",
+                                             ColorSelectionType.SOLID)
+            .setSolidColor(Color.BLUE);
+        tagFontColorProp.addLeftPadding(12);
+        noteFontColorProp = new ColorProperty("UI.Editor.noteFontColor", "Note text:",
+                                              ColorSelectionType.SOLID)
+            .setSolidColor(Color.BLACK);
+        noteFontColorProp.addLeftPadding(12);
+
+        props.add(tagFontProp);
+        props.add(noteFontProp);
+        props.add(overrideLafEditorProp);
+        props.add(editorThemeProp);
+        props.add(editorBgColorProp);
+        props.add(tagFontColorProp);
+        props.add(noteFontColorProp);
+
+        return props;
+    }
+
+    /**
+     * Sets the enabled status of our editor color prop fields as the user
+     * checks or unchecks the "Override Look and Feel" checkbox.
+     */
+    private void updateEditorProps(PropertyFormFieldValueChangedEvent evt) {
+        if (!(evt.formField() instanceof CheckBoxField enabledField)) {
+            log.warning("Unexpected field type for editor override property: " + evt.formField());
+            return; // safety check
+        }
+
+        // Look up our generated form fields:
+        FormField themeField = evt.formPanel().findFormField(editorThemeProp.getFullyQualifiedName());
+        FormField bgField = evt.formPanel().findFormField(editorBgColorProp.getFullyQualifiedName());
+        FormField tagField = evt.formPanel().findFormField(tagFontColorProp.getFullyQualifiedName());
+        FormField noteField = evt.formPanel().findFormField(noteFontColorProp.getFullyQualifiedName());
+
+        // Safety check:
+        if (themeField == null || bgField == null || tagField == null || noteField == null) {
+            log.warning("Could not find one or more editor theme fields in the properties form.");
+            return;
+        }
+        themeField.setEnabled(enabledField.isChecked());
+        bgField.setEnabled(enabledField.isChecked());
+        tagField.setEnabled(enabledField.isChecked());
+        noteField.setEnabled(enabledField.isChecked());
+    }
+
+    /**
+     * Populates our editor color choosers based on the selected theme.
+     */
+    private void setEditorTheme(PropertyFormFieldValueChangedEvent evt) {
+        if (!(evt.formField() instanceof ComboField<?> comboProp)) {
+            log.warning("Unexpected field type for editor theme property: " + evt.formField());
+            return; // safety check
+        }
+        EditorTheme selectedTheme = (EditorTheme)comboProp.getSelectedItem();
+
+        // Look up our generated form fields:
+        FormField bgField = evt.formPanel().findFormField(editorBgColorProp.getFullyQualifiedName());
+        FormField tagField = evt.formPanel().findFormField(tagFontColorProp.getFullyQualifiedName());
+        FormField noteField = evt.formPanel().findFormField(noteFontColorProp.getFullyQualifiedName());
+
+        // Safety check:
+        if (!(bgField instanceof ColorField bg)
+            || !(tagField instanceof ColorField tag)
+            || !(noteField instanceof ColorField note)) {
+            log.warning("Could not find one or more editor theme fields in the properties form.");
+            return;
+        }
+        bg.setColor(selectedTheme.getBackground());
+        tag.setColor(selectedTheme.getTagColor());
+        note.setColor(selectedTheme.getTextColor());
+    }
+
+    private List<AbstractProperty> createActionPanelThemeProperties() {
+        List<AbstractProperty> props = new ArrayList<>();
+
+        // We will override the LaF by default for this, because it looks much nicer in my opinion.
+        // User can disable this override if they disagree, or choose a different ActionPanel theme.
+        overrideLafActionPanelProp = new BooleanProperty("UI.ActionPanel.overrideLaf", "Override Look and Feel", true);
+        overrideLafActionPanelProp.addFormFieldChangeListener(this::updateActionPanelProps);
+        actionPanelThemeProp = new EnumProperty<>("UI.ActionPanel.theme", "Theme:", ColorTheme.DEFAULT);
+        actionPanelThemeProp.addLeftPadding(12);
+
+        props.add(overrideLafActionPanelProp);
+        props.add(actionPanelThemeProp);
+
+        return props;
+    }
+
+    /**
+     * Enables or disables the generated ActionPanel theme chooser based on
+     * whether the user has checked or unchecked the "Override Look and Feel" checkbox for the ActionPanel.
+     */
+    private void updateActionPanelProps(PropertyFormFieldValueChangedEvent evt) {
+        if (!(evt.formField() instanceof CheckBoxField enabledField)) {
+            log.warning("Unexpected field type for action panel override property: " + evt.formField());
+            return; // safety check
+        }
+
+        // Look up our generated form field:
+        FormField themeField = evt.formPanel().findFormField(actionPanelThemeProp.getFullyQualifiedName());
+
+        // Safety check:
+        if (themeField == null) {
+            log.warning("Could not find action panel theme field in the properties form.");
+            return;
+        }
+        themeField.setEnabled(enabledField.isChecked());
     }
 
     private List<AbstractProperty> createKeystrokeProperties() {

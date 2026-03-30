@@ -1,7 +1,9 @@
 package ca.corbett.snotes.ui;
 
 import ca.corbett.extras.ScrollUtil;
+import ca.corbett.snotes.AppConfig;
 import ca.corbett.snotes.model.Note;
+import ca.corbett.snotes.ui.actions.UIReloadAction;
 
 import javax.swing.JPanel;
 import javax.swing.JTextPane;
@@ -25,7 +27,7 @@ import java.util.logging.Logger;
  * @author <a href="https://github.com/scorbo2">scorbo2</a>
  * @since Snotes 2.0
  */
-public class MultiNoteViewer extends JPanel {
+public class MultiNoteViewer extends JPanel implements UIReloadable {
 
     /**
      * Callers can listen for Note selection events by implementing this interface.
@@ -60,7 +62,16 @@ public class MultiNoteViewer extends JPanel {
         textPane.addMouseListener(new TextFieldMouseListener());
         setLayout(new BorderLayout());
         add(ScrollUtil.buildScrollPane(textPane), BorderLayout.CENTER);
+        setStyles();
         setNotes(notes);
+        UIReloadAction.getInstance().registerReloadable(this);
+    }
+
+    /**
+     * Invoke this when the MultiNoteViewer is no longer needed, to clean up resources and unregister from events.
+     */
+    public void dispose() {
+        UIReloadAction.getInstance().unregisterReloadable(this);
     }
 
     /**
@@ -80,7 +91,6 @@ public class MultiNoteViewer extends JPanel {
             return;
         }
 
-        setStyles();
         Document doc = textPane.getDocument();
         for (Note note : this.notes) {
             positionOffsets.add(doc.getLength());
@@ -109,6 +119,11 @@ public class MultiNoteViewer extends JPanel {
         listeners.remove(listener);
     }
 
+    @Override
+    public void reloadUI() {
+        setStyles();
+    }
+
     private void fireNoteSelectionEvent(Note note) {
         for (NoteSelectedListener listener : new ArrayList<>(listeners)) {
             listener.onNoteSelected(note);
@@ -116,21 +131,52 @@ public class MultiNoteViewer extends JPanel {
     }
 
     /**
-     * A future ticket will make font colors, faces, and other styles customizable.
-     * For now, we will go with a hard-coded style set.
-     * <p>
-     *  TODO when this gets wired up to AppConfig, we'll have to respond to UIReload events...
-     * </p>
+     * Sets or updates the text styles for tag and note contents.
+     * Can be invoked whenever the UI is reloaded, to ensure that the styles are up-to-date with the current theme.
      */
     private void setStyles() {
+        textPane.setBackground(AppConfig.getInstance().getEditorBgColor());
+
         Style defaultStyle = StyleContext.getDefaultStyleContext().getStyle(StyleContext.DEFAULT_STYLE);
-        Style tagStyle = textPane.addStyle("tag", defaultStyle);
-        StyleConstants.setFontFamily(tagStyle, Font.MONOSPACED);
-        StyleConstants.setFontSize(tagStyle, 16);
-        StyleConstants.setBold(tagStyle, true);
-        Style noteStyle = textPane.addStyle("note", defaultStyle);
-        StyleConstants.setFontFamily(noteStyle, Font.SERIF);
-        StyleConstants.setFontSize(noteStyle, 14);
+        Style tagStyle = textPane.getStyle("tag");
+        if (tagStyle == null) {
+            tagStyle = textPane.addStyle("tag", defaultStyle);
+        }
+        Font tagFont = AppConfig.getInstance().getTagFont();
+        StyleConstants.setFontFamily(tagStyle, tagFont.getFamily());
+        StyleConstants.setFontSize(tagStyle, tagFont.getSize());
+        StyleConstants.setBold(tagStyle, tagFont.isBold());
+        StyleConstants.setItalic(tagStyle, tagFont.isItalic());
+        StyleConstants.setForeground(tagStyle, AppConfig.getInstance().getTagFontColor());
+
+        Style noteStyle = textPane.getStyle("note");
+        if (noteStyle == null) {
+            noteStyle = textPane.addStyle("note", defaultStyle);
+        }
+        Font noteFont = AppConfig.getInstance().getNoteFont();
+        StyleConstants.setFontFamily(noteStyle, noteFont.getFamily());
+        StyleConstants.setFontSize(noteStyle, noteFont.getSize());
+        StyleConstants.setBold(noteStyle, noteFont.isBold());
+        StyleConstants.setItalic(noteStyle, noteFont.isItalic());
+        StyleConstants.setForeground(noteStyle, AppConfig.getInstance().getNoteFontColor());
+
+        // Re-insert all content to force the styles to be applied to everything that's already there.
+        // We can only get away with this because this is a read-only viewer, so we don't have to
+        // worry that the user may have changed our content since we originally inserted it.
+        int pos = textPane.getCaretPosition();
+        textPane.setText("");
+        Document doc = textPane.getDocument();
+        for (Note note : notes) {
+            try {
+                doc.insertString(doc.getLength(), note.getHumanTagLine() + "\n", textPane.getStyle("tag"));
+                doc.insertString(doc.getLength(), note.getText() + "\n\n", textPane.getStyle("note"));
+            }
+            catch (BadLocationException ble) {
+                // Should never happen, but let's not ignore it:
+                log.warning("MultiNoteViewer: unexpected BadLocationException: " + ble.getMessage());
+            }
+        }
+        textPane.setCaretPosition(pos);
     }
 
     /**

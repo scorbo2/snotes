@@ -3,6 +3,7 @@ package ca.corbett.snotes.ui;
 import ca.corbett.extras.CustomizableDesktopPane;
 import ca.corbett.extras.MessageUtil;
 import ca.corbett.extras.SingleInstanceManager;
+import ca.corbett.extras.actionpanel.ActionPanel;
 import ca.corbett.extras.io.KeyStrokeManager;
 import ca.corbett.extras.logging.LogConsole;
 import ca.corbett.extras.properties.KeyStrokeProperty;
@@ -245,6 +246,15 @@ public class MainWindow extends JFrame implements UIReloadable {
         desktopPane.setGradientConfig(AppConfig.getInstance().getDesktopGradient());
         desktopPane.setLogoImagePlacement(AppConfig.getInstance().getDesktopLogoPlacement());
         desktopPane.repaint();
+
+        // Update our ActionPanel with theme settings:
+        ActionPanel actionPanel = actionPanelManager.getActionPanel();
+        if (AppConfig.getInstance().isOverrideLafForActionPanel()) {
+            actionPanel.getColorOptions().setFromTheme(AppConfig.getInstance().getActionPanelColorTheme());
+        }
+        else {
+            actionPanel.getColorOptions().useSystemDefaults();
+        }
 
         // The actions in our ActionManager may need refreshing:
         actionPanelManager.reload();

@@ -13,6 +13,7 @@ import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.model.Tag;
 import ca.corbett.snotes.model.TagList;
 import ca.corbett.snotes.model.YMDDate;
+import ca.corbett.snotes.ui.actions.UIReloadAction;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -41,7 +42,7 @@ import java.util.logging.Logger;
  * @author <a href="https://github.com/scorbo2">scorbo2</a>
  * @since Snotes 2.0
  */
-public class WriterFrame extends JInternalFrame {
+public class WriterFrame extends JInternalFrame implements UIReloadable {
 
     private static final Logger log = Logger.getLogger(WriterFrame.class.getName());
     private MessageUtil messageUtil;
@@ -50,6 +51,7 @@ public class WriterFrame extends JInternalFrame {
     private final Note note;
     private final List<Note> context;
     private ToggleableTabbedPane tabPane;
+    private MultiNoteViewer contextViewer;
     private FormPanel headerForm;
     private ShortTextField dateField;
     private ShortTextField tagField;
@@ -109,6 +111,9 @@ public class WriterFrame extends JInternalFrame {
         else {
             autoSaveTimer = null; // No need for an auto-save timer for real notes
         }
+
+        reloadUI();
+        UIReloadAction.getInstance().registerReloadable(this);
     }
 
     @Override
@@ -116,6 +121,10 @@ public class WriterFrame extends JInternalFrame {
         if (autoSaveTimer != null) {
             autoSaveTimer.stop();
         }
+        if (contextViewer != null) {
+            contextViewer.dispose();
+        }
+        UIReloadAction.getInstance().unregisterReloadable(this);
         super.dispose();
     }
 
@@ -180,6 +189,15 @@ public class WriterFrame extends JInternalFrame {
             // Defer to saveInternal but keep the frame open:
             saveInternal(false);
         }
+    }
+
+    @Override
+    public void reloadUI() {
+        // Update our editor colors and fonts based on the current theme:
+        // (Note: our context viewer also listens for UI reloads, and so it will update itself)
+        textPane.setBackground(AppConfig.getInstance().getEditorBgColor());
+        textPane.setForeground(AppConfig.getInstance().getNoteFontColor());
+        textPane.setFont(AppConfig.getInstance().getNoteFont());
     }
 
     /**
@@ -290,7 +308,8 @@ public class WriterFrame extends JInternalFrame {
         tabPane = new ToggleableTabbedPane();
         int selectedTab = 0;
         if (!context.isEmpty()) {
-            tabPane.addTab("Context", new MultiNoteViewer(context));
+            contextViewer = new MultiNoteViewer(context);
+            tabPane.addTab("Context", contextViewer);
             selectedTab = 1; // start on the edit tab, always
         }
 
