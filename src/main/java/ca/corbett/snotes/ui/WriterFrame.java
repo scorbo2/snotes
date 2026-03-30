@@ -373,6 +373,43 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
 
         @Override
         public void internalFrameClosing(InternalFrameEvent e) {
+            // If this is a scratch note, we need to know if the user wants to
+            // keep it around for future editing, or just get rid of it:
+            if (dataManager.isScratchNote(note)) {
+                int result = getMessageUtil().askYesNo("Discard scratch note?",
+                                                       "This is a scratch note. Do you want to discard it?");
+                if (result == MessageUtil.YES) {
+                    dataManager.delete(note);
+                }
+                else {
+                    // Save the latest contents to the scratch directory, so it can be edited later:
+                    try {
+                        note.clearAllTags(); // we will nuke and pave to overwrite old settings
+                        note.setDate(getDate());
+                        TagList tagList = TagList.fromRawString(tagField.getText());
+                        for (Tag tag : tagList.getTags()) {
+                            note.tag(tag);
+                        }
+                        note.setText(textPane.getText());
+                        dataManager.saveScratch(note);
+                    }
+                    catch (IOException ioe) {
+                        log.log(Level.SEVERE, "Failed to save scratch note: " + note.getSourceFile(), ioe);
+                        getMessageUtil().error("Save error",
+                                               "An error occurred while saving the scratch note: " + ioe.getMessage(),
+                                               ioe);
+
+                        // Keep the frame open so the user doesn't lose their work, since we failed to save it:
+                        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+                        return;
+                    }
+                }
+
+                setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+                return;
+            }
+
+            // Otherwise, we'll only prompt if there are unsaved changes here:
             if (isDirty) {
                 int result = getMessageUtil().askYesNoCancel("Unsaved changes",
                                                              "You have unsaved changes. Do you want to save before closing?");
@@ -389,18 +426,6 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
                         // we need to prevent the frame from closing.
                         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
                         return;
-                    }
-                }
-            }
-            else {
-                // There are no unsaved changes, but if this is a scratch note, we need
-                // to know if the user wants to keep it in the scratch directory, or
-                // discard it entirely (delete it).
-                if (dataManager.isScratchNote(note)) {
-                    int result = getMessageUtil().askYesNo("Discard scratch note?",
-                                                           "This is a scratch note. Do you want to discard it?");
-                    if (result == MessageUtil.YES) {
-                        dataManager.delete(note);
                     }
                 }
             }
