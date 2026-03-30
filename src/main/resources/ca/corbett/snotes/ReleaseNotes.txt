@@ -2,6 +2,7 @@ Snotes Release Notes
 Author: Steve Corbett
 
 Version 2.0 [TODO] rewrite
+  #56 - Wire up UpdateManager for dynamic extensions
   #52 - Better options for discarding scratch notes
   #50 - Fix bug regarding scratch file cleanup
   #45 - WriterFrame: show optional context

@@ -20,7 +20,8 @@ public class ExtensionManagerAction extends EnhancedAction {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (AppConfig.getInstance().showExtensionDialog(MainWindow.getInstance())) {
+        if (AppConfig.getInstance().showExtensionDialog(MainWindow.getInstance(),
+                                                        MainWindow.getInstance().getUpdateManager())) {
             // Reload the UI to reflect any changes in extensions:
             UIReloadAction.getInstance().actionPerformed(null);
         }
