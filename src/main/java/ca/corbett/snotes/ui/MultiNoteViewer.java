@@ -165,7 +165,6 @@ public class MultiNoteViewer extends JPanel implements UIReloadable {
         // worry that the user may have changed our content since we originally inserted it.
         int pos = textPane.getCaretPosition();
         textPane.setText("");
-        positionOffsets.clear();
         Document doc = textPane.getDocument();
         for (Note note : notes) {
             try {
