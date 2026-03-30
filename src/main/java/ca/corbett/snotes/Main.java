@@ -6,6 +6,8 @@ import ca.corbett.extras.progress.SimpleProgressWorker;
 import ca.corbett.extras.progress.SplashProgressWindow;
 import ca.corbett.snotes.extensions.SnotesExtensionManager;
 import ca.corbett.snotes.ui.MainWindow;
+import ca.corbett.updates.UpdateManager;
+import ca.corbett.updates.UpdateSources;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
@@ -96,6 +98,10 @@ public class Main {
             mainWindow.processStartArgs(Arrays.asList(args));
         });
 
+        // Parse the update sources file if it was provided,
+        // so that dynamic extension discovery and download will be available:
+        parseUpdateSources();
+
         // Show the splash progress screen, which will show the main window when done:
         SplashProgressWindow splashWindow = new SplashProgressWindow(Color.GRAY, Color.BLACK, Resources.getLogoWide());
         splashWindow.runWorker(new StartupWorker(mainWindow));
@@ -146,6 +152,52 @@ public class Main {
         }
         catch (IOException ioe) {
             System.out.println("WARN: Unable to load log configuration: " + ioe.getMessage());
+        }
+    }
+
+    /**
+     * If an update sources json was provided, we can parse it here and make it automatically
+     * available to our ExtensionManager implementation. This enables dynamic extension
+     * discovery and download at runtime.
+     */
+    private static void parseUpdateSources() {
+        Logger logger = Logger.getLogger(Main.class.getName());
+        if (Version.UPDATE_SOURCES_FILE != null) {
+            try {
+                UpdateSources updateSources = UpdateSources.fromFile(Version.UPDATE_SOURCES_FILE);
+                UpdateManager updateManager = new UpdateManager(updateSources);
+                MainWindow.getInstance().setUpdateManager(updateManager);
+
+                // Let's register a shutdown hook for when UpdateManager restarts the app to pick up new extensions:
+                updateManager.registerShutdownHook(() -> {
+                    if (SwingUtilities.isEventDispatchThread()) {
+                        MainWindow.getInstance().cleanup();
+                    } else {
+                        try {
+                            SwingUtilities.invokeAndWait(() -> MainWindow.getInstance().cleanup());
+                        } catch (Exception e) {
+                            Logger.getLogger(Main.class.getName())
+                                  .log(Level.WARNING, "Error during MainWindow cleanup in shutdown hook.", e);
+                        }
+                    }
+                });
+
+                // Let our AboutInfo know about this too, so the About dialog can do application version checks:
+                Version.getAboutInfo().updateManager = updateManager;
+
+                logger.info("Update sources provided. Dynamic extension discovery is enabled.");
+            }
+            catch (Exception e) {
+                logger.log(Level.SEVERE,
+                           "Unable to parse update sources. Extension download will not be available. Error: "
+                               + e.getMessage(),
+                           e);
+            }
+        }
+        else {
+            // Not an error, just means that we won't be able to pick up extensions dynamically.
+            // User can still load extensions by manually dropping the jar file into our extensions directory.
+            logger.log(Level.INFO, "No update sources provided. Dynamic extension discovery disabled.");
         }
     }
 

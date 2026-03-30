@@ -15,6 +15,7 @@ import ca.corbett.snotes.extensions.SnotesExtensionManager;
 import ca.corbett.snotes.io.DataManager;
 import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.ui.actions.UIReloadAction;
+import ca.corbett.updates.UpdateManager;
 
 import javax.swing.JFrame;
 import javax.swing.JInternalFrame;
@@ -43,6 +44,7 @@ public class MainWindow extends JFrame implements UIReloadable {
     private final ActionPanelManager actionPanelManager;
     private final KeyStrokeManager keyStrokeManager;
     private final DataManager dataManager;
+    private volatile UpdateManager updateManager;
     private boolean cleanupComplete;
     private boolean initialLoad;
     private int internalFrameAddPosition;
@@ -105,6 +107,17 @@ public class MainWindow extends JFrame implements UIReloadable {
      */
     public DataManager getDataManager() {
         return dataManager;
+    }
+
+    public void setUpdateManager(UpdateManager updateManager) {
+        this.updateManager = updateManager;
+    }
+
+    /**
+     * Returns our UpdateManager, if it was successfully initialized with valid update sources, or null if not.
+     */
+    public UpdateManager getUpdateManager() {
+        return updateManager;
     }
 
     public void processStartArgs(java.util.List<String> args) {
@@ -188,11 +201,12 @@ public class MainWindow extends JFrame implements UIReloadable {
         add(splitPane, BorderLayout.CENTER);
     }
 
-    private void cleanup() {
+    public void cleanup() {
         // Make the method idempotent, just in case:
         if (cleanupComplete) {
             return;
         }
+        cleanupComplete = true;
 
         // Go through all internal frames and dispose them.
         // If any of them (like WriterFrame) have a save prompt on close,
@@ -210,7 +224,6 @@ public class MainWindow extends JFrame implements UIReloadable {
         // Always save window state, even if "remember state" is disabled:
         AppConfig.getInstance().setWindowProps(getExtendedState(), getWidth(), getHeight(), getX(), getY());
 
-        cleanupComplete = true;
         logger.info("Shutting down: MainWindow cleanup invoked.");
 
         actionPanelManager.dispose();
