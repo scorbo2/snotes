@@ -169,7 +169,18 @@ public class Main {
                 MainWindow.getInstance().setUpdateManager(updateManager);
 
                 // Let's register a shutdown hook for when UpdateManager restarts the app to pick up new extensions:
-                updateManager.registerShutdownHook(MainWindow.getInstance()::cleanup);
+                updateManager.registerShutdownHook(() -> {
+                    if (SwingUtilities.isEventDispatchThread()) {
+                        MainWindow.getInstance().cleanup();
+                    } else {
+                        try {
+                            SwingUtilities.invokeAndWait(() -> MainWindow.getInstance().cleanup());
+                        } catch (Exception e) {
+                            Logger.getLogger(Main.class.getName())
+                                  .log(Level.WARNING, "Error during MainWindow cleanup in shutdown hook.", e);
+                        }
+                    }
+                });
 
                 // Let our AboutInfo know about this too, so the About dialog can do application version checks:
                 Version.getAboutInfo().updateManager = updateManager;
