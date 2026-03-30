@@ -172,6 +172,7 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
         }
         if (dataManager.isScratchNote(note)) {
             try {
+                note.clearAllTags(); // we will nuke and pave to overwrite old settings
                 note.setDate(getDate());
                 TagList tagList = TagList.fromRawString(tagField.getText());
                 for (Tag tag : tagList.getTags()) {
