@@ -206,6 +206,7 @@ public class MainWindow extends JFrame implements UIReloadable {
         if (cleanupComplete) {
             return;
         }
+        cleanupComplete = true;
 
         // Go through all internal frames and dispose them.
         // If any of them (like WriterFrame) have a save prompt on close,
@@ -229,7 +230,6 @@ public class MainWindow extends JFrame implements UIReloadable {
         keyStrokeManager.dispose();
         SnotesExtensionManager.getInstance().deactivateAll();
         SingleInstanceManager.getInstance().release();
-        cleanupComplete = true;
     }
 
     /**
