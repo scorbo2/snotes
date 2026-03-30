@@ -44,7 +44,7 @@ public class MainWindow extends JFrame implements UIReloadable {
     private final ActionPanelManager actionPanelManager;
     private final KeyStrokeManager keyStrokeManager;
     private final DataManager dataManager;
-    private UpdateManager updateManager;
+    private volatile UpdateManager updateManager;
     private boolean cleanupComplete;
     private boolean initialLoad;
     private int internalFrameAddPosition;
