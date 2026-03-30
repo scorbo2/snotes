@@ -407,11 +407,6 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
 
             // If we get here, the frame can just close:
             setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-
-            // Clean up our context viewer, if we have one.
-            if (contextViewer != null) {
-                contextViewer.dispose();
-            }
         }
     }
 }
