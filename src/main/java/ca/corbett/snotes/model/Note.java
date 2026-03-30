@@ -314,7 +314,7 @@ public final class Note {
      * <p>
      * If the Note's source file is not located within the data directory,
      * this method will return the absolute path of the source file instead.
-     * <p>
+     * </p>
      * <p>
      * If the given Note is null, or has no source file, an empty string is returned.
      * </p>
