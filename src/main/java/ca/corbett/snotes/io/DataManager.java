@@ -176,6 +176,10 @@ public class DataManager {
         }
 
         File savePath = SnotesIO.computeFile(dataDir, note);
+        // Capture the old source file BEFORE saveNote() updates it, so we can clean it up afterwards
+        // regardless of which code path we take below:
+        File oldSourceFile = note.getSourceFile();
+
         if (hasCollision(note)) {
             if (savePath.exists()) {
                 handleNoteCollision(note, savePath, collisionStrategy);
@@ -190,18 +194,23 @@ public class DataManager {
                 throw new IOException("Failed to create directory for note: " + targetDir.getAbsolutePath());
             }
 
-            File oldSourceFile = note.getSourceFile();
             SnotesIO.saveNote(note, savePath); // updates the Note's source file to the new location + marks it clean.
-            if (oldSourceFile != null && oldSourceFile.exists() && !oldSourceFile.equals(savePath)) {
-                if (!oldSourceFile.delete()) {
-                    // This is not fatal, but it is wonky... warn but proceed:
-                    log.warning("Failed to delete old source file for note: " + oldSourceFile.getAbsolutePath());
-                }
-            }
         }
         else {
-            // The Note's source file is the same as the computed save path, so we can just overwrite it.
+            // Either the Note's source file is already at the computed save path (in-place overwrite),
+            // or savePath doesn't exist yet (first-time save with no collision). Save to the computed path.
             SnotesIO.saveNote(note, savePath);
+        }
+
+        // Clean up the old source file if it differs from where we just saved.
+        // This covers both scratch note promotion (no collision path above) and note relocation
+        // (collision path above). Without this step outside the collision block, a scratch file
+        // would survive on disk any time the first save has no collision.
+        if (oldSourceFile != null && oldSourceFile.exists() && !oldSourceFile.equals(savePath)) {
+            if (!oldSourceFile.delete()) {
+                // This is not fatal, but it is wonky... warn but proceed:
+                log.warning("Failed to delete old source file for note: " + oldSourceFile.getAbsolutePath());
+            }
         }
 
         // If this was a scratch note, move it from the scratch list to the main notes list:
