@@ -66,6 +66,15 @@ public class ReaderFrame extends JInternalFrame {
         initComponents();
     }
 
+    @Override
+    public void dispose() {
+        // Clean up any resources we have open:
+        if (noteViewer != null) {
+            noteViewer.dispose();
+        }
+        super.dispose();
+    }
+
     private void initComponents() {
         setLayout(new BorderLayout());
         if (query != null) {

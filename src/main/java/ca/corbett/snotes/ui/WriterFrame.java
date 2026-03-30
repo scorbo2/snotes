@@ -50,6 +50,7 @@ public class WriterFrame extends JInternalFrame {
     private final Note note;
     private final List<Note> context;
     private ToggleableTabbedPane tabPane;
+    private MultiNoteViewer contextViewer;
     private FormPanel headerForm;
     private ShortTextField dateField;
     private ShortTextField tagField;
@@ -290,7 +291,8 @@ public class WriterFrame extends JInternalFrame {
         tabPane = new ToggleableTabbedPane();
         int selectedTab = 0;
         if (!context.isEmpty()) {
-            tabPane.addTab("Context", new MultiNoteViewer(context));
+            contextViewer = new MultiNoteViewer(context);
+            tabPane.addTab("Context", contextViewer);
             selectedTab = 1; // start on the edit tab, always
         }
 
@@ -388,6 +390,11 @@ public class WriterFrame extends JInternalFrame {
 
             // If we get here, the frame can just close:
             setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+
+            // Clean up our context viewer, if we have one.
+            if (contextViewer != null) {
+                contextViewer.dispose();
+            }
         }
     }
 }

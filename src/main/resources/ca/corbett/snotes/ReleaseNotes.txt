@@ -12,6 +12,7 @@ Version 2.0 [TODO] rewrite
   #30 - Implement the new search dialog
   #28 - Implement UI for deleting Queries
   #27 - Implement UI for editing Queries
+  #24 - Implement custom color themes
   #21 - Implement UI for creating Queries
   #20 - Implement intelligent model object persistence
   #18 - Implement Template and basic persistence
