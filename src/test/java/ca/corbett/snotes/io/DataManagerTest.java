@@ -277,6 +277,84 @@ class DataManagerTest {
     }
 
     @Test
+    void save_scratchNote_withNoCollision_shouldDeleteScratchFileFromDisk() throws IOException {
+        // GIVEN a new scratch note with a unique tag so there is no collision:
+        Note note = dataManager.newNote();
+        note.setText("No-collision scratch content");
+        note.tag("no-collision-scratch-delete-test");
+        File scratchFile = note.getSourceFile();
+        assertNotNull(scratchFile);
+        assertTrue(scratchFile.exists(), "Scratch file should exist before save");
+
+        // WHEN we save it (savePath does not exist yet → hasCollision() == false):
+        dataManager.save(note);
+
+        // THEN the scratch file should be gone from disk:
+        assertFalse(scratchFile.exists(),
+                    "Scratch file should have been deleted after a successful save with no collision");
+
+        // AND the note should live in the data directory now:
+        assertNotNull(note.getSourceFile());
+        assertTrue(note.getSourceFile().exists());
+        assertFalse(note.getSourceFile().getAbsolutePath().contains(DataManager.SCRATCH_DIR));
+    }
+
+    @Test
+    void save_scratchNote_withCollisionAndOVERWRITE_shouldDeleteScratchFileFromDisk() throws IOException {
+        // GIVEN a note that has already been saved (occupies the collision target path):
+        Note firstNote = dataManager.newNote();
+        firstNote.tag("scratch-overwrite-cleanup-test");
+        firstNote.setText("I was here first");
+        dataManager.save(firstNote);
+
+        // GIVEN a second scratch note with the same tag, triggering a collision:
+        Note secondNote = dataManager.newNote();
+        secondNote.tag("scratch-overwrite-cleanup-test");
+        secondNote.setText("I will overwrite the first");
+        File secondScratchFile = secondNote.getSourceFile();
+        assertNotNull(secondScratchFile);
+        assertTrue(secondScratchFile.exists(), "Second scratch file should exist before save");
+        assertTrue(dataManager.hasCollision(secondNote));
+
+        // WHEN we save with OVERWRITE:
+        dataManager.save(secondNote, DataManager.CollisionStrategy.OVERWRITE);
+
+        // THEN the second scratch file should have been cleaned up:
+        assertFalse(secondScratchFile.exists(),
+                    "Scratch file should have been deleted after a successful OVERWRITE save");
+    }
+
+    @Test
+    void save_scratchNote_withCollisionAndAPPEND_shouldDeleteScratchFileFromDisk() throws IOException {
+        // GIVEN a note that has already been saved (occupies the collision target path):
+        Note firstNote = dataManager.newNote();
+        firstNote.tag("scratch-append-cleanup-test");
+        firstNote.setText("First content");
+        dataManager.save(firstNote);
+
+        // GIVEN a second scratch note with the same tag, triggering a collision:
+        Note secondNote = dataManager.newNote();
+        secondNote.tag("scratch-append-cleanup-test");
+        secondNote.setText("Appended content");
+        File secondScratchFile = secondNote.getSourceFile();
+        assertNotNull(secondScratchFile);
+        assertTrue(secondScratchFile.exists(), "Second scratch file should exist before save");
+        assertTrue(dataManager.hasCollision(secondNote));
+
+        // WHEN we save with APPEND:
+        dataManager.save(secondNote, DataManager.CollisionStrategy.APPEND);
+
+        // THEN the second scratch file should have been cleaned up:
+        assertFalse(secondScratchFile.exists(),
+                    "Scratch file should have been deleted after a successful APPEND save");
+
+        // AND both notes' content should be present in the saved file:
+        String content = Files.readString(firstNote.getSourceFile().toPath());
+        assertTrue(content.contains("First content"));
+        assertTrue(content.contains("Appended content"));
+    }
+
+    @Test
     void save_datedNote_shouldCreateDateSubdirectoryStructure() throws IOException {
         // GIVEN a dated scratch note:
         Note note = dataManager.newNote();
