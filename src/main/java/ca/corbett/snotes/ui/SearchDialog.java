@@ -15,6 +15,7 @@ import ca.corbett.snotes.ui.query.QueryFilterPanel;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
@@ -48,11 +49,36 @@ public class SearchDialog extends JDialog {
     private static final Logger log = Logger.getLogger(SearchDialog.class.getName());
     private MessageUtil messageUtil;
 
+    private enum Limit {
+        ALL("Return all results", Integer.MAX_VALUE),
+        RECENT5("5 most recent results", 5),
+        RECENT10("10 most recent results", 10),
+        RECENT20("20 most recent results", 20);
+
+        private final int limit;
+        private final String label;
+
+        Limit(String label, int limit) {
+            this.label = label;
+            this.limit = limit;
+        }
+
+        public int getLimit() {
+            return limit;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
+
     private final KeyStrokeManager keyManager;
     private JTabbedPane tabPane;
     private FormPanel simpleSearchForm;
     private ShortTextField simpleTextField;
     private ShortTextField simpleTagField;
+    private JComboBox<Limit> limitComboBox;
     private QueryFilterPanel advancedSearchForm;
 
     /**
@@ -80,6 +106,9 @@ public class SearchDialog extends JDialog {
 
     private void performSearch() {
         Query transientQuery;
+        int queryLimit = limitComboBox.getSelectedItem() == null
+            ? Integer.MAX_VALUE
+            : ((Limit)limitComboBox.getSelectedItem()).getLimit();
         if (tabPane.getSelectedComponent() == simpleSearchForm) {
             if (!simpleSearchForm.isFormValid()) {
                 // Pointless, since there are no validators on our simple form.
@@ -114,7 +143,7 @@ public class SearchDialog extends JDialog {
             transientQuery = advancedSearchForm.getQuery();
         }
 
-        List<Note> results = transientQuery.execute(MainWindow.getInstance().getDataManager().getNotes());
+        List<Note> results = transientQuery.execute(MainWindow.getInstance().getDataManager().getNotes(), queryLimit);
         if (results.isEmpty()) {
             getMessageUtil().info("Nothing found", "No notes matched your search criteria.");
             return;
@@ -176,15 +205,30 @@ public class SearchDialog extends JDialog {
     }
 
     private JPanel buildButtonPanel() {
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel buttonPanel = new JPanel(new BorderLayout());
+
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton btn = new JButton("Search");
         btn.addActionListener(e -> performSearch());
         btn.setPreferredSize(new Dimension(110, 24));
-        buttonPanel.add(btn);
+        rightPanel.add(btn);
         btn = new JButton("Cancel");
         btn.addActionListener(e -> dispose());
         btn.setPreferredSize(new Dimension(110, 24));
-        buttonPanel.add(btn);
+        rightPanel.add(btn);
+
+        // We'll put the limit combo box down here on the button panel,
+        // because it applies equally to both of our tab panes, and I don't
+        // want two combos for this. This is slightly non-standard UI design,
+        // but eh, it works, and it keeps our tabs from getting cluttered.
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        limitComboBox = new JComboBox<>(Limit.values());
+        limitComboBox.setEditable(false);
+        limitComboBox.setSelectedItem(Limit.ALL);
+        leftPanel.add(limitComboBox);
+
+        buttonPanel.add(leftPanel, BorderLayout.CENTER);
+        buttonPanel.add(rightPanel, BorderLayout.EAST);
         buttonPanel.setBorder(BorderFactory.createRaisedBevelBorder());
         return buttonPanel;
     }
