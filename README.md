@@ -1,78 +1,190 @@
-# snotes
+# Snotes
 
-TODO - migration from old repo in progress
+## What is this?
 
-## Project goals
+Snotes (Steve's Notes) is a note-taking and note-organizing application built in Java Swing, using my own
+[swing-extras](https://github.com/scorbo2/swing-extras) library. Notes can be dated and semantically tagged,
+allowing for effortless searching.
 
-The 1.x release has been in place and stable for ages, but the code is very old and looks very clunky.
-It was written against a much older version of swing-extras, and as such, is missing out on a lot of
-really cool features, most notably the new application extension mechanism. The goal for 2.0 is to
-port over the functionality of 1.x, but in a much cleaner, more modular, and more extensible way,
-leveraging the latest and greatest features of swing-extras 2.x (2.6 is the latest release as of this
-writing, so that will be the starting point for Snotes 2.0).
+![Snotes screenshot](snotes.jpg)
 
-Specific 2.0 goals:
+## How do I get it?
 
-- keep the UI as close to 1.x as possible, making changes only to address known pain points (query/template setup, for
-  one example)
-- add extension hooks throughout the app so that extensions can add new functionality.
-- clean up the code! The 1.x code feels like a hacky proof-of-concept, which it kind of was. The 2.0 rewrite should show
-  best practices, and ideally should be something that can be used as an example of how to build a modular, extensible
-  Swing application using swing-extras.
-- unit tests! The old code had almost no tests at all. The new code should have excellent test coverage of the core
-  functionality.
-- Keep business logic out of UI classes! This is terrible practice and makes unit testing MUCH harder.
-- rely as much on swing-extras as possible! There are many opportunities to leverage the functionality provided there.
-- 1.x allowed for custom editor/viewer themes (font face/size, foreground/background color, etc.) - that has to be
-  ported over to 2.0.
+### Option 1: Installer tarball
 
-## Old code layout - to be replaced
+If you are running on Linux, and have Java 17 or higher installed, you can download the installer tarball:
 
-- ca.corbett.snotes.io: classes for loading/saving model objects, also used for querying/searching
-- ca.corbett.snotes.model: model objects (snotes, queries, templates, tags)
-- ca.corbett.snotes.ui: all UI code (main app window, dialogs, etc.)
-- ca.corbett.snotes.ui.actions: all action classes for menu items, toolbar buttons, etc.
+- [Snotes Installer](https://www.corbett.ca/apps/Snotes-2.0.tar.gz)
+- Size: TODO
+- Sha256: `TODO`
 
-### Problems with the old layout
+This is the best option, as you get an installer script that sets everything up for you:
 
-The "io" package makes no sense. It handles loading, caching, and also searching?
-The "io" package should entirely focus on loading/saving model objects to/from disk.
+- desktop shortcut
+- desktop menu integration
+- launcher script in your PATH (so you can run `Snotes` from the terminal)
+- uninstaller script that removes all of the above
 
-The "model" package is probably fine - these are just POJOs that store simple data.
+### Option 2: Build from source
 
-The "ui" package needs a bit of cleanup, but is essentially okay.
+You can clone the Snotes repository from GitHub and build it with maven:
 
-The "ui.actions" package is solid - I like having all actions grouped together with human-readable names. It makes
-navigating and understanding (or extending) the UI code later much easier. It also makes it very easy to trace which
-actions are being invoked from where, by just searching for references to the action class. And by centralizing
-certain functionality into an action (like launching the preferences dialog), we have a single place to make changes
-later if needed (for example, reloading the UI after the prefs dialog is okayed).
+```bash
+git clone https://github.com/scorbo2/snotes.git
+cd snotes
+mvn clean package
 
-## Proposed new code layout
+# Run the executable jar that Maven created:
+cd target
+java -jar snotes-2.0.jar
+```
 
-- ca.corbett.snotes.io: classes for loading/saving model objects (make these classes more focused!)
-- ca.corbett.snotes.model: model objects (snotes, queries, templates, tags, etc. - as before)
-- ca.corbett.snotes.ui: all UI code (main app window, dialogs, etc. - as before)
-- ca.corbett.snotes.ui.actions: all action classes for menu items, toolbar buttons, etc. (as before)
-- ca.corbett.snotes.extensions: extension manager, built-in extensions, and related code (new for 2.0!)
+## User guide
 
-The upgrade to latest swing-extras also introduces the concept of application extensions, which is great.
-The application code can have extension hooks that extensions can leverage to provide additional functionality,
-or to offer alternatives to application built-in behavior.
+### Creating a new note from "scratch"
 
-### Open questions
+From the "Write" tab in the action panel on the left, click the "New note" link. This will bring up the
+note editor:
 
-1. How do we handle caching? Should the service layer cache model objects in memory for faster access? Or should the io
-   layer handle caching?
-   a) My inclination is to have the service layer handle caching, as it is the layer that will be interacting with the
-   model objects the most.
-2. What do the extension points look like? Should the io layer have extension points for custom storage backends?
-   a) Given how easy it is to add extension points, I think we could go crazy with it and have extension points
-   EVERYWHERE. If they never get used, they cost almost nothing at runtime (one quick check with ExtensionManager to see
-   if any extension wants to exercise that extension point).
-3. The io "cache" classes currently just store up all model objects in memory to make for extremely rapid searching.
-   Should we look at using sqlite for enhanced text-based search options? Perhaps an in-memory sqlite database loaded on
-   startup?
-   a) I'm inclined to port the old io code over more or less as-is for 2.0, and then look at sqlite integration for 3.0
-   or later. The current persistence format for this stuff has been stable since 1.0, and I don't feel the need to
-   completely overhaul it right away.
+![New note](screenshots/new_note.jpg)
+
+We see in the title bar of the editor that the note was created as a "scratch" note, with a long random filename.
+This is just temporary. When we save the note, it will be given a proper home in the Snotes data directory,
+and will be renamed to match the note's date and/or tag list.
+
+We see that the "Date" field has defaulted to today's date. The date field is optional, and can be blanked out.
+Most notes are dated, which makes them easier to search later (see "searching for notes" below). However,
+some notes aren't specific to any date, so it makes sense to leave them undated.
+
+The "Tag(s)" field is empty by default, but must contain at least one tag before the note can be saved.
+"Tags" are any keyword that you want to semantically associate with the note. This could be a project name,
+or a person's name, or the name of a city or town, or anything else that might be associated. You can add
+multiple tags by separating them with spaces or commas. Tags can make it MUCH easier to search for notes later,
+if you make good use of this field.
+
+If you attempt to close the editor without saving, you'll receive the following prompt:
+
+![Unsaved changes prompt](screenshots/discard_scratch_note.png)
+
+Clicking "yes" on the discard prompt will delete this scratch note. Clicking "no" will keep it as a scratch
+note. You can come back to it later and continue editing - you haven't lost the note by closing the editor.
+
+When you save a scratch note, it will be moved into the Snotes data directory, and renamed
+to match the note's date and/or tag list. For example, if you save a note with the date "2024-01-01"
+and the tags "projectx" and "projecty", it will be saved to the following file:
+
+```shell
+${SNOTES_DATA_DIR}/2024/01/01/projectx_projecty.txt
+```
+
+(Note that the Snotes data dir is defined in settings. See "Setting options" below for more information.)
+
+If your note was undated, it will be saved to a `static` directory, like this:
+
+```shell
+${SNOTES_DATA_DIR}/static/projectx_projecty.txt
+```
+
+Either way, your new note is immediately searchable by date, by tag, and/or by contents!
+
+### Creating a new note from a template
+
+Templates allow you to create notes with the date and/or tag fields pre-filled.
+This is handy if you have notes that you create frequently with the same values.
+Templates are very easy to create! Click the "New template" link in the "Write" tab of the action panel,
+and fill out the form:
+
+![New template](screenshots/new_template.jpg)
+
+You have to supply the following:
+
+- Name: this is any unique name you wish to give the template. This is how it will appear in the action panel.
+- Date: your options are "No date", "Yesterday's date", "Today's date", and "Tomorrow's date". The date is resolved when
+  the Template is used to create a new note.
+- Tags: enter the list of tag(s) that you want to pre-fill when a note is created from this template.
+- Context: you can select to display read-only "context" in the editor. All notes that match the tag(s) that you have
+  entered on this form will be retrieved, and they will be displayed in the editor as read-only context. You can
+  choose "All", "None", or "Most recent 1/3/5/10". This is a great way to have relevant notes at your fingertips when
+  you're writing a new note.
+
+When you click "OK", the new template is created and will be immediately available in the "Write" tab of the action
+panel. Just click on it to bring up a new scratch note in the editor, with the date and tags pre-filled according to the
+template. You can then edit the note as you normally would, and save it when you're done.
+
+### Searching for notes
+
+Select "Search" from the "Read" tab in the action panel (or press Ctrl+F) to bring up the search dialog:
+
+![Search dialog](screenshots/search_simple.png)
+
+The dialog defaults to "simple search", which is very keyboard friendly. The focus is in the "Contains text"
+field, so you can simply type the text that you're looking for and hit Enter to search. Or, hit the tab key
+to move focus to the "Has tag(s)" field, and type the tag(s) that you want to search for.
+You can separate multiple tags with spaces or commas. Press Enter to search, and the results will be displayed
+in a read-only dialog.
+
+Alternatively, select the "Advanced Search" tab to bring up the advanced search options:
+
+![Advanced search dialog](screenshots/search_advanced.png)
+
+Here, we can enter up to eight filters to narrow down our search. The filters are:
+
+- Text: enter text to search for (case-insensitive)
+- Text (exact): enter text to search for (case-sensitive)
+- Tag: enter tag(s) to search for
+- Date: enter a specific date (in yyyy-MM-dd) format to search for
+- Year: enter a specific year to search for
+- Month: enter a specific month (01-12) to search for, regardless of year. For example, enter "01" to find all notes
+  that have ever been entered in January (in any year).
+- Day of month: enter a specific day of the month (1-31) to search for, regardless of month or year. For example,
+  enter "15" to find all notes that were entered on the 15th of any month (in any year). This naturally combines with
+  the Month filter! You can select "Month: 12" and "Day of month: 25" to find all notes that were entered on December
+  25th of any year.
+- Day of Week: enter a specific day of the week (Monday-Sunday) to search for, regardless of date. For example,
+  enter "Monday" to find all notes that were entered on a Monday (in any month and year).
+- Undated only: select this to return only notes that have no date associated with them.
+
+### Using Queries
+
+If there's a particular search that you perform frequently, you can set up a Query, to avoid having to re-enter all the
+filters. This is very easy to set up! Select "New query" from the "Read" tab in the action panel, and fill out the form:
+
+![New query dialog](screenshots/new_query.jpg)
+
+Here, we can enter a Query name, which will be used to identify this Query in the action panel. The filter options
+should look very familiar - they are the same as the filters in the advanced search dialog. You can enter any
+combination of filters that you like, and when you click "OK", your new Query will be created and will be immediately
+available in the "Read" tab of the action panel. Just click on it to execute the query and see the results!
+
+### Setting options
+
+Choose "Preferences" from the "Options" tab in the action panel to bring up the options dialog:
+
+![Options dialog](screenshots/options.jpg)
+
+There are numerous options here for changing the behavior and appearance of Snotes. You can change the editor
+fonts and colors, you can change the application Look and Feel, and you can select a different data directory.
+Here, you can also customize the keyboard shortcuts that the application uses. Clicking OK applies and saves
+the changes with immediate effect.
+
+## Extending Snotes
+
+Snotes is built on the `swing-extras` library, which has a built-in application extension mechanism.
+This means that you can write your own Snotes extensions in Java, package them into a jar file,
+and load them dynamically at runtime! Refer to the Javadocs for `SnotesExtension` and `SnotesExtensionManager`
+for more information, or refer to the [swing-extras book](https://www.corbett.ca/swing-extras-book/) and its
+section on application extensions.
+
+## Bug reports or feature requests
+
+The [GitHub issues page](https://github.com/scorbo2/snotes/issues) is the best place to report bugs or request
+features.
+Please check there first to see if your issue has already been reported, and if not, feel free to open a new issue!
+
+## License
+
+Snotes is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Version history
+
+Refer to the [Release Notes](src/main/resources/ca/corbett/snotes/ReleaseNotes.txt) for a detailed version history.
