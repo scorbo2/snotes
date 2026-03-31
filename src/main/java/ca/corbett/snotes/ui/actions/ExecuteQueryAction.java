@@ -14,7 +14,6 @@ import java.util.logging.Logger;
 
 /**
  * This action takes a Query and executes it, showing the results in a new frame.
- * TODO this is a placeholder until the UI is ready for it.
  *
  * @author <a href="https://github.com/scorbo2">scorbo2</a>
  */
