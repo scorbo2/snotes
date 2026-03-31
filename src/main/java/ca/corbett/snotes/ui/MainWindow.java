@@ -4,6 +4,7 @@ import ca.corbett.extras.CustomizableDesktopPane;
 import ca.corbett.extras.MessageUtil;
 import ca.corbett.extras.SingleInstanceManager;
 import ca.corbett.extras.actionpanel.ActionPanel;
+import ca.corbett.extras.image.animation.BlurLayerUI;
 import ca.corbett.extras.io.KeyStrokeManager;
 import ca.corbett.extras.logging.LogConsole;
 import ca.corbett.extras.properties.KeyStrokeProperty;
@@ -19,9 +20,11 @@ import ca.corbett.updates.UpdateManager;
 
 import javax.swing.JFrame;
 import javax.swing.JInternalFrame;
+import javax.swing.JLayer;
 import javax.swing.JSplitPane;
 import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -31,9 +34,19 @@ import java.util.logging.Logger;
 
 /**
  * The main window for the Snotes application.
- * TODO this needs a lot of work...
+ * On initial startup, all notes will be loaded in a background thread, while a progress dialog
+ * is shown. The UI will not be interactive until this initial load completes. If the initial
+ * load is interrupted via the "cancel" button on the progress dialog, only those notes that
+ * were loaded before the operation was canceled will be available in the UI.
+ * <p>
+ *     Note that this initial load creates a complete cache in memory of all notes.
+ *     All searches are done in this in-memory cache. The assumption is that disk
+ *     contents will not change while the application is running. There is currently
+ *     no way to force a reload after the initial load.
+ * </p>
  *
  * @author scorbo2
+ * @since Snotes 2.0
  */
 public class MainWindow extends JFrame implements UIReloadable {
 
@@ -42,6 +55,7 @@ public class MainWindow extends JFrame implements UIReloadable {
     private final MessageUtil messageUtil;
     private boolean isSingleInstanceModeEnabled;
     private final ActionPanelManager actionPanelManager;
+    private final BlurLayerUI blurLayer;
     private final KeyStrokeManager keyStrokeManager;
     private final DataManager dataManager;
     private volatile UpdateManager updateManager;
@@ -64,6 +78,11 @@ public class MainWindow extends JFrame implements UIReloadable {
         dataManager.addNoteDeletionListener(this::noteDeleted);
         keyStrokeManager = new KeyStrokeManager(this);
         actionPanelManager = new ActionPanelManager();
+        blurLayer = new BlurLayerUI();
+        blurLayer.setBlurOverlayColor(Color.LIGHT_GRAY);
+        blurLayer.setOverlayTextColor(Color.WHITE);
+        blurLayer.setOverlayTextSize(24);
+        blurLayer.setOverlayText("Loading...");
         initComponents();
         addWindowListener(new WindowCloseHandler());
         cleanupComplete = false;
@@ -94,6 +113,7 @@ public class MainWindow extends JFrame implements UIReloadable {
             // Tell our DataManager to load everything (background thread), and then trigger a UI reload when finished:
             try {
                 initialLoad = true;
+                blurLayer.setBlurred(true);
                 dataManager.loadAll(e -> reloadUI());
             }
             catch (IOException ioe) {
@@ -193,7 +213,7 @@ public class MainWindow extends JFrame implements UIReloadable {
 
         JSplitPane splitPane = new JSplitPane();
         splitPane.setOneTouchExpandable(false); // Sadly, this does not play well with some look and feels
-        splitPane.setLeftComponent(actionPanelManager.getActionPanel());
+        splitPane.setLeftComponent(new JLayer<>(actionPanelManager.getActionPanel(), blurLayer));
         splitPane.setRightComponent(desktopPane);
         splitPane.setDividerLocation(0.25);
 
@@ -271,6 +291,12 @@ public class MainWindow extends JFrame implements UIReloadable {
 
         // The actions in our ActionManager may need refreshing:
         actionPanelManager.reload();
+
+        // If we were blurred for the initial load, unblur now with a little animation:
+        // (we delay this until after ActionPanel is populated so the "unblur" animation is more dramatic)
+        if (blurLayer.isBlurred()) {
+            blurLayer.blurIn(null);
+        }
 
         // Clear all keystrokes and reload, since they are all user-configurable:
         keyStrokeManager.clear();
