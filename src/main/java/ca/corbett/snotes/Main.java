@@ -4,7 +4,6 @@ import ca.corbett.extras.LookAndFeelManager;
 import ca.corbett.extras.SingleInstanceManager;
 import ca.corbett.snotes.extensions.SnotesExtensionManager;
 import ca.corbett.snotes.ui.MainWindow;
-import ca.corbett.updates.UpdateManager;
 import ca.corbett.updates.UpdateSources;
 
 import javax.swing.SwingUtilities;
@@ -161,22 +160,26 @@ public class Main {
         if (Version.UPDATE_SOURCES_FILE != null) {
             try {
                 UpdateSources updateSources = UpdateSources.fromFile(Version.UPDATE_SOURCES_FILE);
-                UpdateManager updateManager = new UpdateManager(updateSources);
+                SnotesUpdateManager updateManager = new SnotesUpdateManager(updateSources);
                 MainWindow.getInstance().setUpdateManager(updateManager);
 
+                // See the javadocs in SnotesUpdateManager for an explanation of why we
+                // aren't registering a shutdown hook here. Don't remove the following commented code!
+                // We'll restore it when the underlying bug in UpdateManager is fixed.
+
                 // Let's register a shutdown hook for when UpdateManager restarts the app to pick up new extensions:
-                updateManager.registerShutdownHook(() -> {
-                    if (SwingUtilities.isEventDispatchThread()) {
-                        MainWindow.getInstance().cleanup();
-                    } else {
-                        try {
-                            SwingUtilities.invokeAndWait(() -> MainWindow.getInstance().cleanup());
-                        } catch (Exception e) {
-                            Logger.getLogger(Main.class.getName())
-                                  .log(Level.WARNING, "Error during MainWindow cleanup in shutdown hook.", e);
-                        }
-                    }
-                });
+//                updateManager.registerShutdownHook(() -> {
+//                    if (SwingUtilities.isEventDispatchThread()) {
+//                        MainWindow.getInstance().cleanup();
+//                    } else {
+//                        try {
+//                            SwingUtilities.invokeAndWait(() -> MainWindow.getInstance().cleanup());
+//                        } catch (Exception e) {
+//                            Logger.getLogger(Main.class.getName())
+//                                  .log(Level.WARNING, "Error during MainWindow cleanup in shutdown hook.", e);
+//                        }
+//                    }
+//                });
 
                 // Let our AboutInfo know about this too, so the About dialog can do application version checks:
                 Version.getAboutInfo().updateManager = updateManager;

@@ -4,6 +4,7 @@ import ca.corbett.extras.EnhancedAction;
 import ca.corbett.extras.MessageUtil;
 import ca.corbett.snotes.AppConfig;
 import ca.corbett.snotes.ui.MainWindow;
+import ca.corbett.updates.UpdateManager;
 
 import java.awt.event.ActionEvent;
 import java.io.File;
@@ -32,12 +33,19 @@ public class PrefsAction extends EnhancedAction {
             // If the data directory changed, we need to restart the application:
             File newDataDirectory = AppConfig.getInstance().getDataDirectory();
             if (!dataDirectory.getAbsolutePath().equals(newDataDirectory.getAbsolutePath())) {
-                getMessageUtil().info("Restart required",
-                                      "Changing the data directory requires restarting the application.");
 
-                // TODO once we have wired up the UpdateManager (future ticket),
-                //      we can restart the application automatically.
-                //      Until then, all we can do is nag the user to do it for us.
+                // We can restart automatically, if an UpdateManager is configured:
+                UpdateManager updateManager = MainWindow.getInstance().getUpdateManager();
+                if (updateManager != null) {
+                    // Will restart if user confirms:
+                    updateManager.showApplicationRestartPrompt(MainWindow.getInstance());
+                }
+
+                // Otherwise, all we can do is nag the user to do it for us:
+                else {
+                    getMessageUtil().info("Restart required",
+                                          "Changing the data directory requires restarting the application.");
+                }
             }
 
             // If the user clicked OK, reload the UI:
