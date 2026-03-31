@@ -77,6 +77,8 @@ and the tags "projectx" and "projecty", it will be saved to the following file:
 ${SNOTES_DATA_DIR}/2024/01/01/projectx_projecty.txt
 ```
 
+(Note that the Snotes data dir is defined in settings. See "Setting options" below for more information.)
+
 If your note was undated, it will be saved to a `static` directory, like this:
 
 ```shell
@@ -138,9 +140,8 @@ Here, we can enter up to eight filters to narrow down our search. The filters ar
   enter "15" to find all notes that were entered on the 15th of any month (in any year). This naturally combines with
   the Month filter! You can select "Month: 12" and "Day of month: 25" to find all notes that were entered on December
   25th of any year.
-- Day of Week: enter a specific day of the week (Monday-Sunday) to search for, regardless of date. For example, enter "
-  Monday"
-  to find all notes that were entered on a Monday (in any month and year).
+- Day of Week: enter a specific day of the week (Monday-Sunday) to search for, regardless of date. For example,
+  enter "Monday" to find all notes that were entered on a Monday (in any month and year).
 - Undated only: select this to return only notes that have no date associated with them.
 
 ### Using Queries
