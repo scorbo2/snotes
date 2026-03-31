@@ -222,7 +222,7 @@ public class SearchDialog extends JDialog {
         // want two combos for this. This is slightly non-standard UI design,
         // but eh, it works, and it keeps our tabs from getting cluttered.
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        leftPanel.add(limitComboBox = new JComboBox<>(Limit.values()));
+        limitComboBox = new JComboBox<>(Limit.values());
         limitComboBox.setEditable(false);
         limitComboBox.setSelectedItem(Limit.ALL);
         leftPanel.add(limitComboBox);
