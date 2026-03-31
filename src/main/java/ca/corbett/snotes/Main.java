@@ -2,16 +2,12 @@ package ca.corbett.snotes;
 
 import ca.corbett.extras.LookAndFeelManager;
 import ca.corbett.extras.SingleInstanceManager;
-import ca.corbett.extras.progress.SimpleProgressWorker;
-import ca.corbett.extras.progress.SplashProgressWindow;
 import ca.corbett.snotes.extensions.SnotesExtensionManager;
 import ca.corbett.snotes.ui.MainWindow;
 import ca.corbett.updates.UpdateManager;
 import ca.corbett.updates.UpdateSources;
 
-import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
-import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -102,9 +98,9 @@ public class Main {
         // so that dynamic extension discovery and download will be available:
         parseUpdateSources();
 
-        // Show the splash progress screen, which will show the main window when done:
-        SplashProgressWindow splashWindow = new SplashProgressWindow(Color.GRAY, Color.BLACK, Resources.getLogoWide());
-        splashWindow.runWorker(new StartupWorker(mainWindow));
+        // Now show the main window. It has an async loader on startup that will show
+        // a progress dialog after the main window comes up:
+        SwingUtilities.invokeLater(() -> mainWindow.setVisible(true));
     }
 
     /**
@@ -198,29 +194,6 @@ public class Main {
             // Not an error, just means that we won't be able to pick up extensions dynamically.
             // User can still load extensions by manually dropping the jar file into our extensions directory.
             logger.log(Level.INFO, "No update sources provided. Dynamic extension discovery disabled.");
-        }
-    }
-
-    /**
-     * A worker thread to perform one-time startup tasks and report progress to the splash screen progress bar.
-     */
-    private static class StartupWorker extends SimpleProgressWorker {
-
-        private final JFrame window;
-
-        public StartupWorker(JFrame window) {
-            this.window = window;
-        }
-
-        @Override
-        public void run() {
-            // TODO here is where we load all Snotes files, which may take quite some time.
-            // We can fire progress events as we go, and the splash screen's progress bar will update.
-            // For now, let's just pretend we finished the work in one step:
-            fireProgressComplete();
-
-            // Once complete, we can show the main window on the EDT thread:
-            SwingUtilities.invokeLater(() -> window.setVisible(true));
         }
     }
 }
