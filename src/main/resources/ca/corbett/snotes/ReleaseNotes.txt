@@ -2,6 +2,7 @@ Snotes Release Notes
 Author: Steve Corbett
 
 Version 2.0 [TODO] rewrite
+  #59 - Add limit option on search dialog
   #56 - Wire up UpdateManager for dynamic extensions
   #55 - Better progress display on initial load
   #52 - Better options for discarding scratch notes
