@@ -26,6 +26,7 @@ public class Query {
     private final List<Filter> filters;
     private File sourceFile;
     private boolean isDirty;
+    private int order;
 
     /**
      * Creates an empty, unnamed Query with no filters.
@@ -37,6 +38,7 @@ public class Query {
         name = DEFAULT_NAME;
         sourceFile = null;
         isDirty = true;
+        order = 0;
     }
 
     /**
@@ -202,6 +204,24 @@ public class Query {
         }
 
         return filteredNotes;
+    }
+
+    /**
+     * Returns the sort order for this Query. Lower values sort first. Defaults to 0.
+     */
+    public int getOrder() {
+        return order;
+    }
+
+    /**
+     * Sets the sort order for this Query. Lower values sort first.
+     */
+    public void setOrder(int order) {
+        if (this.order == order) {
+            return; // No change, so don't mark dirty
+        }
+        this.order = order;
+        isDirty = true;
     }
 
     /**
