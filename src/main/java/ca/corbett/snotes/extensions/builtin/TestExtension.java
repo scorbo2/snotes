@@ -19,7 +19,14 @@ import java.util.List;
 
 /**
  * This is a test extension used for development and testing purposes.
- * TODO remove or hide this extension before release.
+ * <p>
+ *     This extension is a bit special, in that it is completely hidden
+ *     from the UI unless a hidden system property is set.
+ *     You have to start with "-Dsnotes.enableTestExtension" to see it.
+ *     The intention is that regular users generally shouldn't see
+ *     this extension, or even know that it exists, but it can be useful
+ *     for development and testing.
+ * </p>
  *
  * @author <a href="https://github.com/scorbo2">scorbo2</a>
  * @since Snotes 2.0
