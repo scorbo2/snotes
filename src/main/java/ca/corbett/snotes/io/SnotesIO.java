@@ -76,6 +76,12 @@ class SnotesIO {
             }
         }
 
+        // Load order if present; default to 0 for older persisted Queries that lack the field:
+        JsonNode orderNode = rootNode.get("order");
+        if (orderNode != null && !orderNode.isNull() && orderNode.isNumber()) {
+            query.setOrder(orderNode.asInt(0));
+        }
+
         query.setSourceFile(sourceFile);
         query.markClean();
         return query;
@@ -108,6 +114,7 @@ class SnotesIO {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode rootNode = mapper.createObjectNode();
         rootNode.put("name", query.getName());
+        rootNode.put("order", query.getOrder());
 
         ArrayNode filtersArray = mapper.createArrayNode();
         for (Filter filter : query.getFilters()) {
@@ -160,6 +167,7 @@ class SnotesIO {
         rootNode.put("name", template.getName());
         rootNode.put("dateOption", template.getDateOption().name());
         rootNode.put("context", template.getContext().name());
+        rootNode.put("order", template.getOrder());
         ArrayNode tagsArray = rootNode.putArray("tags");
         for (Tag tag : template.getTagList()) {
             tagsArray.add(tag.getTag()); // get raw tag without the '#' prefix for cleaner JSON
@@ -266,6 +274,13 @@ class SnotesIO {
         for (String tag : tagList) {
             template.addTag(tag);
         }
+
+        // Load order if present; default to 0 for older persisted Templates that lack the field:
+        JsonNode orderNode = rootNode.get("order");
+        if (orderNode != null && !orderNode.isNull() && orderNode.isNumber()) {
+            template.setOrder(orderNode.asInt(0));
+        }
+
         template.setSourceFile(sourceFile);
         template.markClean();
         return template;

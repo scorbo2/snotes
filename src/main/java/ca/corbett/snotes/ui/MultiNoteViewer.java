@@ -7,6 +7,7 @@ import ca.corbett.snotes.ui.actions.UIReloadAction;
 
 import javax.swing.JPanel;
 import javax.swing.JTextPane;
+import javax.swing.SwingUtilities;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.Style;
@@ -14,6 +15,7 @@ import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
 import java.awt.BorderLayout;
 import java.awt.Font;
+import java.awt.Rectangle;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
@@ -72,6 +74,41 @@ public class MultiNoteViewer extends JPanel implements UIReloadable {
      */
     public void dispose() {
         UIReloadAction.getInstance().unregisterReloadable(this);
+    }
+
+    /**
+     * Scrolls this viewer to the top. This method must not be invoked until the
+     * MultiNoteViewer is fully initialized and visible (otherwise nothing happens).
+     */
+    public void scrollToTop() {
+        SwingUtilities.invokeLater(() -> {
+            textPane.setCaretPosition(0);
+            try {
+                Rectangle rect = textPane.modelToView2D(0).getBounds();
+                textPane.scrollRectToVisible(rect);
+            }
+            catch (BadLocationException e) {
+                // ignore - 0 is always valid
+            }
+        });
+    }
+
+    /**
+     * Scrolls this viewer to the bottom. This method must not be invoked until the
+     * MultiNoteViewer is fully initialized and visible (otherwise nothing happens).
+     */
+    public void scrollToBottom() {
+        SwingUtilities.invokeLater(() -> {
+            int length = textPane.getDocument().getLength();
+            textPane.setCaretPosition(length);
+            try {
+                Rectangle rect = textPane.modelToView2D(length).getBounds();
+                textPane.scrollRectToVisible(rect);
+            }
+            catch (BadLocationException e) {
+                // ignore - length is always valid
+            }
+        });
     }
 
     /**

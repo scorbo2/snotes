@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -806,5 +807,104 @@ class DataManagerTest {
         catch (IOException ioe) {
             fail("Unexpected IOException during test setup: " + ioe.getMessage());
         }
+    }
+
+    @Test
+    void setTemplates_withNoOrderSet_shouldOrderBySourceFileName() {
+        // GIVEN some templates with no order set:
+        Template t1 = new Template();
+        t1.setName("t1");
+        t1.setSourceFile(new File(tempDir, "t1.template"));
+        Template t2 = new Template();
+        t2.setName("t2");
+        t2.setSourceFile(new File(tempDir, "t2.template"));
+        Template t3 = new Template();
+        t3.setName("t3");
+        t3.setSourceFile(new File(tempDir, "t3.template"));
+
+        // WHEN we set them in a random order:
+        dataManager.setTemplates(List.of(t2, t3, t1));
+
+        // THEN they should be set according to the tiebreaker sort, which is filename:
+        assertEquals(3, dataManager.getTemplates().size());
+        assertEquals("t1", dataManager.getTemplates().get(0).getName());
+        assertEquals("t2", dataManager.getTemplates().get(1).getName());
+        assertEquals("t3", dataManager.getTemplates().get(2).getName());
+    }
+
+    @Test
+    void setTemplates_withOrderSet_shouldRespectOrder() {
+        // GIVEN some templates with an explicit order set:
+        Template t1 = new Template();
+        t1.setName("t1");
+        t1.setOrder(999); // should come last!
+        t1.setSourceFile(new File(tempDir, "t1.template"));
+        Template t2 = new Template();
+        t2.setName("t2");
+        t2.setOrder(444); // should come first!
+        t2.setSourceFile(new File(tempDir, "t2.template"));
+        Template t3 = new Template();
+        t3.setName("t3");
+        t3.setOrder(555); // should come in the middle
+        t3.setSourceFile(new File(tempDir, "t3.template"));
+
+        // WHEN we set them in order by filename:
+        dataManager.setTemplates(List.of(t1, t2, t3));
+
+        // THEN they should be set according to their explicit order and ignore the filename:
+        assertEquals(3, dataManager.getTemplates().size());
+        assertEquals("t2", dataManager.getTemplates().get(0).getName());
+        assertEquals("t3", dataManager.getTemplates().get(1).getName());
+        assertEquals("t1", dataManager.getTemplates().get(2).getName());
+
+    }
+
+    @Test
+    void setQueries_withNoOrderSet_shouldOrderBySourceFileName() {
+        // GIVEN some queries with no order set:
+        Query q1 = new Query();
+        q1.setName("q1");
+        q1.setSourceFile(new File(tempDir, "q1.query"));
+        Query q2 = new Query();
+        q2.setName("q2");
+        q2.setSourceFile(new File(tempDir, "q2.query"));
+        Query q3 = new Query();
+        q3.setName("q3");
+        q3.setSourceFile(new File(tempDir, "q3.query"));
+
+        // WHEN we set them in a random order:
+        dataManager.setQueries(List.of(q2, q3, q1));
+
+        // THEN they should be set according to the tiebreaker sort, which is source file name:
+        assertEquals(3, dataManager.getQueries().size());
+        assertEquals("q1", dataManager.getQueries().get(0).getName());
+        assertEquals("q2", dataManager.getQueries().get(1).getName());
+        assertEquals("q3", dataManager.getQueries().get(2).getName());
+    }
+
+    @Test
+    void setQueries_withOrderSet_shouldRespectOrder() {
+        // GIVEN some queries with an explicit order set:
+        Query q1 = new Query();
+        q1.setName("q1");
+        q1.setOrder(999); // should come last!
+        q1.setSourceFile(new File(tempDir, "q1.query"));
+        Query q2 = new Query();
+        q2.setName("q2");
+        q2.setOrder(444); // should come first!
+        q2.setSourceFile(new File(tempDir, "q2.query"));
+        Query q3 = new Query();
+        q3.setName("q3");
+        q3.setOrder(555); // should come in the middle
+        q3.setSourceFile(new File(tempDir, "q3.query"));
+
+        // WHEN we set them in order by name:
+        dataManager.setQueries(List.of(q1, q2, q3));
+
+        // THEN they should be set according to their explicit order and ignore the name:
+        assertEquals(3, dataManager.getQueries().size());
+        assertEquals("q2", dataManager.getQueries().get(0).getName());
+        assertEquals("q3", dataManager.getQueries().get(1).getName());
+        assertEquals("q1", dataManager.getQueries().get(2).getName());
     }
 }

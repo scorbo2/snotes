@@ -256,5 +256,14 @@ public class QueryTest extends FilterTest {
         // THEN an IllegalArgumentException should be thrown:
         assertThrows(IllegalArgumentException.class, () -> query.execute(unfilteredList, -1));
     }
+
+    @Test
+    public void constructor_shouldDefaultOrderToZero() {
+        // WHEN we construct a Query with the default constructor:
+        Query query = new Query();
+
+        // THEN the order should be set to zero:
+        assertEquals(0, query.getOrder());
+    }
 }
 

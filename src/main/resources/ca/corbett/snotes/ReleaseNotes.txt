@@ -2,6 +2,8 @@ Snotes Release Notes
 Author: Steve Corbett
 
 Version 2.0 [TODO] rewrite
+  #66 - Allow manual reordering of Queries and Templates
+  #65 - Fix context view initial scroll position
   #62 - Implement auto-restart when changing data dirs
   #59 - Add limit option on search dialog
   #56 - Wire up UpdateManager for dynamic extensions

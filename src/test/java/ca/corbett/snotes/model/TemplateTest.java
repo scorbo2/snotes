@@ -232,6 +232,15 @@ public class TemplateTest {
         assertEquals("my_tag_value", template.getTagList().get(0).getTag());
     }
 
+    @Test
+    public void constructor_shouldDefaultOrderToZero() {
+        // WHEN we construct a Template:
+        Template template = new Template();
+
+        // THEN the order should default to zero:
+        assertEquals(0, template.getOrder());
+    }
+
     // -----------------------------------------------------------------------
     // clearTags tests
     // -----------------------------------------------------------------------

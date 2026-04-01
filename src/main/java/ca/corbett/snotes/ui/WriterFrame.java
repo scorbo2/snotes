@@ -57,6 +57,7 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
     private ShortTextField tagField;
     private JTextPane textPane;
     private boolean isDirty;
+    private boolean hasScrolledToBottom;
     private final Timer autoSaveTimer;
 
     /**
@@ -101,6 +102,7 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
         setDefaultCloseOperation(JInternalFrame.DISPOSE_ON_CLOSE);
         setFrameIcon(Resources.getLogoIcon(16));
         this.addInternalFrameListener(new FrameCloseListener());
+        this.hasScrolledToBottom = false;
         initComponents();
         if (dataManager.isScratchNote(note)) {
             // For scratch notes, we want to auto-save every minute, so we set up a timer to do that.
@@ -341,6 +343,19 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
             tabPane.setTabHeaderVisible(false);
         }
         tabPane.setSelectedIndex(selectedTab);
+
+        if (contextViewer != null) {
+            // Listen for tab changes, and scroll to the bottom of the context viewer the first time
+            // it is selected. This is surprisingly difficult, and must be deferred until the component
+            // is actually visible, or it will fail to have any effect. Java Swing is tricky sometimes.
+            tabPane.addChangeListener(e -> {
+                if (!hasScrolledToBottom) {
+                    contextViewer.scrollToBottom();
+                    hasScrolledToBottom = true;
+                }
+            });
+        }
+
         return tabPane;
     }
 

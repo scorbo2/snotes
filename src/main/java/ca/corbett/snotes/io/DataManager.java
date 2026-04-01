@@ -14,6 +14,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -470,6 +471,9 @@ public class DataManager {
         if (!templates.contains(template)) {
             templates.add(template);
         }
+
+        // Re-apply our template ordering, in case it has changed:
+        applyTemplateOrdering();
     }
 
     /**
@@ -513,6 +517,9 @@ public class DataManager {
         if (!queries.contains(query)) {
             queries.add(query);
         }
+
+        // Re-apply our query ordering, in case it has changed:
+        applyQueryOrdering();
     }
 
     /**
@@ -710,19 +717,41 @@ public class DataManager {
         this.notes.addAll(notes);
     }
 
-    private void setQueries(List<Query> queries) {
+    void setQueries(List<Query> queries) {
         this.queries.clear();
         this.queries.addAll(queries);
+        applyQueryOrdering();
     }
 
-    private void setTemplates(List<Template> templates) {
+    void setTemplates(List<Template> templates) {
         this.templates.clear();
         this.templates.addAll(templates);
+        applyTemplateOrdering();
     }
 
     private void setScratchNotes(List<Note> scratchNotes) {
         this.scratchNotes.clear();
         this.scratchNotes.addAll(scratchNotes);
+    }
+
+    /**
+     * Invoked whenever Query instances are added. We order Queries first
+     * by their "order" attribute, and then alphabetically by their source filename as a tiebreaker.
+     */
+    private void applyQueryOrdering() {
+        queries.sort(Comparator
+                         .comparingInt(Query::getOrder)
+                         .thenComparing(q -> q.getSourceFile() != null ? q.getSourceFile().getName() : ""));
+    }
+
+    /**
+     * Invoked whenever Template instances are added. We order Templates first
+     * by their "order" attribute, and then alphabetically by their source filename as a tiebreaker.
+     */
+    private void applyTemplateOrdering() {
+        templates.sort(Comparator
+                           .comparingInt(Template::getOrder)
+                           .thenComparing(t -> t.getSourceFile() != null ? t.getSourceFile().getName() : ""));
     }
 
     /**
