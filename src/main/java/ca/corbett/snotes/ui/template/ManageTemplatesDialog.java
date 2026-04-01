@@ -1,20 +1,25 @@
 package ca.corbett.snotes.ui.template;
 
+import ca.corbett.extras.EnhancedAction;
 import ca.corbett.extras.MessageUtil;
 import ca.corbett.extras.io.KeyStrokeManager;
 import ca.corbett.forms.Alignment;
 import ca.corbett.forms.FormPanel;
+import ca.corbett.forms.SwingFormsResources;
+import ca.corbett.forms.actions.ListItemMoveAction;
 import ca.corbett.forms.fields.ListField;
 import ca.corbett.snotes.io.DataManager;
 import ca.corbett.snotes.model.Template;
 import ca.corbett.snotes.ui.MainWindow;
 import ca.corbett.snotes.ui.actions.UIReloadAction;
 
-import javax.swing.AbstractAction;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.ListSelectionModel;
+import javax.swing.event.ListDataEvent;
+import javax.swing.event.ListDataListener;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -34,9 +39,14 @@ public class ManageTemplatesDialog extends JDialog {
     private static final Logger log = Logger.getLogger(ManageTemplatesDialog.class.getName());
     private MessageUtil messageUtil;
 
+    private final ListListener listListener;
+    private ListItemMoveAction<Template> moveUpAction;
+    private ListItemMoveAction<Template> moveDownAction;
+
     private final KeyStrokeManager keyManager;
     private final DataManager dataManager;
     private ListField<Template> templateListField;
+    private boolean listReordered;
 
     public ManageTemplatesDialog() {
         super(MainWindow.getInstance(), "Manage Templates", true);
@@ -44,9 +54,15 @@ public class ManageTemplatesDialog extends JDialog {
         setResizable(false);
         setLocationRelativeTo(MainWindow.getInstance());
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        this.listListener = new ListListener();
+        this.listReordered = false;
         this.dataManager = MainWindow.getInstance().getDataManager();
         keyManager = new KeyStrokeManager(this);
         keyManager.registerHandler(KeyStrokeManager.parseKeyStroke("ESC"), e -> closeDialog());
+        keyManager.registerHandler(KeyStrokeManager.parseKeyStroke("Ctrl+up"),
+                                   e -> moveUpAction.actionPerformed(e));
+        keyManager.registerHandler(KeyStrokeManager.parseKeyStroke("Ctrl+down"),
+                                   e -> moveDownAction.actionPerformed(e));
         setLayout(new BorderLayout());
         add(buildFormPanel(), BorderLayout.CENTER);
         add(buildButtonPanel(), BorderLayout.SOUTH);
@@ -56,16 +72,27 @@ public class ManageTemplatesDialog extends JDialog {
         keyManager.dispose();
         setVisible(false);
         dispose();
+
+        if (listReordered) {
+            // Trigger a UI reload so the list of queries in the ActionPanel are updated:
+            UIReloadAction.getInstance().actionPerformed(null);
+        }
     }
 
     /**
      * Forces a refresh of the list of Templates displayed here.
      */
     private void refresh() {
-        templateListField.getListModel().clear();
-        templateListField.getListModel().addAll(dataManager.getTemplates());
-        templateListField.getList().revalidate();
-        templateListField.getList().repaint();
+        templateListField.removeListDataListener(listListener);
+        try {
+            templateListField.getListModel().clear();
+            templateListField.getListModel().addAll(dataManager.getTemplates());
+            templateListField.getList().revalidate();
+            templateListField.getList().repaint();
+        }
+        finally {
+            templateListField.addListDataListener(listListener);
+        }
     }
 
     private JPanel buildFormPanel() {
@@ -77,10 +104,21 @@ public class ManageTemplatesDialog extends JDialog {
         templateListField.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         templateListField.setShouldExpand(true);
         templateListField.setButtonPosition(ListField.ButtonPosition.BOTTOM);
+        templateListField.setButtonLayout(FlowLayout.CENTER, 2, 2);
+        templateListField.setButtonPanelBorder(BorderFactory.createLoweredBevelBorder());
         templateListField.setButtonLayout(FlowLayout.LEFT, 6, 4);
         templateListField.addButton(new AddTemplateAction());
         templateListField.addButton(new EditTemplateAction());
         templateListField.addButton(new DeleteTemplateAction());
+        this.moveUpAction = new ListItemMoveAction<>(SwingFormsResources.getMoveUpIcon(16), templateListField,
+                                                     ListItemMoveAction.Direction.UP);
+        moveUpAction.setTooltip(moveUpAction.getTooltip() + " (Ctrl+Up)");
+        this.moveDownAction = new ListItemMoveAction<>(SwingFormsResources.getMoveDownIcon(16), templateListField,
+                                                       ListItemMoveAction.Direction.DOWN);
+        moveDownAction.setTooltip(moveDownAction.getTooltip() + " (Ctrl+Down)");
+        templateListField.addButton(moveUpAction);
+        templateListField.addButton(moveDownAction);
+        templateListField.addListDataListener(new ListListener());
         formPanel.add(templateListField);
 
         return formPanel;
@@ -100,9 +138,10 @@ public class ManageTemplatesDialog extends JDialog {
      * After the dialog is closed, if a new Template was created, it will be saved
      * and the list of Templates will be refreshed.
      */
-    private class AddTemplateAction extends AbstractAction {
+    private class AddTemplateAction extends EnhancedAction {
         public AddTemplateAction() {
-            super("New");
+            super("", SwingFormsResources.getAddIcon(16));
+            setTooltip("Add a new template");
         }
 
         @Override
@@ -133,9 +172,10 @@ public class ManageTemplatesDialog extends JDialog {
      * After the dialog is closed, if the Template was updated, it will be saved
      * and the list of Templates will be refreshed.
      */
-    private class EditTemplateAction extends AbstractAction {
+    private class EditTemplateAction extends EnhancedAction {
         public EditTemplateAction() {
-            super("Edit");
+            super("", SwingFormsResources.getEditIcon(16));
+            setTooltip("Edit the selected template");
         }
 
         @Override
@@ -171,9 +211,10 @@ public class ManageTemplatesDialog extends JDialog {
      * An internal action to delete the selected Template.
      * After confirming with the user, the Template will be deleted and the list of Templates will be refreshed.
      */
-    private class DeleteTemplateAction extends AbstractAction {
+    private class DeleteTemplateAction extends EnhancedAction {
         public DeleteTemplateAction() {
-            super("Delete");
+            super("", SwingFormsResources.getRemoveIcon(16));
+            setTooltip("Delete the selected template");
         }
 
         @Override
@@ -195,6 +236,51 @@ public class ManageTemplatesDialog extends JDialog {
                 // Also refresh our own list:
                 refresh();
             }
+        }
+    }
+
+    /**
+     * Listens for list re-ordering events, so we can update our Queries accordingly.
+     * Note that we do this against the model objects directly - this dialog does not
+     * have an OK/Cancel setup. Any changes you make here are live.
+     */
+    private class ListListener implements ListDataListener {
+
+        @Override
+        public void intervalAdded(ListDataEvent e) {
+            boolean isDirty = false;
+            for (int i = 0; i < templateListField.getListModel().size(); i++) {
+                Template template = templateListField.getListModel().get(i);
+                template.setOrder(i);
+                isDirty = isDirty || template.isDirty();
+            }
+
+            // If any query is dirty, save 'em all:
+            if (isDirty) {
+                try {
+                    for (int i = 0; i < templateListField.getListModel().size(); i++) {
+                        dataManager.saveTemplate(templateListField.getListModel().get(i));
+                    }
+
+                    // Make a note that we did this so we can reload the UI when the dialog closes:
+                    listReordered = true;
+                }
+                catch (IOException ioe) {
+                    getMessageUtil().error("Save error",
+                                           "An error occurred while saving the updated template order: " + ioe.getMessage(),
+                                           ioe);
+                }
+            }
+        }
+
+        @Override
+        public void intervalRemoved(ListDataEvent e) {
+            // ignored
+        }
+
+        @Override
+        public void contentsChanged(ListDataEvent e) {
+            // ignored
         }
     }
 

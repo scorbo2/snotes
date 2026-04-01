@@ -1,20 +1,25 @@
 package ca.corbett.snotes.ui.query;
 
+import ca.corbett.extras.EnhancedAction;
 import ca.corbett.extras.MessageUtil;
 import ca.corbett.extras.io.KeyStrokeManager;
 import ca.corbett.forms.Alignment;
 import ca.corbett.forms.FormPanel;
+import ca.corbett.forms.SwingFormsResources;
+import ca.corbett.forms.actions.ListItemMoveAction;
 import ca.corbett.forms.fields.ListField;
 import ca.corbett.snotes.io.DataManager;
 import ca.corbett.snotes.model.Query;
 import ca.corbett.snotes.ui.MainWindow;
 import ca.corbett.snotes.ui.actions.UIReloadAction;
 
-import javax.swing.AbstractAction;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.ListSelectionModel;
+import javax.swing.event.ListDataEvent;
+import javax.swing.event.ListDataListener;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -34,9 +39,14 @@ public class ManageQueriesDialog extends JDialog {
     private static final Logger log = Logger.getLogger(ManageQueriesDialog.class.getName());
     private MessageUtil messageUtil;
 
+    private final ListListener listListener;
+    private ListItemMoveAction<Query> moveUpAction;
+    private ListItemMoveAction<Query> moveDownAction;
+
     private final KeyStrokeManager keyManager;
     private final DataManager dataManager;
     private ListField<Query> queryListField;
+    private boolean listReordered;
 
     public ManageQueriesDialog() {
         super(MainWindow.getInstance(), "Manage Queries", true);
@@ -44,9 +54,15 @@ public class ManageQueriesDialog extends JDialog {
         setResizable(false);
         setLocationRelativeTo(MainWindow.getInstance());
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        this.listListener = new ListListener();
+        this.listReordered = false;
         this.dataManager = MainWindow.getInstance().getDataManager();
         keyManager = new KeyStrokeManager(this);
         keyManager.registerHandler(KeyStrokeManager.parseKeyStroke("ESC"), e -> closeDialog());
+        keyManager.registerHandler(KeyStrokeManager.parseKeyStroke("Ctrl+up"),
+                                   e -> moveUpAction.actionPerformed(e));
+        keyManager.registerHandler(KeyStrokeManager.parseKeyStroke("Ctrl+down"),
+                                   e -> moveDownAction.actionPerformed(e));
         setLayout(new BorderLayout());
         add(buildFormPanel(), BorderLayout.CENTER);
         add(buildButtonPanel(), BorderLayout.SOUTH);
@@ -56,16 +72,27 @@ public class ManageQueriesDialog extends JDialog {
         keyManager.dispose();
         setVisible(false);
         dispose();
+        
+        if (listReordered) {
+            // Trigger a UI reload so the list of queries in the ActionPanel are updated:
+            UIReloadAction.getInstance().actionPerformed(null);
+        }
     }
 
     /**
      * Forces a refresh of the list of Queries displayed here.
      */
     private void refresh() {
-        queryListField.getListModel().clear();
-        queryListField.getListModel().addAll(dataManager.getQueries());
-        queryListField.getList().revalidate();
-        queryListField.getList().repaint();
+        queryListField.removeListDataListener(listListener);
+        try {
+            queryListField.getListModel().clear();
+            queryListField.getListModel().addAll(dataManager.getQueries());
+            queryListField.getList().revalidate();
+            queryListField.getList().repaint();
+        }
+        finally {
+            queryListField.addListDataListener(listListener);
+        }
     }
 
     private JPanel buildFormPanel() {
@@ -77,10 +104,21 @@ public class ManageQueriesDialog extends JDialog {
         queryListField.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         queryListField.setShouldExpand(true);
         queryListField.setButtonPosition(ListField.ButtonPosition.BOTTOM);
-        queryListField.setButtonLayout(FlowLayout.LEFT, 6, 4);
+        queryListField.setButtonLayout(FlowLayout.CENTER, 2, 2);
+        queryListField.setButtonPanelBorder(BorderFactory.createLoweredBevelBorder());
         queryListField.addButton(new AddQueryAction());
         queryListField.addButton(new EditQueryAction());
         queryListField.addButton(new DeleteQueryAction());
+        this.moveUpAction = new ListItemMoveAction<>(SwingFormsResources.getMoveUpIcon(16), queryListField,
+                                                     ListItemMoveAction.Direction.UP);
+        moveUpAction.setTooltip(moveUpAction.getTooltip() + " (Ctrl+Up)");
+        this.moveDownAction = new ListItemMoveAction<>(SwingFormsResources.getMoveDownIcon(16), queryListField,
+                                                       ListItemMoveAction.Direction.DOWN);
+        moveDownAction.setTooltip(moveDownAction.getTooltip() + " (Ctrl+Down)");
+        queryListField.addButton(moveUpAction);
+        queryListField.addButton(moveDownAction);
+        queryListField.addListDataListener(new ListListener());
+
         formPanel.add(queryListField);
 
         return formPanel;
@@ -100,9 +138,10 @@ public class ManageQueriesDialog extends JDialog {
      * After the dialog is closed, if a new Query was created, it will be saved
      * and the list of Queries will be refreshed.
      */
-    private class AddQueryAction extends AbstractAction {
+    private class AddQueryAction extends EnhancedAction {
         public AddQueryAction() {
-            super("New");
+            super("", SwingFormsResources.getAddIcon(16));
+            setTooltip("Create a new query");
         }
 
         @Override
@@ -133,9 +172,10 @@ public class ManageQueriesDialog extends JDialog {
      * After the dialog is closed, if the Query was updated, it will be saved
      * and the list of Queries will be refreshed.
      */
-    private class EditQueryAction extends AbstractAction {
+    private class EditQueryAction extends EnhancedAction {
         public EditQueryAction() {
-            super("Edit");
+            super("", SwingFormsResources.getEditIcon(16));
+            setTooltip("Edit the selected query");
         }
 
         @Override
@@ -171,9 +211,10 @@ public class ManageQueriesDialog extends JDialog {
      * An internal action to delete the selected Query.
      * After confirming with the user, the Query will be deleted and the list of Queries will be refreshed.
      */
-    private class DeleteQueryAction extends AbstractAction {
+    private class DeleteQueryAction extends EnhancedAction {
         public DeleteQueryAction() {
-            super("Delete");
+            super("", SwingFormsResources.getRemoveIcon(16));
+            setTooltip("Delete the selected query");
         }
 
         @Override
@@ -195,6 +236,51 @@ public class ManageQueriesDialog extends JDialog {
                 // Also refresh our own list:
                 refresh();
             }
+        }
+    }
+
+    /**
+     * Listens for list re-ordering events, so we can update our Queries accordingly.
+     * Note that we do this against the model objects directly - this dialog does not
+     * have an OK/Cancel setup. Any changes you make here are live.
+     */
+    private class ListListener implements ListDataListener {
+
+        @Override
+        public void intervalAdded(ListDataEvent e) {
+            boolean isDirty = false;
+            for (int i = 0; i < queryListField.getListModel().size(); i++) {
+                Query query = queryListField.getListModel().get(i);
+                query.setOrder(i);
+                isDirty = isDirty || query.isDirty();
+            }
+
+            // If any query is dirty, save 'em all:
+            if (isDirty) {
+                try {
+                    for (int i = 0; i < queryListField.getListModel().size(); i++) {
+                        dataManager.saveQuery(queryListField.getListModel().get(i));
+                    }
+
+                    // Make a note that we did this so we can reload the UI when the dialog closes:
+                    listReordered = true;
+                }
+                catch (IOException ioe) {
+                    getMessageUtil().error("Save error",
+                                           "An error occurred while saving the updated query order: " + ioe.getMessage(),
+                                           ioe);
+                }
+            }
+        }
+
+        @Override
+        public void intervalRemoved(ListDataEvent e) {
+            // ignored
+        }
+
+        @Override
+        public void contentsChanged(ListDataEvent e) {
+            // ignored
         }
     }
 

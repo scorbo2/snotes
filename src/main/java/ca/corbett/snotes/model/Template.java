@@ -95,6 +95,7 @@ public class Template {
     private final List<Tag> tagList;
     private File sourceFile;
     private boolean isDirty;
+    private int order;
 
     /**
      * Creates a new, empty, unnamed Template.
@@ -114,6 +115,7 @@ public class Template {
         this.context = Context.NONE;
         this.tagList = new ArrayList<>();
         this.sourceFile = null;
+        this.order = 0;
         isDirty = true;
     }
 
@@ -230,6 +232,24 @@ public class Template {
      */
     public List<Tag> getTagList() {
         return new ArrayList<>(tagList);
+    }
+
+    /**
+     * Returns the sort order for this Template. Lower values sort first. Defaults to 0.
+     */
+    public int getOrder() {
+        return order;
+    }
+
+    /**
+     * Sets the sort order for this Template. Lower values sort first.
+     */
+    public void setOrder(int order) {
+        if (this.order == order) {
+            return; // No change, so don't mark dirty
+        }
+        this.order = order;
+        isDirty = true;
     }
 
     /**

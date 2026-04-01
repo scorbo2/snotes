@@ -746,4 +746,56 @@ class SnotesIOTest {
         String expectedName = FileSystemUtil.sanitizeFilename("My Test Template.template");
         assertEquals(expectedName, computed.getName());
     }
+
+    @Test
+    public void loadQuery_withNoOrderPresent_shouldDefaultOrderToZero() {
+        // GIVEN a Query saved in a file that has no "order" field at all:
+        File file = new File(tempDir, "no-order.query");
+        String content = "{\"name\":\"Test Query\",\"filters\":[]}";
+        try {
+            Files.writeString(file.toPath(), content, StandardCharsets.UTF_8);
+        }
+        catch (IOException ioe) {
+            fail("IOException thrown while setting up test file: " + ioe.getMessage());
+        }
+
+        // WHEN we load this Query:
+        Query loaded = null;
+        try {
+            loaded = SnotesIO.loadQuery(file);
+        }
+        catch (IOException ioe) {
+            fail("IOException thrown during load: " + ioe.getMessage());
+        }
+
+        // THEN it should have a default ordering of 0:
+        assertNotNull(loaded);
+        assertEquals(0, loaded.getOrder());
+    }
+
+    @Test
+    public void loadTemplate_withNoOrderPresent_shouldDefaultOrderToZero() {
+        // GIVEN a Template saved in a file that has no "order" field at all:
+        File file = new File(tempDir, "no-order.template");
+        String content = "{\"name\":\"Test Template\",\"dateOption\":\"NONE\",\"context\":\"NONE\",\"tags\":[]}";
+        try {
+            Files.writeString(file.toPath(), content, StandardCharsets.UTF_8);
+        }
+        catch (IOException ioe) {
+            fail("IOException thrown while setting up test file: " + ioe.getMessage());
+        }
+
+        // WHEN we load this Template:
+        Template loaded = null;
+        try {
+            loaded = SnotesIO.loadTemplate(file);
+        }
+        catch (IOException ioe) {
+            fail("IOException thrown during load: " + ioe.getMessage());
+        }
+
+        // THEN it should have a default ordering of 0:
+        assertNotNull(loaded);
+        assertEquals(0, loaded.getOrder());
+    }
 }
