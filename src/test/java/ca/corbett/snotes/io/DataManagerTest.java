@@ -810,7 +810,7 @@ class DataManagerTest {
     }
 
     @Test
-    void setTemplates_withNoOrderSet_shouldOrderByFilename() {
+    void setTemplates_withNoOrderSet_shouldOrderBySourceFileName() {
         // GIVEN some templates with no order set:
         Template t1 = new Template();
         t1.setName("t1");
@@ -860,7 +860,7 @@ class DataManagerTest {
     }
 
     @Test
-    void setQueries_withNoOrderSet_shouldOrderByName() {
+    void setQueries_withNoOrderSet_shouldOrderBySourceFileName() {
         // GIVEN some queries with no order set:
         Query q1 = new Query();
         q1.setName("q1");

@@ -470,7 +470,6 @@ public class DataManager {
         // If this Template wasn't already in our cache, add it now:
         if (!templates.contains(template)) {
             templates.add(template);
-            applyTemplateOrdering();
         }
 
         // Re-apply our template ordering, in case it has changed:
@@ -517,7 +516,6 @@ public class DataManager {
         // If this Query wasn't already in our cache, add it now:
         if (!queries.contains(query)) {
             queries.add(query);
-            applyQueryOrdering();
         }
 
         // Re-apply our query ordering, in case it has changed:

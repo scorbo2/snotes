@@ -74,7 +74,7 @@ public class ManageTemplatesDialog extends JDialog {
         dispose();
 
         if (listReordered) {
-            // Trigger a UI reload so the list of queries in the ActionPanel are updated:
+            // Trigger a UI reload so the list of templates in the ActionPanel are updated:
             UIReloadAction.getInstance().actionPerformed(null);
         }
     }
@@ -106,7 +106,6 @@ public class ManageTemplatesDialog extends JDialog {
         templateListField.setButtonPosition(ListField.ButtonPosition.BOTTOM);
         templateListField.setButtonLayout(FlowLayout.CENTER, 2, 2);
         templateListField.setButtonPanelBorder(BorderFactory.createLoweredBevelBorder());
-        templateListField.setButtonLayout(FlowLayout.LEFT, 6, 4);
         templateListField.addButton(new AddTemplateAction());
         templateListField.addButton(new EditTemplateAction());
         templateListField.addButton(new DeleteTemplateAction());
@@ -118,7 +117,7 @@ public class ManageTemplatesDialog extends JDialog {
         moveDownAction.setTooltip(moveDownAction.getTooltip() + " (Ctrl+Down)");
         templateListField.addButton(moveUpAction);
         templateListField.addButton(moveDownAction);
-        templateListField.addListDataListener(new ListListener());
+        templateListField.addListDataListener(listListener);
         formPanel.add(templateListField);
 
         return formPanel;
@@ -240,7 +239,7 @@ public class ManageTemplatesDialog extends JDialog {
     }
 
     /**
-     * Listens for list re-ordering events, so we can update our Queries accordingly.
+     * Listens for list re-ordering events, so we can update our Templates accordingly.
      * Note that we do this against the model objects directly - this dialog does not
      * have an OK/Cancel setup. Any changes you make here are live.
      */
@@ -255,7 +254,7 @@ public class ManageTemplatesDialog extends JDialog {
                 isDirty = isDirty || template.isDirty();
             }
 
-            // If any query is dirty, save 'em all:
+            // If any template is dirty, save 'em all:
             if (isDirty) {
                 try {
                     for (int i = 0; i < templateListField.getListModel().size(); i++) {

@@ -72,7 +72,7 @@ public class ManageQueriesDialog extends JDialog {
         keyManager.dispose();
         setVisible(false);
         dispose();
-        
+
         if (listReordered) {
             // Trigger a UI reload so the list of queries in the ActionPanel are updated:
             UIReloadAction.getInstance().actionPerformed(null);
@@ -117,7 +117,7 @@ public class ManageQueriesDialog extends JDialog {
         moveDownAction.setTooltip(moveDownAction.getTooltip() + " (Ctrl+Down)");
         queryListField.addButton(moveUpAction);
         queryListField.addButton(moveDownAction);
-        queryListField.addListDataListener(new ListListener());
+        queryListField.addListDataListener(listListener);
 
         formPanel.add(queryListField);
 
