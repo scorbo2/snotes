@@ -907,4 +907,85 @@ class DataManagerTest {
         assertEquals("q3", dataManager.getQueries().get(1).getName());
         assertEquals("q1", dataManager.getQueries().get(2).getName());
     }
+
+    @Test
+    void getUniqueYears_withOnlyUndatedNotes_shouldReturnEmptyList() throws IOException {
+        // GIVEN a DataManager with only undated notes:
+        Note note1 = dataManager.newNote();
+        note1.tag("note1");
+        note1.setText("Undated note 1");
+        dataManager.save(note1);
+        Note note2 = dataManager.newNote();
+        note2.tag("note2");
+        note2.setText("Undated note 2");
+        dataManager.save(note2);
+
+        // WHEN we call getUniqueYears:
+        List<Integer> years = dataManager.getUniqueYears();
+
+        // THEN it should return an empty list because there are no dated notes:
+        assertNotNull(years);
+        assertTrue(years.isEmpty(), "Expected getUniqueYears to return an empty list when there are no dated notes");
+    }
+
+    @Test
+    void getUniqueYears_withAllNotesInSameYear_shouldReturnOneYear() throws IOException {
+        // GIVEN a DataManager with several notes all dated in the same year:
+        Note note1 = dataManager.newNote();
+        note1.tag("note1");
+        note1.setText("Dated note 1");
+        note1.setDate(new YMDDate("2023-05-10"));
+        dataManager.save(note1);
+        Note note2 = dataManager.newNote();
+        note2.tag("note2");
+        note2.setText("Dated note 2");
+        note2.setDate(new YMDDate("2023-11-20"));
+        dataManager.save(note2);
+        Note note3 = dataManager.newNote();
+        note3.tag("note3");
+        note3.setText("Dated note 3");
+        note3.setDate(new YMDDate("2023-01-15"));
+        dataManager.save(note3);
+
+        // WHEN we call getUniqueYears:
+        List<Integer> years = dataManager.getUniqueYears();
+
+        // THEN we should get back a list with just our one year:
+        assertNotNull(years);
+        assertEquals(1, years.size(), "Expected getUniqueYears to return a list with one year");
+        assertEquals(2023, years.get(0), "Expected the unique year to be 2023");
+    }
+
+    @Test
+    void getUniqueYears_withMultipleYears_shouldReturnSortedUniqueYears() throws IOException {
+        // GIVEN a DataManager with several notes dated across multiple years:
+        Note note1 = dataManager.newNote();
+        note1.tag("note1");
+        note1.setText("Dated note 1");
+        note1.setDate(new YMDDate("2022-05-10"));
+        dataManager.save(note1);
+        Note note2 = dataManager.newNote();
+        note2.tag("note2");
+        note2.setText("Dated note 2");
+        note2.setDate(new YMDDate("2023-11-20"));
+        dataManager.save(note2);
+        Note note3 = dataManager.newNote();
+        note3.tag("note3");
+        note3.setText("Dated note 3");
+        note3.setDate(new YMDDate("2021-01-15"));
+        dataManager.save(note3);
+        Note note4 = dataManager.newNote();
+        note4.tag("note4");
+        note4.setText("Dated note 4");
+        note4.setDate(new YMDDate("2022-08-30"));
+        dataManager.save(note4);
+
+        // WHEN we call getUniqueYears:
+        List<Integer> years = dataManager.getUniqueYears();
+
+        // THEN we should get back a sorted list of the unique years:
+        assertNotNull(years);
+        assertEquals(3, years.size(), "Expected getUniqueYears to return a list with three unique years");
+        assertEquals(List.of(2021, 2022, 2023), years, "Expected the unique years to be [2021, 2022, 2023]");
+    }
 }
