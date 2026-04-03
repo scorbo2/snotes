@@ -4,7 +4,6 @@ import ca.corbett.extensions.ExtensionManager;
 import ca.corbett.extras.EnhancedAction;
 import ca.corbett.extras.properties.KeyStrokeProperty;
 import ca.corbett.snotes.Version;
-import ca.corbett.snotes.extensions.builtin.StatisticsExtension;
 import ca.corbett.snotes.extensions.builtin.TestExtension;
 import ca.corbett.snotes.ui.actions.ActionGroup;
 
@@ -50,7 +49,6 @@ public class SnotesExtensionManager extends ExtensionManager<SnotesExtension> {
         if (isTestExtensionRequired()) {
             addExtension(new TestExtension(), true);
         }
-        addExtension(new StatisticsExtension(), true);
 
         // Now look for external extensions in jar files in our EXTENSIONS_DIR:
         try {

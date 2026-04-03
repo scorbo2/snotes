@@ -7,6 +7,7 @@ import ca.corbett.snotes.model.filter.DayOfMonthFilter;
 import ca.corbett.snotes.model.filter.MonthFilter;
 import ca.corbett.snotes.model.filter.TagFilter;
 import ca.corbett.snotes.model.filter.TextFilter;
+import ca.corbett.snotes.model.filter.YearFilter;
 
 import java.util.List;
 
@@ -22,6 +23,7 @@ import java.util.List;
  * </p>
  *
  * @author <a href="https://github.com/scorbo2">scorbo2</a>
+ * @since Snotes 2.0
  */
 public class QueryFactory {
 
@@ -58,9 +60,53 @@ public class QueryFactory {
     }
 
     /**
+     * Returns a Query that looks for Notes written on xmas day in any year.
+     */
+    public static Query xmas() {
+        return specificDateAnyYear(12, 25);
+    }
+
+    /**
+     * Returns a Query that looks for Notes written on New Year's Eve in any year.
+     */
+    public static Query newYearsEve() {
+        return specificDateAnyYear(12, 31);
+    }
+
+    /**
+     * Returns a Query that looks for Notes written on any day in the given year.
+     */
+    public static Query year(int year) {
+        return new Query().addFilter(new YearFilter(year, DateFilterType.ON));
+    }
+
+    /**
+     * Returns a Query that looks for notes written in the given month (1-12) in any year.
+     */
+    public static Query month(int month) {
+        return new Query().addFilter(new MonthFilter(month, BooleanFilterType.IS));
+    }
+
+    /**
+     * Returns a Query that looks for notes written in the given month (1-12) of the given year.
+     */
+    public static Query month(int year, int month) {
+        return new Query()
+            .addFilter(new YearFilter(year, DateFilterType.ON))
+            .addFilter(new MonthFilter(month, BooleanFilterType.IS));
+    }
+
+    /**
      * Returns a very simple Query that returns all Notes that contain the given text, case-insensitive.
      */
     public static Query contains(String text) {
         return new Query().addFilter(new TextFilter(text, false));
+    }
+
+    /**
+     * Returns a very simple Query that returns all Notes that contain exactly the given text, case-sensitive.
+     */
+    public static Query containsExactly(String text) {
+        return new Query().addFilter(new TextFilter(text, true));
     }
 }
