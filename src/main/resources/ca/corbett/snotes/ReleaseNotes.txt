@@ -2,6 +2,7 @@ Snotes Release Notes
 Author: Steve Corbett
 
 Version 2.0 [TODO] rewrite
+  #69 - Fix bug in computeFile with static notes
   #66 - Allow manual reordering of Queries and Templates
   #65 - Fix context view initial scroll position
   #62 - Implement auto-restart when changing data dirs

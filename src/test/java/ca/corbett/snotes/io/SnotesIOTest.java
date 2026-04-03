@@ -748,6 +748,58 @@ class SnotesIOTest {
     }
 
     @Test
+    public void computeFile_withNoSourceFile_shouldCompute() {
+        // GIVEN a Note with no source file:
+        Note note = new Note();
+        note.setText("hello");
+
+        // WHEN we compute a file for it:
+        File computed = SnotesIO.computeFile(tempDir, note);
+
+        // THEN it should be a direct child of the static directory with the default untagged filename:
+        File expectedDir = new File(tempDir, DataManager.STATIC_DIR);
+        String expectedName = "untagged_note.txt";
+        assertEquals(expectedDir.getAbsolutePath(), computed.getParentFile().getAbsolutePath());
+        assertEquals(expectedName, computed.getName());
+    }
+
+    @Test
+    public void computeFile_withSourceFileOutsideOfStaticDir_shouldCompute() {
+        // GIVEN a Note with a source file that is outside of the static directory:
+        Note note = new Note();
+        note.setText("hello");
+        File externalFile = new File(tempDir, "external_note.snote");
+        note.setSourceFile(externalFile);
+
+        // WHEN we compute a file for it:
+        File computed = SnotesIO.computeFile(tempDir, note);
+
+        // THEN it should ignore the source file and compute as if there were no source file:
+        File expectedDir = new File(tempDir, DataManager.STATIC_DIR);
+        String expectedName = "untagged_note.txt";
+        assertEquals(expectedDir.getAbsolutePath(), computed.getParentFile().getAbsolutePath());
+        assertEquals(expectedName, computed.getName());
+    }
+
+    @Test
+    public void computeFile_withSourceFileInStaticDir_shouldSaveToSourceFile() {
+        // GIVEN a Note with a source file that is already inside the static directory:
+        //  (A valid real-world scenario! Undated notes can live anywhere in the static dir.)
+        File staticDir = new File(tempDir, DataManager.STATIC_DIR);
+        File subDir = new File(staticDir, "someSubDirectory");
+        File sourceFile = new File(subDir, "existing_note.snote");
+        Note note = new Note();
+        note.setText("hello");
+        note.setSourceFile(sourceFile);
+
+        // WHEN we compute a file for it:
+        File computed = SnotesIO.computeFile(tempDir, note);
+
+        // THEN it should return the existing source file rather than computing a new one:
+        assertEquals(sourceFile.getAbsolutePath(), computed.getAbsolutePath());
+    }
+
+    @Test
     public void loadQuery_withNoOrderPresent_shouldDefaultOrderToZero() {
         // GIVEN a Query saved in a file that has no "order" field at all:
         File file = new File(tempDir, "no-order.query");
