@@ -413,6 +413,18 @@ class SnotesIO {
     }
 
     /**
+     * Returns true if the given file is located in the scratch directory.
+     */
+    static boolean isInScratchDir(File dataDirectory, File file) {
+        if (file == null) {
+            return false;
+        }
+
+        File scratchDir = new File(dataDirectory, DataManager.SCRATCH_DIR);
+        return file.getAbsolutePath().startsWith(scratchDir.getAbsolutePath() + File.separator);
+    }
+
+    /**
      * Automatically computes a suggested File for the given Note based
      * on its metadata, and based on the supplied data directory.
      *
@@ -448,10 +460,13 @@ class SnotesIO {
                     return note.getSourceFile();
                 }
                 else {
-                    // This could happen legitimately if the user edited a dated note and removed the date.
-                    // It's worth logging a warning, as it's a bit unusual, and might not be intentional.
-                    log.warning("Undated note has a source file that is not in the static directory. " +
-                                    "Ignoring source file and computing new file in static directory.");
+                    // If we're not saving a scratch note, something is fishy...
+                    if (!isInScratchDir(dataDirectory, note.getSourceFile())) {
+                        // This could happen legitimately if the user edited a dated note and removed the date.
+                        // It's worth logging a warning, as it's a bit unusual, and might not be intentional.
+                        log.warning("Undated note has a source file that is not in the static directory. " +
+                                        "Ignoring source file and computing new save location in static directory.");
+                    }
                 }
             }
 
