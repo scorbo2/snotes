@@ -533,7 +533,7 @@ public class DataManager {
     public List<Integer> getUniqueYears() {
         SortedSet<Integer> years = new TreeSet<>();
         for (Note note : notes) {
-            if (note.hasDate() && note.getDate() != null) {
+            if (note.hasDate()) {
                 years.add(note.getDate().getYear());
             }
         }
