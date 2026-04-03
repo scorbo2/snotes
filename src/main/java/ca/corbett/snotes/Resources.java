@@ -25,6 +25,7 @@ public class Resources {
     private static ImageIcon iconRead;
     private static ImageIcon iconWrite;
     private static ImageIcon iconOptions;
+    private static ImageIcon iconStats;
 
     private Resources() {
     }
@@ -41,8 +42,9 @@ public class Resources {
         URL iconReadUrl = Resources.class.getResource("/ca/corbett/snotes/images/icon-read-24.png");
         URL iconWriteUrl = Resources.class.getResource("/ca/corbett/snotes/images/icon-write-24.png");
         URL iconOptionsUrl = Resources.class.getResource("/ca/corbett/snotes/images/icon-options-24.png");
+        URL iconStatsUrl = Resources.class.getResource("/ca/corbett/snotes/images/icon-stats-24.png");
         if (logoWideUrl == null || logoIconUrl == null || iconReadUrl == null
-            || iconWriteUrl == null || iconOptionsUrl == null) {
+            || iconWriteUrl == null || iconOptionsUrl == null || iconStatsUrl == null) {
             logger.severe("Failed to load one or more resource images.");
             return false;
         }
@@ -54,6 +56,7 @@ public class Resources {
             iconRead = new ImageIcon(ImageUtil.loadImage(iconReadUrl));
             iconWrite = new ImageIcon(ImageUtil.loadImage(iconWriteUrl));
             iconOptions = new ImageIcon(ImageUtil.loadImage(iconOptionsUrl));
+            iconStats = new ImageIcon(ImageUtil.loadImage(iconStatsUrl));
         }
         catch (Exception e) {
             logger.severe("Failed to load one or more resource images: " + e.getMessage());
@@ -107,5 +110,12 @@ public class Resources {
      */
     public static ImageIcon getIconOptions() {
         return iconOptions;
+    }
+
+    /**
+     * Returns the "statistics" icon.
+     */
+    public static ImageIcon getIconStats() {
+        return iconStats;
     }
 }

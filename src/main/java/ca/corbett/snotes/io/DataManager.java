@@ -16,6 +16,8 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -520,6 +522,22 @@ public class DataManager {
 
         // Re-apply our query ordering, in case it has changed:
         applyQueryOrdering();
+    }
+
+    /**
+     * Examines all notes in cache, and returns a list of all unique years
+     * from all dated notes. The returned list is sorted in ascending order.
+     * The returned list may be empty if our cache is empty, or if our cache
+     * only contains undated notes.
+     */
+    public List<Integer> getUniqueYears() {
+        SortedSet<Integer> years = new TreeSet<>();
+        for (Note note : notes) {
+            if (note.hasDate()) {
+                years.add(note.getDate().getYear());
+            }
+        }
+        return new ArrayList<>(years);
     }
 
     /**

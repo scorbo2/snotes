@@ -29,6 +29,7 @@ Version 2.0 [TODO] rewrite
   #16 - Implement KeyStrokeManager
   #14 - Implement ActionPanel (replaces JxTaskPane from V1)
   #12 - Query persistence
+  #10 - Add support for statistics extension
   Port to GitHub, switch to Maven, upgrade to Java 17
 
 Version 1.0 [2023-04-06]

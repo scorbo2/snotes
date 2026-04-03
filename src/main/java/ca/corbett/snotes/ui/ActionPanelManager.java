@@ -26,9 +26,12 @@ public class ActionPanelManager {
         // One-time customization of ActionPanel:
         actionPanel.setMinimumSize(new Dimension(180, 0)); // don't let it get too narrow; height can be whatever
         actionPanel.getColorOptions().setFromTheme(ColorTheme.DEFAULT); // TODO should be a config option; fine for now
-        actionPanel.getActionGroupMargins().setAll(8).setInternalSpacing(12).setTop(12);
+        actionPanel.getActionGroupMargins().setAll(8).setInternalSpacing(16).setTop(12);
         actionPanel.setHeaderIconSize(20);
         actionPanel.getExpandCollapseOptions().setAllowHeaderDoubleClick(true);
+        actionPanel.getActionTrayMargins().setLeft(12); // indent action labels a bit
+        actionPanel.getActionTrayMargins().setTop(4); // add a bit of extra space at the top of the action trays
+        actionPanel.getActionTrayMargins().setBottom(6); // add a bit of extra space at the bottom of the action trays
     }
 
     /**
