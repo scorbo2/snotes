@@ -400,6 +400,31 @@ class SnotesIO {
     }
 
     /**
+     * Returns true if the given file is located in the static directory,
+     * which is where undated notes are stored by default.
+     */
+    static boolean isInStaticDir(File dataDirectory, File file) {
+        if (file == null) {
+            return false;
+        }
+
+        File staticDir = new File(dataDirectory, DataManager.STATIC_DIR);
+        return file.getAbsolutePath().startsWith(staticDir.getAbsolutePath() + File.separator);
+    }
+
+    /**
+     * Returns true if the given file is located in the scratch directory.
+     */
+    static boolean isInScratchDir(File dataDirectory, File file) {
+        if (file == null) {
+            return false;
+        }
+
+        File scratchDir = new File(dataDirectory, DataManager.SCRATCH_DIR);
+        return file.getAbsolutePath().startsWith(scratchDir.getAbsolutePath() + File.separator);
+    }
+
+    /**
      * Automatically computes a suggested File for the given Note based
      * on its metadata, and based on the supplied data directory.
      *
@@ -424,8 +449,28 @@ class SnotesIO {
                 + File.separator + date.getDayStr();
         }
 
-        // Undated notes go into the static directory by default, but the UI allows this to be changed:
+        // Undated notes go into the static directory by default.
+        // One day the UI will allow this to be customized.
         else {
+            // If this note has a source file that's already in the
+            // static directory, we'll just save back to that file
+            // instead of computing a location:
+            if (note.getSourceFile() != null) {
+                if (isInStaticDir(dataDirectory, note.getSourceFile())) {
+                    return note.getSourceFile();
+                }
+                else {
+                    // If we're not saving a scratch note, something is fishy...
+                    if (!isInScratchDir(dataDirectory, note.getSourceFile())) {
+                        // This could happen legitimately if the user edited a dated note and removed the date.
+                        // It's worth logging a warning, as it's a bit unusual, and might not be intentional.
+                        log.warning("Undated note has a source file that is not in the static directory. " +
+                                        "Ignoring source file and computing new save location in static directory.");
+                    }
+                }
+            }
+
+            // Otherwise, it'll be a direct child of the static dir:
             dirPath += File.separator + DataManager.STATIC_DIR;
         }
 
