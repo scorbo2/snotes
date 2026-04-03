@@ -443,8 +443,16 @@ class SnotesIO {
             // If this note has a source file that's already in the
             // static directory, we'll just save back to that file
             // instead of computing a location:
-            if (note.getSourceFile() != null && isInStaticDir(dataDirectory, note.getSourceFile())) {
-                return note.getSourceFile();
+            if (note.getSourceFile() != null) {
+                if (isInStaticDir(dataDirectory, note.getSourceFile())) {
+                    return note.getSourceFile();
+                }
+                else {
+                    // This could happen legitimately if the user edited a dated note and removed the date.
+                    // It's worth logging a warning, as it's a bit unusual, and might not be intentional.
+                    log.warning("Undated note has a source file that is not in the static directory. " +
+                                    "Ignoring source file and computing new file in static directory.");
+                }
             }
 
             // Otherwise, it'll be a direct child of the static dir:
