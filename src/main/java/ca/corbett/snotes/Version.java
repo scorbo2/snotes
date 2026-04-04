@@ -8,7 +8,7 @@ public final class Version {
 
     private static final AboutInfo aboutInfo;
 
-    public static String NAME = "Snotes2"; // TODO name changed to Snotes2 to avoid conflict with V1 settings... change back when V2 is stable
+    public static String NAME = "Snotes";
     public static String VERSION = "2.0";
     public static String FULL_NAME = NAME + " " + VERSION;
     public static String COPYRIGHT = "Copyright © 2023-2026 Steve Corbett";
@@ -57,7 +57,7 @@ public final class Version {
     static {
         aboutInfo = new AboutInfo();
         aboutInfo.applicationName = NAME;
-        aboutInfo.applicationVersion = VERSION + "-SNAPSHOT"; // TODO remove this before release
+        aboutInfo.applicationVersion = VERSION;
         aboutInfo.copyright = COPYRIGHT;
         aboutInfo.license = LICENSE;
         aboutInfo.projectUrl = PROJECT_URL;
