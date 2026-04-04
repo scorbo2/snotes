@@ -1,36 +1,37 @@
 Snotes Release Notes
 Author: Steve Corbett
 
-Version 2.0 [TODO] rewrite
-  #69 - Fix bug in computeFile with static notes
-  #66 - Allow manual reordering of Queries and Templates
-  #65 - Fix context view initial scroll position
-  #62 - Implement auto-restart when changing data dirs
-  #59 - Add limit option on search dialog
-  #56 - Wire up UpdateManager for dynamic extensions
-  #55 - Better progress display on initial load
-  #52 - Better options for discarding scratch notes
-  #50 - Fix bug regarding scratch file cleanup
-  #45 - WriterFrame: show optional context
-  #44 - Include update_sources.json for dynamic extensions
-  #42 - Add save prompt when exiting application
-  #40 - Implement WriterFrame, add collision handling
-  #37 - Read-only multi-Note viewer
-  #35 - Template builder: add warning for blank template
-  #33 - Implement UI for Template CRUD
-  #31 - Add "remember size and position" option
-  #30 - Implement the new search dialog
-  #28 - Implement UI for deleting Queries
-  #27 - Implement UI for editing Queries
-  #24 - Implement custom color themes
-  #21 - Implement UI for creating Queries
-  #20 - Implement intelligent model object persistence
-  #18 - Implement Template and basic persistence
-  #16 - Implement KeyStrokeManager
-  #14 - Implement ActionPanel (replaces JxTaskPane from V1)
-  #12 - Query persistence
-  #10 - Add support for statistics extension
+Version 2.0 [2026-04-03] - Complete rewrite!
   Port to GitHub, switch to Maven, upgrade to Java 17
+  Migrate from swing-extras 1.7 to 2.8; huge changes!
+  #10 - Add support for statistics extension
+  #12 - Query persistence
+  #14 - Implement ActionPanel (replaces JxTaskPane from V1)
+  #16 - Implement KeyStrokeManager
+  #18 - Implement Template and basic persistence
+  #20 - Implement intelligent model object persistence
+  #21 - Implement UI for creating Queries
+  #24 - Implement custom color themes
+  #27 - Implement UI for editing Queries
+  #28 - Implement UI for deleting Queries
+  #30 - Implement the new search dialog
+  #31 - Add "remember size and position" option
+  #33 - Implement UI for Template CRUD
+  #35 - Template builder: add warning for blank template
+  #37 - Read-only multi-Note viewer
+  #40 - Implement WriterFrame, add collision handling
+  #42 - Add save prompt when exiting application
+  #44 - Include update_sources.json for dynamic extensions
+  #45 - WriterFrame: show optional context
+  #50 - Fix bug regarding scratch file cleanup
+  #52 - Better options for discarding scratch notes
+  #55 - Better progress display on initial load
+  #56 - Wire up UpdateManager for dynamic extensions
+  #59 - Add limit option on search dialog
+  #62 - Implement auto-restart when changing data dirs
+  #65 - Fix context view initial scroll position
+  #66 - Allow manual reordering of Queries and Templates
+  #69 - Fix bug in computeFile with static notes
 
 Version 1.0 [2023-04-06]
   [SNOTES-1] - Skeletal project creation
