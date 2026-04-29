@@ -14,9 +14,9 @@ allowing for effortless searching.
 
 If you are running on Linux, and have Java 17 or higher installed, you can download the installer tarball:
 
-- [Snotes Installer](https://www.corbett.ca/apps/Snotes-2.0.tar.gz)
-- Size: 6MB
-- Sha256: `87e0eb8b4d1326f19b887baad9faef0a2e271adf2710caff0bb9dfb962edeee6`
+- [Snotes Installer](https://www.corbett.ca/apps/Snotes-2.1.tar.gz)
+- Size: TODO
+- Sha256: `TODO`
 
 This is the best option, as you get an installer script that sets everything up for you:
 
@@ -36,7 +36,7 @@ mvn clean package
 
 # Run the executable jar that Maven created:
 cd target
-java -jar snotes-2.0.jar
+java -jar snotes-2.1.jar
 ```
 
 ## User guide

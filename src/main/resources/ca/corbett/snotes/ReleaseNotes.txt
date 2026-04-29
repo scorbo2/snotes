@@ -1,6 +1,12 @@
 Snotes Release Notes
 Author: Steve Corbett
 
+Version 2.1 [TODO] - Maintenance release
+  Upgrade to swing-extras 2.9 (minor upgrade)
+  #77 - add fallback exception handler
+  #76 - fix auto-save bug in WriterFrame
+  #73 - minor code cleanup
+
 Version 2.0 [2026-04-03] - Complete rewrite!
   Port to GitHub, switch to Maven, upgrade to Java 17
   Migrate from swing-extras 1.7 to 2.8; huge changes!

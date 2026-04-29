@@ -1,5 +1,6 @@
 package ca.corbett.snotes;
 
+import ca.corbett.extras.FallbackExceptionHandler;
 import ca.corbett.extras.LookAndFeelManager;
 import ca.corbett.extras.SingleInstanceManager;
 import ca.corbett.snotes.extensions.SnotesExtensionManager;
@@ -46,6 +47,10 @@ public class Main {
     public static void main(String[] args) {
         // Before we do anything else, set up logging:
         configureLogging();
+
+        // Register a fallback exception handler for uncaught exceptions.
+        // This ensures they will at least get logged with a proper stack trace.
+        FallbackExceptionHandler.register();
 
         // Ensure only a single instance is running (if configured to do so):
         boolean isSingleInstanceEnabled = Boolean.parseBoolean(AppConfig.peek(AppConfig.SINGLE_INSTANCE_PROP));
