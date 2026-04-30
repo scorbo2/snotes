@@ -8,12 +8,12 @@ public final class Version {
 
     private static final AboutInfo aboutInfo;
 
-    public static String NAME = "Snotes";
-    public static String VERSION = "2.0";
-    public static String FULL_NAME = NAME + " " + VERSION;
-    public static String COPYRIGHT = "Copyright © 2023-2026 Steve Corbett";
-    public static String PROJECT_URL = "https://github.com/scorbo2/snotes";
-    public static String LICENSE = "https://opensource.org/license/mit";
+    public static final String NAME = "Snotes";
+    public static final String VERSION = "2.1";
+    public static final String FULL_NAME = NAME + " " + VERSION;
+    public static final String COPYRIGHT = "Copyright © 2023-2026 Steve Corbett";
+    public static final String PROJECT_URL = "https://github.com/scorbo2/snotes";
+    public static final String LICENSE = "https://opensource.org/license/mit";
 
     /**
      * The directory where the application was installed -

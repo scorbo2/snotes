@@ -4,10 +4,10 @@ import ca.corbett.extras.EnhancedAction;
 import ca.corbett.extras.MessageUtil;
 import ca.corbett.snotes.AppConfig;
 import ca.corbett.snotes.ui.MainWindow;
-import ca.corbett.updates.UpdateManager;
 
 import java.awt.event.ActionEvent;
 import java.io.File;
+import java.io.IOException;
 import java.util.logging.Logger;
 
 /**
@@ -33,18 +33,21 @@ public class PrefsAction extends EnhancedAction {
             // If the data directory changed, we need to restart the application:
             File newDataDirectory = AppConfig.getInstance().getDataDirectory();
             if (!dataDirectory.getAbsolutePath().equals(newDataDirectory.getAbsolutePath())) {
+                MainWindow.getInstance().saveAll(); // save everything first!
+                MainWindow.getInstance().closeAll();
+                try {
+                    // Purge in-memory cache, switch to the new data directory, and reload the UI.
+                    MainWindow.getInstance().getDataManager().switchDataDirectory(newDataDirectory, l -> {
+                        MainWindow.getInstance().resetInitialLoad();
+                        UIReloadAction.getInstance().actionPerformed(null);
+                    });
 
-                // We can restart automatically, if an UpdateManager is configured:
-                UpdateManager updateManager = MainWindow.getInstance().getUpdateManager();
-                if (updateManager != null) {
-                    // Will restart if user confirms:
-                    updateManager.showApplicationRestartPrompt(MainWindow.getInstance());
+                    // Avoid multiple UI reloads:
+                    return;
                 }
-
-                // Otherwise, all we can do is nag the user to do it for us:
-                else {
-                    getMessageUtil().info("Restart required",
-                                          "Changing the data directory requires restarting the application.");
+                catch (IOException ioe) {
+                    log.severe("Failed to switch data directory: " + ioe.getMessage());
+                    getMessageUtil().error("Failed to switch data directory: " + ioe.getMessage(), ioe);
                 }
             }
 

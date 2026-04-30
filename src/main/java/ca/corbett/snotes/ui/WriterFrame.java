@@ -215,8 +215,14 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
         if (!headerForm.isFormValid()) {
             return false; // Validation errors will show on the form (invalid date or missing tags).
         }
-        if (!isDirty) {
-            return true; // counts as successful save, since there are no changes to save!
+
+        // Scratch notes get auto-saved on a timer, which will mark them as no longer dirty,
+        // even though they have not yet been properly saved. So, if this is a scratch note,
+        // we want to skip the isDirty check and allow the save to proceed, otherwise an
+        // early return here might prevent the save from happening. Non-scratch notes have no
+        // auto-save timer, so it's safe to return here if they are not dirty.
+        if (!isDirty && !dataManager.isScratchNote(note)) {
+            return true;
         }
 
         note.clearAllTags(); // we will nuke and pave to overwrite old settings
