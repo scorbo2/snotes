@@ -16,7 +16,7 @@ If you are running on Linux, and have Java 17 or higher installed, you can downl
 
 - [Snotes Installer](https://www.corbett.ca/apps/Snotes-2.1.tar.gz)
 - Size: 6MB
-- Sha256: `33785dabd178f220238542a6d952f0175314e7edf7df6f512f47d7021f349eed`
+- Sha256: `bf16960fc8d3e45e46e802b04e994669124a2976e75819f0ff680e19d87685d5`
 
 This is the best option, as you get an installer script that sets everything up for you:
 

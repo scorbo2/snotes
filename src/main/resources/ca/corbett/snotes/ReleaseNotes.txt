@@ -1,7 +1,7 @@
 Snotes Release Notes
 Author: Steve Corbett
 
-Version 2.1 [TODO] - Maintenance release
+Version 2.1 [2026-04-29] - Maintenance release
   Upgrade to swing-extras 2.9 (minor upgrade)
   #77 - add fallback exception handler
   #76 - fix auto-save bug in WriterFrame
