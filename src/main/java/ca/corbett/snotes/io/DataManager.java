@@ -75,10 +75,10 @@ public class DataManager {
     private final List<Note> scratchNotes;
     private final AtomicInteger loadProgress;
 
-    private final File dataDir;
-    private final File metadataDir;
-    private final File staticDir;
-    private final File scratchDir;
+    private File dataDir;
+    private File metadataDir;
+    private File staticDir;
+    private File scratchDir;
 
     /**
      * Creates a new DataManager with empty caches and a data directory
@@ -579,6 +579,20 @@ public class DataManager {
                 saveTemplate(template);
             }
         }
+    }
+
+    /**
+     * Attempts a saveAll() of all current data, then discards all cached in-memory data
+     * and switches to the given data directory.
+     */
+    public void switchDataDirectory(File dataDir, LoadListener listener) throws IOException {
+        saveAll();
+        this.dataDir = dataDir;
+        // These directories may not exist, but that's okay... loadAll() will deal with it:
+        metadataDir = new File(dataDir, METADATA_DIR);
+        staticDir = new File(dataDir, STATIC_DIR);
+        scratchDir = new File(dataDir, SCRATCH_DIR);
+        loadAll(listener);
     }
 
     /**

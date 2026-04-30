@@ -205,6 +205,25 @@ public class MainWindow extends JFrame implements UIReloadable {
         }
     }
 
+    /**
+     * Closes all open frames. This may trigger save prompt dialogs if any frame has unsaved changes.
+     * You can invoke saveAll() before invoking this if you just want to close everything silently.
+     */
+    public void closeAll() {
+        // Go through all internal frames and dispose them.
+        // If any of them (like WriterFrame) have a save prompt on close,
+        // this will trigger that, giving the user a chance to save their work before we exit.
+        for (JInternalFrame frame : desktopPane.getAllFrames()) {
+            try {
+                frame.toFront();
+                frame.setClosed(true); // don't call dispose()! It bypasses the frame close listener.
+            }
+            catch (PropertyVetoException ignored) {
+                // Just ignore it
+            }
+        }
+    }
+
     private void initComponents() {
         desktopPane = new CustomizableDesktopPane(Resources.getLogoWide(),
                                                   AppConfig.getInstance().getDesktopLogoPlacement(),
@@ -228,18 +247,7 @@ public class MainWindow extends JFrame implements UIReloadable {
         }
         cleanupComplete = true;
 
-        // Go through all internal frames and dispose them.
-        // If any of them (like WriterFrame) have a save prompt on close,
-        // this will trigger that, giving the user a chance to save their work before we exit.
-        for (JInternalFrame frame : desktopPane.getAllFrames()) {
-            try {
-                frame.toFront();
-                frame.setClosed(true); // don't call dispose()! It bypasses the frame close listener.
-            }
-            catch (PropertyVetoException ignored) {
-                // Just ignore it - application exit can't be canceled at this point
-            }
-        }
+        closeAll();
 
         // Always save window state, even if "remember state" is disabled:
         AppConfig.getInstance().setWindowProps(getExtendedState(), getWidth(), getHeight(), getX(), getY());
@@ -250,6 +258,14 @@ public class MainWindow extends JFrame implements UIReloadable {
         keyStrokeManager.dispose();
         SnotesExtensionManager.getInstance().deactivateAll();
         SingleInstanceManager.getInstance().release();
+    }
+
+    /**
+     * Resets our "initial load" flag, so we will do our initial load behavior again
+     * the next time reloadUI() is invoked. This is handy when switching to a new data directory.
+     */
+    public void resetInitialLoad() {
+        initialLoad = true;
     }
 
     /**
