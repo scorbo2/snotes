@@ -15,8 +15,8 @@ allowing for effortless searching.
 If you are running on Linux, and have Java 17 or higher installed, you can download the installer tarball:
 
 - [Snotes Installer](https://www.corbett.ca/apps/Snotes-2.1.tar.gz)
-- Size: TODO
-- Sha256: `TODO`
+- Size: 6MB
+- Sha256: `33785dabd178f220238542a6d952f0175314e7edf7df6f512f47d7021f349eed`
 
 This is the best option, as you get an installer script that sets everything up for you:
 
