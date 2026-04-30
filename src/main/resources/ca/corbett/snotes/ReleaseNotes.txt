@@ -5,6 +5,7 @@ Version 2.1 [TODO] - Maintenance release
   Upgrade to swing-extras 2.9 (minor upgrade)
   #77 - add fallback exception handler
   #76 - fix auto-save bug in WriterFrame
+  #75 - don't force an app restart when changing data dirs
   #73 - minor code cleanup
 
 Version 2.0 [2026-04-03] - Complete rewrite!
