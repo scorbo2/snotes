@@ -31,6 +31,7 @@ import ca.corbett.snotes.ui.EditorTheme;
 import ca.corbett.snotes.ui.actions.AboutAction;
 import ca.corbett.snotes.ui.actions.ExitAction;
 import ca.corbett.snotes.ui.actions.ExtensionManagerAction;
+import ca.corbett.snotes.ui.actions.FontSizeQuickChangeAction;
 import ca.corbett.snotes.ui.actions.LogConsoleAction;
 import ca.corbett.snotes.ui.actions.NewNoteAction;
 import ca.corbett.snotes.ui.actions.PrefsAction;
@@ -100,6 +101,8 @@ public class AppConfig extends AppProperties<SnotesExtension> {
     public static final String KEY_PREFERENCES = KEYSTROKE_PREFIX + "General.preferences";
     public static final String KEY_SEARCH = KEYSTROKE_PREFIX + "General.search";
     public static final String KEY_EXIT = KEYSTROKE_PREFIX + "General.exit";
+    public static final String KEY_FONT_SIZE_UP = KEYSTROKE_PREFIX + "General.fontSizeUp";
+    public static final String KEY_FONT_SIZE_DOWN = KEYSTROKE_PREFIX + "General.fontSizeDown";
 
     // We centralize these here so that KeyStrokeManager can handle updating
     // their keyboard accelerators when the user changes them in the properties dialog:
@@ -111,6 +114,8 @@ public class AppConfig extends AppProperties<SnotesExtension> {
     private EnhancedAction preferencesAction;
     private EnhancedAction searchAction;
     private EnhancedAction exitAction;
+    private EnhancedAction fontSizeUpAction;
+    private EnhancedAction fontSizeDownAction;
 
     private BooleanProperty enableSingleInstance;
     private BooleanProperty rememberSizePositionProp;
@@ -298,12 +303,53 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         return exitAction;
     }
 
+    public EnhancedAction getFontSizeUpAction() {
+        return fontSizeUpAction;
+    }
+
+    public EnhancedAction getFontSizeDownAction() {
+        return fontSizeDownAction;
+    }
+
     public Font getTagFont() {
         return tagFontProp.getFont();
     }
 
     public Font getNoteFont() {
         return noteFontProp.getFont();
+    }
+
+    /**
+     * Adjusts both tag and text font size by the given increment, and then triggers
+     * an immediate save() to persist the change immediately. Intended to be
+     * used by FontSizeQuickChangeAction.
+     * <p>
+     * We group the two font changes together so we only save() once.
+     * </p>
+     *
+     * @param increment a positive/negative point size by which we will increment or decrement the current sizes.
+     */
+    public void changeFontSizes(int increment) {
+        Font tagFont = getTagFont();
+        Font textFont = getNoteFont();
+
+        // If EITHER font size gets too small, we'll abort this change (even if the other font
+        // size could still be reduced!). This is so that we can maintain the "gap" between the
+        // two font sizes if the user makes them larger again.
+        if (increment < 0 && (tagFont.getSize() <= 2 || textFont.getSize() <= 2)) {
+            log.warning("Font size cannot be decreased any further.");
+            return;
+        }
+
+        // Note: we don't put an upper limit on font size.
+        // If the user wants to make their fonts huge, more power to them!
+
+        // Adjust and save:
+        Font newTagFont = new Font(tagFont.getName(), tagFont.getStyle(), tagFont.getSize() + increment);
+        Font newTextFont = new Font(textFont.getName(), textFont.getStyle(), textFont.getSize() + increment);
+        tagFontProp.setFont(newTagFont);
+        noteFontProp.setFont(newTextFont);
+        save(); // trigger an immediate save() to persist this.
     }
 
     /**
@@ -370,6 +416,8 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_PREFERENCES));
         keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_SEARCH));
         keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_EXIT));
+        keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_FONT_SIZE_UP));
+        keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_FONT_SIZE_DOWN));
 
         // And now ask our extension manager:
         keyProps.addAll(SnotesExtensionManager.getInstance().getKeyStrokeProperties());
@@ -554,6 +602,8 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         preferencesAction = new PrefsAction();
         searchAction = new SearchAction();
         exitAction = new ExitAction();
+        fontSizeUpAction = new FontSizeQuickChangeAction(2);
+        fontSizeDownAction = new FontSizeQuickChangeAction(-2);
 
         List<AbstractProperty> props = new ArrayList<>();
 
@@ -580,6 +630,12 @@ public class AppConfig extends AppProperties<SnotesExtension> {
                       .setAllowBlank(true));
         props.add(new KeyStrokeProperty(KEY_EXIT, "Exit:",
                                         KeyStrokeManager.parseKeyStroke("Ctrl+Q"), exitAction)
+                      .setAllowBlank(true));
+        props.add(new KeyStrokeProperty(KEY_FONT_SIZE_UP, "Increase font size:",
+                                        KeyStrokeManager.parseKeyStroke("Ctrl+equals"), fontSizeUpAction)
+                      .setAllowBlank(true));
+        props.add(new KeyStrokeProperty(KEY_FONT_SIZE_DOWN, "Decrease font size:",
+                                        KeyStrokeManager.parseKeyStroke("Ctrl+minus"), fontSizeDownAction)
                       .setAllowBlank(true));
 
         return props;
