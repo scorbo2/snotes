@@ -3,6 +3,7 @@ package ca.corbett.snotes.model;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -104,7 +105,7 @@ class NoteTest {
         String relativePath = Note.getRelativePath(note, dataDir);
 
         // THEN it should return the correct relative path:
-        assertEquals("notes/note1.txt", relativePath);
+        assertEquals(Paths.get("notes", "note1.txt").toString(), relativePath);
     }
 
     @Test
@@ -118,6 +119,11 @@ class NoteTest {
         String relativePath = Note.getRelativePath(note, dataDir);
 
         // THEN it should return the absolute path of the source file:
-        assertEquals("/other/path/note1.txt", relativePath);
+        assertEquals(new File("/other/path/note1.txt")
+                         .toPath()
+                         .toAbsolutePath()
+                         .normalize()
+                         .toString(),
+                     relativePath);
     }
 }
