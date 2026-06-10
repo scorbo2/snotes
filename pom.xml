@@ -31,7 +31,7 @@
     <scm>
         <connection>scm:git:git://github.com/scorbo2/snotes.git</connection>
         <developerConnection>scm:git:ssh://github.com:scorbo2/snotes.git</developerConnection>
-        <url>http://github.com/scorbo2/snotse/tree/master</url>
+        <url>http://github.com/scorbo2/snotes/tree/master</url>
     </scm>
 
     <properties>
