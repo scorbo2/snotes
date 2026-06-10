@@ -2,7 +2,9 @@ Snotes Release Notes
 Author: Steve Corbett
 
 Version 2.2 [TODO release date]
+  #87 - upgrade to Java 25 / swing-extras 3.0
   #83 - add right-click context menu in editor pane
+  #79 - fix unit tests on Windows
 
 Version 2.1 [2026-04-29] - Maintenance release
   Upgrade to swing-extras 2.9 (minor upgrade)
