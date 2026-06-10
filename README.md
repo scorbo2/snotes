@@ -12,7 +12,7 @@ allowing for effortless searching.
 
 ### Option 1: Installer tarball
 
-If you are running on Linux, and have Java 17 or higher installed, you can download the installer tarball:
+If you are running on Linux, and have Java 25 or higher installed, you can download the installer tarball:
 
 - [Snotes Installer](https://www.corbett.ca/apps/Snotes-2.1.tar.gz)
 - Size: 6MB
