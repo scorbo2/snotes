@@ -18,6 +18,8 @@ If you are running on Linux, and have Java 17 or higher installed, you can downl
 - Size: 6MB
 - Sha256: `bf16960fc8d3e45e46e802b04e994669124a2976e75819f0ff680e19d87685d5`
 
+TODO update download info for 2.2 release
+
 This is the best option, as you get an installer script that sets everything up for you:
 
 - desktop shortcut
@@ -36,7 +38,7 @@ mvn clean package
 
 # Run the executable jar that Maven created:
 cd target
-java -jar snotes-2.1.jar
+java -jar snotes-2.2.jar
 ```
 
 ## User guide
