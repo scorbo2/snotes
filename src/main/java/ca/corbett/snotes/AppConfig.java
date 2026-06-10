@@ -336,7 +336,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         // If EITHER font size gets too small, we'll abort this change (even if the other font
         // size could still be reduced!). This is so that we can maintain the "gap" between the
         // two font sizes if the user makes them larger again.
-        if (increment < 0 && (tagFont.getSize() <= 2 || textFont.getSize() <= 2)) {
+        if (tagFont.getSize() + increment < 2 || textFont.getSize() + increment < 2) {
             log.warning("Font size cannot be decreased any further.");
             return;
         }
