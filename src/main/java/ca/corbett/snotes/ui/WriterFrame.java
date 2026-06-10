@@ -19,7 +19,9 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JInternalFrame;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
@@ -27,9 +29,13 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.InternalFrameAdapter;
 import javax.swing.event.InternalFrameEvent;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -326,6 +332,43 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
         textPane.setText(note.getText());
         isDirty = false;
 
+        // Set up right-click popup menu with clipboard and selection options:
+        JPopupMenu popupMenu = new JPopupMenu();
+        JMenuItem cutItem = new JMenuItem("Cut");
+        cutItem.addActionListener(e -> textPane.cut());
+        JMenuItem copyItem = new JMenuItem("Copy");
+        copyItem.addActionListener(e -> textPane.copy());
+        JMenuItem pasteItem = new JMenuItem("Paste");
+        pasteItem.addActionListener(e -> textPane.paste());
+        JMenuItem selectAllItem = new JMenuItem("Select All");
+        selectAllItem.addActionListener(e -> textPane.selectAll());
+
+        popupMenu.add(cutItem);
+        popupMenu.add(copyItem);
+        popupMenu.add(pasteItem);
+        popupMenu.add(selectAllItem);
+        popupMenu.addPopupMenuListener(new PopupMenuListener() {
+            @Override
+            public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+                boolean editable = textPane.isEditable() && textPane.isEnabled();
+                boolean hasSelection = textPane.getSelectionStart() != textPane.getSelectionEnd();
+                cutItem.setEnabled(editable && hasSelection);
+                pasteItem.setEnabled(editable);
+                copyItem.setEnabled(hasSelection);
+                selectAllItem.setEnabled(textPane.getDocument().getLength() > 0);
+            }
+            @Override
+            public void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent e) {
+                // no-op
+            }
+
+            @Override
+            public void popupMenuCanceled(javax.swing.event.PopupMenuEvent e) {
+                // no-op
+            }
+        });
+        textPane.addMouseListener(new RightClickListener(popupMenu));
+
         // Set up a listener such that any edit in this text pane sets our isDirty flag:
         textPane.getDocument().addDocumentListener(new DocumentListener() {
             @Override
@@ -454,6 +497,33 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
 
             // If we get here, the frame can just close:
             setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        }
+    }
+
+    /**
+     * Handles showing our right-click popup menu in the editor pane.
+     */
+    private static class RightClickListener extends MouseAdapter {
+        private final JPopupMenu popupMenu;
+
+        public RightClickListener(JPopupMenu popupMenu) {
+            this.popupMenu = popupMenu;
+        }
+
+        private void maybeShowPopup(MouseEvent e) {
+            if (e.isPopupTrigger()) {
+                popupMenu.show(e.getComponent(), e.getX(), e.getY());
+            }
+        }
+
+        @Override
+        public void mousePressed(MouseEvent e) {
+            maybeShowPopup(e);
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent e) {
+            maybeShowPopup(e);
         }
     }
 }
