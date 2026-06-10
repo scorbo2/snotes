@@ -19,7 +19,9 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JInternalFrame;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
@@ -30,6 +32,8 @@ import javax.swing.event.InternalFrameEvent;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -325,6 +329,38 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
         textPane = new JTextPane();
         textPane.setText(note.getText());
         isDirty = false;
+
+        // Set up right-click popup menu with clipboard and selection options:
+        JPopupMenu popupMenu = new JPopupMenu();
+        JMenuItem cutItem = new JMenuItem("Cut");
+        cutItem.addActionListener(e -> textPane.cut());
+        JMenuItem copyItem = new JMenuItem("Copy");
+        copyItem.addActionListener(e -> textPane.copy());
+        JMenuItem pasteItem = new JMenuItem("Paste");
+        pasteItem.addActionListener(e -> textPane.paste());
+        JMenuItem selectAllItem = new JMenuItem("Select All");
+        selectAllItem.addActionListener(e -> textPane.selectAll());
+
+        popupMenu.add(cutItem);
+        popupMenu.add(copyItem);
+        popupMenu.add(pasteItem);
+        popupMenu.add(selectAllItem);
+
+        textPane.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    popupMenu.show(e.getComponent(), e.getX(), e.getY());
+                }
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    popupMenu.show(e.getComponent(), e.getX(), e.getY());
+                }
+            }
+        });
 
         // Set up a listener such that any edit in this text pane sets our isDirty flag:
         textPane.getDocument().addDocumentListener(new DocumentListener() {

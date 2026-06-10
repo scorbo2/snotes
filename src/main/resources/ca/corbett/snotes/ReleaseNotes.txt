@@ -2,7 +2,7 @@ Snotes Release Notes
 Author: Steve Corbett
 
 Version 2.2 [TODO release date]
-  TODO release notes for 2.2
+  #83 - add right-click context menu in editor pane
 
 Version 2.1 [2026-04-29] - Maintenance release
   Upgrade to swing-extras 2.9 (minor upgrade)
