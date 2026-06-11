@@ -37,6 +37,7 @@ import ca.corbett.snotes.ui.actions.NewNoteAction;
 import ca.corbett.snotes.ui.actions.PrefsAction;
 import ca.corbett.snotes.ui.actions.SaveAction;
 import ca.corbett.snotes.ui.actions.SearchAction;
+import ca.corbett.snotes.ui.actions.TagListAction;
 import com.formdev.flatlaf.FlatLightLaf;
 
 import java.awt.Color;
@@ -103,6 +104,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
     public static final String KEY_EXIT = KEYSTROKE_PREFIX + "General.exit";
     public static final String KEY_FONT_SIZE_UP = KEYSTROKE_PREFIX + "General.fontSizeUp";
     public static final String KEY_FONT_SIZE_DOWN = KEYSTROKE_PREFIX + "General.fontSizeDown";
+    public static final String KEY_TAG_LIST = KEYSTROKE_PREFIX + "General.tagList";
 
     // We centralize these here so that KeyStrokeManager can handle updating
     // their keyboard accelerators when the user changes them in the properties dialog:
@@ -116,6 +118,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
     private EnhancedAction exitAction;
     private EnhancedAction fontSizeUpAction;
     private EnhancedAction fontSizeDownAction;
+    private EnhancedAction tagListAction;
 
     private BooleanProperty enableSingleInstance;
     private BooleanProperty rememberSizePositionProp;
@@ -309,6 +312,10 @@ public class AppConfig extends AppProperties<SnotesExtension> {
 
     public EnhancedAction getFontSizeDownAction() {
         return fontSizeDownAction;
+    }
+
+    public EnhancedAction getTagListAction() {
+        return tagListAction;
     }
 
     public Font getTagFont() {
@@ -604,6 +611,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         exitAction = new ExitAction();
         fontSizeUpAction = new FontSizeQuickChangeAction(2);
         fontSizeDownAction = new FontSizeQuickChangeAction(-2);
+        tagListAction = new TagListAction();
 
         List<AbstractProperty> props = new ArrayList<>();
 
@@ -636,6 +644,9 @@ public class AppConfig extends AppProperties<SnotesExtension> {
                       .setAllowBlank(true));
         props.add(new KeyStrokeProperty(KEY_FONT_SIZE_DOWN, "Decrease font size:",
                                         KeyStrokeManager.parseKeyStroke("Ctrl+minus"), fontSizeDownAction)
+                      .setAllowBlank(true));
+        props.add(new KeyStrokeProperty(KEY_TAG_LIST, "Show tag list:",
+                                        KeyStrokeManager.parseKeyStroke("Ctrl+T"), tagListAction)
                       .setAllowBlank(true));
 
         return props;

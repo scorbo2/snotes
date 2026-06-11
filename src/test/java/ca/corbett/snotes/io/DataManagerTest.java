@@ -2,6 +2,7 @@ package ca.corbett.snotes.io;
 
 import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.model.Query;
+import ca.corbett.snotes.model.Tag;
 import ca.corbett.snotes.model.Template;
 import ca.corbett.snotes.model.YMDDate;
 import org.junit.jupiter.api.BeforeEach;
@@ -987,5 +988,201 @@ class DataManagerTest {
         assertNotNull(years);
         assertEquals(3, years.size(), "Expected getUniqueYears to return a list with three unique years");
         assertEquals(List.of(2021, 2022, 2023), years, "Expected the unique years to be [2021, 2022, 2023]");
+    }
+
+    // -----------------------------------------------------------------------
+    // getUniqueTags tests
+    // -----------------------------------------------------------------------
+
+    @Test
+    void getUniqueTags_withEmptyDataManager_shouldReturnEmptyList() {
+        // GIVEN a fresh DataManager with no notes:
+        // (dataManager is already empty from @BeforeEach setup)
+
+        // WHEN we call getUniqueTags:
+        List<Tag> tags = dataManager.getUniqueTags();
+
+        // THEN it should return an empty list:
+        assertNotNull(tags);
+        assertTrue(tags.isEmpty(), "Expected getUniqueTags to return an empty list when there are no notes");
+    }
+
+    @Test
+    void getUniqueTags_withNotesHavingNoTags_shouldReturnEmptyList() throws IOException {
+        // GIVEN a DataManager with notes that have no tags (but unique dates to avoid filename collisions):
+        Note note1 = dataManager.newNote();
+        note1.setDate(new YMDDate("2024-01-01"));
+        note1.setText("Tagless note 1");
+        dataManager.save(note1);
+        Note note2 = dataManager.newNote();
+        note2.setDate(new YMDDate("2024-01-02"));
+        note2.setText("Tagless note 2");
+        dataManager.save(note2);
+
+        // WHEN we call getUniqueTags (which only considers non-date tags):
+        List<Tag> tags = dataManager.getUniqueTags();
+
+        // THEN it should return an empty list:
+        assertNotNull(tags);
+        assertTrue(tags.isEmpty(), "Expected getUniqueTags to return an empty list when notes have no tags");
+    }
+
+    @Test
+    void getUniqueTags_withSingleNote_shouldReturnItsTags() throws IOException {
+        // GIVEN a DataManager with a single note that has multiple tags:
+        Note note = dataManager.newNote();
+        note.tag("zebra");
+        note.tag("apple");
+        note.tag("mango");
+        note.setText("A note with multiple tags");
+        dataManager.save(note);
+
+        // WHEN we call getUniqueTags:
+        List<Tag> tags = dataManager.getUniqueTags();
+
+        // THEN it should return the note's tags sorted alphabetically:
+        assertNotNull(tags);
+        assertEquals(3, tags.size(), "Expected getUniqueTags to return three tags");
+        assertEquals("apple", tags.get(0).getTag(), "Expected tags to be sorted alphabetically");
+        assertEquals("mango", tags.get(1).getTag());
+        assertEquals("zebra", tags.get(2).getTag());
+    }
+
+    @Test
+    void getUniqueTags_withMultipleNotes_shouldCombineAllTags() throws IOException {
+        // GIVEN a DataManager with several notes each having different tags:
+        Note note1 = dataManager.newNote();
+        note1.tag("alpha");
+        note1.setText("Note 1");
+        dataManager.save(note1);
+        Note note2 = dataManager.newNote();
+        note2.tag("beta");
+        note2.setText("Note 2");
+        dataManager.save(note2);
+        Note note3 = dataManager.newNote();
+        note3.tag("gamma");
+        note3.setText("Note 3");
+        dataManager.save(note3);
+
+        // WHEN we call getUniqueTags:
+        List<Tag> tags = dataManager.getUniqueTags();
+
+        // THEN it should return all unique tags sorted alphabetically:
+        assertNotNull(tags);
+        assertEquals(3, tags.size(), "Expected getUniqueTags to return three unique tags");
+        assertEquals(List.of("alpha", "beta", "gamma"),
+                     tags.stream().map(Tag::getTag).toList(),
+                     "Expected tags to be sorted alphabetically");
+    }
+
+    @Test
+    void getUniqueTags_withDuplicateTagsAcrossNotes_shouldDeduplicate() throws IOException {
+        // GIVEN a DataManager with several notes sharing some tags:
+        Note note1 = dataManager.newNote();
+        note1.tag("shared");
+        note1.tag("only-in-one");
+        note1.setText("Note 1");
+        dataManager.save(note1);
+        Note note2 = dataManager.newNote();
+        note2.tag("shared");
+        note2.tag("only-in-two");
+        note2.setText("Note 2");
+        dataManager.save(note2);
+        Note note3 = dataManager.newNote();
+        note3.tag("shared");
+        note3.tag("only-in-three");
+        note3.setText("Note 3");
+        dataManager.save(note3);
+
+        // WHEN we call getUniqueTags:
+        List<Tag> tags = dataManager.getUniqueTags();
+
+        // THEN it should deduplicate tags appearing in multiple notes:
+        assertNotNull(tags);
+        assertEquals(4, tags.size(), "Expected four unique tags after deduplication");
+        assertEquals(List.of("only-in-one", "only-in-three", "only-in-two", "shared"),
+                     tags.stream().map(Tag::getTag).toList(),
+                     "Expected deduplicated tags sorted alphabetically");
+    }
+
+    @Test
+    void getUniqueTags_shouldExcludeDateTags() throws IOException {
+        // GIVEN a DataManager with dated and undated notes:
+        Note note1 = dataManager.newNote();
+        note1.setDate(new YMDDate("2024-06-15"));
+        note1.tag("alpha");
+        note1.setText("Dated note");
+        dataManager.save(note1);
+        Note note2 = dataManager.newNote();
+        note2.tag("beta");
+        note2.setText("Undated note");
+        dataManager.save(note2);
+
+        // WHEN we call getUniqueTags:
+        List<Tag> tags = dataManager.getUniqueTags();
+
+        // THEN date tags should be excluded but regular tags included:
+        assertNotNull(tags);
+        assertEquals(2, tags.size(), "Expected two non-date tags");
+        assertEquals("alpha", tags.get(0).getTag());
+        assertEquals("beta", tags.get(1).getTag());
+        // Verify no tag starts with a date pattern (yyyy-MM-dd)
+        for (Tag tag : tags) {
+            assertFalse(tag.getTag().matches("\\d{4}-\\d{2}-\\d{2}"),
+                        "Expected no date tags in the result");
+        }
+    }
+
+    @Test
+    void getUniqueTags_shouldExcludeScratchNotes() throws IOException {
+        // GIVEN a DataManager with a promoted note and a scratch note:
+        Note realNote = dataManager.newNote();
+        realNote.tag("real-tag");
+        realNote.setText("Real note content");
+        dataManager.save(realNote);
+
+        Note scratchNote = dataManager.newNote();
+        scratchNote.tag("scratch-tag");
+        scratchNote.tag("real-tag");
+        scratchNote.setText("Scratch note content");
+
+        // WHEN we call getUniqueTags (scratch notes should not be included):
+        List<Tag> tags = dataManager.getUniqueTags();
+
+        // THEN only tags from real notes should appear:
+        assertNotNull(tags);
+        assertEquals(1, tags.size(), "Expected only tags from real notes");
+        assertEquals("real-tag", tags.get(0).getTag(),
+                     "Expected only the real note's tag");
+    }
+
+    @Test
+    void getUniqueTags_withMixedDatedAndUndatedNotes_shouldReturnAllNonDateTags() throws IOException {
+        // GIVEN a DataManager with a mix of dated and undated notes:
+        Note note1 = dataManager.newNote();
+        note1.setDate(new YMDDate("2024-01-01"));
+        note1.tag("alpha");
+        note1.setText("Dated note");
+        dataManager.save(note1);
+        Note note2 = dataManager.newNote();
+        note2.tag("beta");
+        note2.setText("Undated note");
+        dataManager.save(note2);
+        Note note3 = dataManager.newNote();
+        note3.setDate(new YMDDate("2024-07-15"));
+        note3.tag("alpha");
+        note3.tag("gamma");
+        note3.setText("Another dated note");
+        dataManager.save(note3);
+
+        // WHEN we call getUniqueTags:
+        List<Tag> tags = dataManager.getUniqueTags();
+
+        // THEN it should return all unique non-date tags, sorted and deduplicated:
+        assertNotNull(tags);
+        assertEquals(3, tags.size(), "Expected three unique non-date tags");
+        assertEquals(List.of("alpha", "beta", "gamma"),
+                     tags.stream().map(Tag::getTag).toList(),
+                     "Expected deduplicated non-date tags sorted alphabetically");
     }
 }

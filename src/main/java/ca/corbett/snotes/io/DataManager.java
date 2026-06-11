@@ -6,6 +6,7 @@ import ca.corbett.extras.progress.SimpleProgressAdapter;
 import ca.corbett.snotes.AppConfig;
 import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.model.Query;
+import ca.corbett.snotes.model.Tag;
 import ca.corbett.snotes.model.Template;
 import ca.corbett.snotes.ui.MainWindow;
 
@@ -538,6 +539,19 @@ public class DataManager {
             }
         }
         return new ArrayList<>(years);
+    }
+
+    /**
+     * Examines all notes in cache (regular notes only - no scratch notes), and returns a list of all unique
+     * non-date tags used across all notes. The returned list is sorted alphabetically and
+     * contains no duplicates. The returned list may be empty if no notes have any tags.
+     */
+    public List<Tag> getUniqueTags() {
+        SortedSet<Tag> uniqueTags = new TreeSet<>();
+        for (Note note : notes) {
+            uniqueTags.addAll(note.getNonDateTags());
+        }
+        return new ArrayList<>(uniqueTags);
     }
 
     /**
