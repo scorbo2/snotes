@@ -7,6 +7,7 @@ import ca.corbett.snotes.AppConfig;
 import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.model.Query;
 import ca.corbett.snotes.model.Tag;
+import ca.corbett.snotes.model.TagUsage;
 import ca.corbett.snotes.model.Template;
 import ca.corbett.snotes.ui.MainWindow;
 
@@ -17,7 +18,9 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -543,15 +546,22 @@ public class DataManager {
 
     /**
      * Examines all notes in cache (regular notes only - no scratch notes), and returns a list of all unique
-     * non-date tags used across all notes. The returned list is sorted alphabetically and
-     * contains no duplicates. The returned list may be empty if no notes have any tags.
+     * non-date tags used across all notes, along with the count of notes that use each tag.
+     * The returned list is sorted alphabetically by tag name. The returned list may be empty
+     * if no notes have any tags.
      */
-    public List<Tag> getUniqueTags() {
-        SortedSet<Tag> uniqueTags = new TreeSet<>();
+    public List<TagUsage> getUniqueTags() {
+        Map<Tag, Integer> tagCounts = new TreeMap<>();
         for (Note note : notes) {
-            uniqueTags.addAll(note.getNonDateTags());
+            for (Tag tag : note.getNonDateTags()) {
+                tagCounts.merge(tag, 1, Integer::sum);
+            }
         }
-        return new ArrayList<>(uniqueTags);
+        List<TagUsage> result = new ArrayList<>();
+        for (Map.Entry<Tag, Integer> entry : tagCounts.entrySet()) {
+            result.add(new TagUsage(entry.getKey(), entry.getValue()));
+        }
+        return result;
     }
 
     /**

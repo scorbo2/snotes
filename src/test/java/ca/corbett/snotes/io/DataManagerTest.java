@@ -2,7 +2,7 @@ package ca.corbett.snotes.io;
 
 import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.model.Query;
-import ca.corbett.snotes.model.Tag;
+import ca.corbett.snotes.model.TagUsage;
 import ca.corbett.snotes.model.Template;
 import ca.corbett.snotes.model.YMDDate;
 import org.junit.jupiter.api.BeforeEach;
@@ -1000,11 +1000,11 @@ class DataManagerTest {
         // (dataManager is already empty from @BeforeEach setup)
 
         // WHEN we call getUniqueTags:
-        List<Tag> tags = dataManager.getUniqueTags();
+        List<TagUsage> usages = dataManager.getUniqueTags();
 
         // THEN it should return an empty list:
-        assertNotNull(tags);
-        assertTrue(tags.isEmpty(), "Expected getUniqueTags to return an empty list when there are no notes");
+        assertNotNull(usages);
+        assertTrue(usages.isEmpty(), "Expected getUniqueTags to return an empty list when there are no notes");
     }
 
     @Test
@@ -1020,11 +1020,11 @@ class DataManagerTest {
         dataManager.save(note2);
 
         // WHEN we call getUniqueTags (which only considers non-date tags):
-        List<Tag> tags = dataManager.getUniqueTags();
+        List<TagUsage> usages = dataManager.getUniqueTags();
 
         // THEN it should return an empty list:
-        assertNotNull(tags);
-        assertTrue(tags.isEmpty(), "Expected getUniqueTags to return an empty list when notes have no tags");
+        assertNotNull(usages);
+        assertTrue(usages.isEmpty(), "Expected getUniqueTags to return an empty list when notes have no tags");
     }
 
     @Test
@@ -1038,14 +1038,17 @@ class DataManagerTest {
         dataManager.save(note);
 
         // WHEN we call getUniqueTags:
-        List<Tag> tags = dataManager.getUniqueTags();
+        List<TagUsage> usages = dataManager.getUniqueTags();
 
-        // THEN it should return the note's tags sorted alphabetically:
-        assertNotNull(tags);
-        assertEquals(3, tags.size(), "Expected getUniqueTags to return three tags");
-        assertEquals("apple", tags.get(0).getTag(), "Expected tags to be sorted alphabetically");
-        assertEquals("mango", tags.get(1).getTag());
-        assertEquals("zebra", tags.get(2).getTag());
+        // THEN it should return the note's tags sorted alphabetically, each with count 1:
+        assertNotNull(usages);
+        assertEquals(3, usages.size(), "Expected getUniqueTags to return three tags");
+        assertEquals("apple", usages.get(0).tag().getTag(), "Expected tags to be sorted alphabetically");
+        assertEquals(1, usages.get(0).count(), "Expected count of 1 for single-note tag");
+        assertEquals("mango", usages.get(1).tag().getTag());
+        assertEquals(1, usages.get(1).count());
+        assertEquals("zebra", usages.get(2).tag().getTag());
+        assertEquals(1, usages.get(2).count());
     }
 
     @Test
@@ -1065,14 +1068,17 @@ class DataManagerTest {
         dataManager.save(note3);
 
         // WHEN we call getUniqueTags:
-        List<Tag> tags = dataManager.getUniqueTags();
+        List<TagUsage> usages = dataManager.getUniqueTags();
 
-        // THEN it should return all unique tags sorted alphabetically:
-        assertNotNull(tags);
-        assertEquals(3, tags.size(), "Expected getUniqueTags to return three unique tags");
+        // THEN it should return all unique tags sorted alphabetically, each with count 1:
+        assertNotNull(usages);
+        assertEquals(3, usages.size(), "Expected getUniqueTags to return three unique tags");
         assertEquals(List.of("alpha", "beta", "gamma"),
-                     tags.stream().map(Tag::getTag).toList(),
+                     usages.stream().map(u -> u.tag().getTag()).toList(),
                      "Expected tags to be sorted alphabetically");
+        for (TagUsage usage : usages) {
+            assertEquals(1, usage.count(), "Expected each tag to have a count of 1");
+        }
     }
 
     @Test
@@ -1095,14 +1101,18 @@ class DataManagerTest {
         dataManager.save(note3);
 
         // WHEN we call getUniqueTags:
-        List<Tag> tags = dataManager.getUniqueTags();
+        List<TagUsage> usages = dataManager.getUniqueTags();
 
-        // THEN it should deduplicate tags appearing in multiple notes:
-        assertNotNull(tags);
-        assertEquals(4, tags.size(), "Expected four unique tags after deduplication");
+        // THEN it should deduplicate tags appearing in multiple notes and report correct counts:
+        assertNotNull(usages);
+        assertEquals(4, usages.size(), "Expected four unique tags after deduplication");
         assertEquals(List.of("only-in-one", "only-in-three", "only-in-two", "shared"),
-                     tags.stream().map(Tag::getTag).toList(),
+                     usages.stream().map(u -> u.tag().getTag()).toList(),
                      "Expected deduplicated tags sorted alphabetically");
+        assertEquals(1, usages.get(0).count(), "only-in-one is used by 1 note");
+        assertEquals(1, usages.get(1).count(), "only-in-three is used by 1 note");
+        assertEquals(1, usages.get(2).count(), "only-in-two is used by 1 note");
+        assertEquals(3, usages.get(3).count(), "shared is used by 3 notes");
     }
 
     @Test
@@ -1119,16 +1129,16 @@ class DataManagerTest {
         dataManager.save(note2);
 
         // WHEN we call getUniqueTags:
-        List<Tag> tags = dataManager.getUniqueTags();
+        List<TagUsage> usages = dataManager.getUniqueTags();
 
         // THEN date tags should be excluded but regular tags included:
-        assertNotNull(tags);
-        assertEquals(2, tags.size(), "Expected two non-date tags");
-        assertEquals("alpha", tags.get(0).getTag());
-        assertEquals("beta", tags.get(1).getTag());
+        assertNotNull(usages);
+        assertEquals(2, usages.size(), "Expected two non-date tags");
+        assertEquals("alpha", usages.get(0).tag().getTag());
+        assertEquals("beta", usages.get(1).tag().getTag());
         // Verify no tag starts with a date pattern (yyyy-MM-dd)
-        for (Tag tag : tags) {
-            assertFalse(tag.getTag().matches("\\d{4}-\\d{2}-\\d{2}"),
+        for (TagUsage usage : usages) {
+            assertFalse(usage.tag().getTag().matches("\\d{4}-\\d{2}-\\d{2}"),
                         "Expected no date tags in the result");
         }
     }
@@ -1147,13 +1157,14 @@ class DataManagerTest {
         scratchNote.setText("Scratch note content");
 
         // WHEN we call getUniqueTags (scratch notes should not be included):
-        List<Tag> tags = dataManager.getUniqueTags();
+        List<TagUsage> usages = dataManager.getUniqueTags();
 
         // THEN only tags from real notes should appear:
-        assertNotNull(tags);
-        assertEquals(1, tags.size(), "Expected only tags from real notes");
-        assertEquals("real-tag", tags.get(0).getTag(),
+        assertNotNull(usages);
+        assertEquals(1, usages.size(), "Expected only tags from real notes");
+        assertEquals("real-tag", usages.get(0).tag().getTag(),
                      "Expected only the real note's tag");
+        assertEquals(1, usages.get(0).count(), "Expected count of 1 for the real note's tag");
     }
 
     @Test
@@ -1176,13 +1187,16 @@ class DataManagerTest {
         dataManager.save(note3);
 
         // WHEN we call getUniqueTags:
-        List<Tag> tags = dataManager.getUniqueTags();
+        List<TagUsage> usages = dataManager.getUniqueTags();
 
-        // THEN it should return all unique non-date tags, sorted and deduplicated:
-        assertNotNull(tags);
-        assertEquals(3, tags.size(), "Expected three unique non-date tags");
+        // THEN it should return all unique non-date tags, sorted and deduplicated, with correct counts:
+        assertNotNull(usages);
+        assertEquals(3, usages.size(), "Expected three unique non-date tags");
         assertEquals(List.of("alpha", "beta", "gamma"),
-                     tags.stream().map(Tag::getTag).toList(),
+                     usages.stream().map(u -> u.tag().getTag()).toList(),
                      "Expected deduplicated non-date tags sorted alphabetically");
+        assertEquals(2, usages.get(0).count(), "alpha is used by 2 notes");
+        assertEquals(1, usages.get(1).count(), "beta is used by 1 note");
+        assertEquals(1, usages.get(2).count(), "gamma is used by 1 note");
     }
 }
