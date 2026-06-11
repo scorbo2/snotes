@@ -5,6 +5,7 @@ Version 2.2 [TODO release date]
   #92 - add global hotkeys for font size adjustment
   #87 - upgrade to Java 25 / swing-extras 3.0
   #83 - add right-click context menu in editor pane
+  #82 - bring back the tag list from Snotes 1.x
   #79 - fix unit tests on Windows
 
 Version 2.1 [2026-04-29] - Maintenance release

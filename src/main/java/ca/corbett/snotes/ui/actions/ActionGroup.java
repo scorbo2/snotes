@@ -96,6 +96,7 @@ public class ActionGroup {
         List<EnhancedAction> queryActions = new ArrayList<>();
 
         queryActions.add(AppConfig.getInstance().getSearchAction());
+        queryActions.add(AppConfig.getInstance().getTagListAction());
 
         // Query CRUD actions:
         queryActions.add(new NewQueryAction());
