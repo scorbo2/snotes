@@ -425,6 +425,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_EXIT));
         keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_FONT_SIZE_UP));
         keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_FONT_SIZE_DOWN));
+        keyProps.add((KeyStrokeProperty)getPropertiesManager().getProperty(KEY_TAG_LIST));
 
         // And now ask our extension manager:
         keyProps.addAll(SnotesExtensionManager.getInstance().getKeyStrokeProperties());
