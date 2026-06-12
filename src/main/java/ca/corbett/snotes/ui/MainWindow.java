@@ -7,6 +7,8 @@ import ca.corbett.extras.actionpanel.ActionPanel;
 import ca.corbett.extras.image.animation.BlurLayerUI;
 import ca.corbett.extras.io.KeyStrokeManager;
 import ca.corbett.extras.logging.LogConsole;
+import ca.corbett.extras.logging.LogConsoleStyle;
+import ca.corbett.extras.logging.LogConsoleTheme;
 import ca.corbett.extras.properties.KeyStrokeProperty;
 import ca.corbett.snotes.AppConfig;
 import ca.corbett.snotes.Main;
@@ -30,6 +32,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.beans.PropertyVetoException;
 import java.io.IOException;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -78,6 +81,7 @@ public class MainWindow extends JFrame implements UIReloadable {
         dataManager.addNoteDeletionListener(this::noteDeleted);
         keyStrokeManager = new KeyStrokeManager(this);
         actionPanelManager = new ActionPanelManager();
+        configureLogConsole();
         blurLayer = new BlurLayerUI();
         blurLayer.setBlurOverlayColor(Color.LIGHT_GRAY);
         blurLayer.setOverlayTextColor(Color.WHITE);
@@ -354,6 +358,43 @@ public class MainWindow extends JFrame implements UIReloadable {
             SingleInstanceManager.getInstance().release();
         }
     }
+
+    /**
+     * Invoked internally to set up our custom LogConsole theme and activate it by default.
+     */
+    private void configureLogConsole() {
+        // We'll start by cloning the green-on-black matrix theme and customize it a bit:
+        LogConsoleTheme theme = LogConsoleTheme.createMatrixStyledTheme();
+
+        // Set up custom log styles for our main actions:
+        theme.setStyle("saveScratchNote", createStyle("Saved scratch note:", true, Color.CYAN, false));
+        theme.setStyle("saveNote", createStyle("Saved note:", true, Color.MAGENTA, false));
+        theme.setStyle("deleteScratchNote", createStyle("Deleted scratch note:", true, Color.ORANGE, false));
+        theme.setStyle("deleteNote", createStyle("Deleted note:", true, Color.ORANGE, false));
+        theme.setStyle("saveTemplate", createStyle("Saved template:", true, Color.PINK, false));
+        theme.setStyle("saveQuery", createStyle("Saved query:", true, Color.PINK, false));
+
+        // Add any provided by extensions:
+        List<LogConsoleStyle> extensionStyles = SnotesExtensionManager.getInstance().getLogConsoleStyles();
+        int index = 1; // this is dumb, but we need a unique identifier for each style
+        for (LogConsoleStyle extensionStyle : extensionStyles) {
+            theme.setStyle("extensionStyle" + index, extensionStyle);
+            index++;
+        }
+
+        // Register our custom theme.
+        // This will overwrite any previous theme of this name, so it's safe to call this repeatedly.
+        LogConsole.getInstance().registerTheme("Snotes", theme, true);
+    }
+
+    private static LogConsoleStyle createStyle(String token, boolean isCaseSensitive, Color fontColor, boolean isBold) {
+        LogConsoleStyle style = new LogConsoleStyle();
+        style.setLogToken(token, isCaseSensitive);
+        style.setFontColor(fontColor);
+        style.setIsBold(isBold);
+        return style;
+    }
+
 
     /**
      * If "remember window size and position" is enabled, restores the
