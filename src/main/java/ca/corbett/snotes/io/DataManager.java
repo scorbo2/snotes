@@ -472,6 +472,7 @@ public class DataManager {
 
         // Now save this Template to its new location. This will update its source file and mark it clean.
         SnotesIO.saveTemplate(template, targetFile);
+        log.info("Saved template: " + targetFile.getName());
 
         // If this Template wasn't already in our cache, add it now:
         if (!templates.contains(template)) {
@@ -518,6 +519,7 @@ public class DataManager {
 
         // Now save this Query to its new location. This will update the Query's source file and mark it clean.
         SnotesIO.saveQuery(query, targetFile);
+        log.info("Saved query: " + targetFile.getName());
 
         // If this Query wasn't already in our cache, add it now:
         if (!queries.contains(query)) {

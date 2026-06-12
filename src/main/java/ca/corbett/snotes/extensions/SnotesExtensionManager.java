@@ -2,6 +2,7 @@ package ca.corbett.snotes.extensions;
 
 import ca.corbett.extensions.ExtensionManager;
 import ca.corbett.extras.EnhancedAction;
+import ca.corbett.extras.logging.LogConsoleStyle;
 import ca.corbett.extras.properties.KeyStrokeProperty;
 import ca.corbett.snotes.Version;
 import ca.corbett.snotes.extensions.builtin.TestExtension;
@@ -124,5 +125,22 @@ public class SnotesExtensionManager extends ExtensionManager<SnotesExtension> {
         // Deliberately not documented anywhere, but -Dsnotes.enableTestExtension will enable our test extension
         String testExtProp = System.getProperty("snotes.enableTestExtension", null);
         return Version.getAboutInfo().applicationVersion.contains("SNAPSHOT") || testExtProp != null;
+    }
+
+    /**
+     * Gives all extensions a chance to register custom LogConsoleStyle objects for use
+     * with the Snotes theme in our LogConsole.
+     *
+     * @return A List of LogConsoleStyle instances, may be empty.
+     */
+    public List<LogConsoleStyle> getLogConsoleStyles() {
+        List<LogConsoleStyle> list = new ArrayList<>();
+        for (SnotesExtension extension : getEnabledLoadedExtensions()) {
+            List<LogConsoleStyle> toAdd = extension.getLogConsoleStyles();
+            if (toAdd != null) {
+                list.addAll(toAdd);
+            }
+        }
+        return list;
     }
 }
