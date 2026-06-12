@@ -81,7 +81,6 @@ public class MainWindow extends JFrame implements UIReloadable {
         dataManager.addNoteDeletionListener(this::noteDeleted);
         keyStrokeManager = new KeyStrokeManager(this);
         actionPanelManager = new ActionPanelManager();
-        configureLogConsole();
         blurLayer = new BlurLayerUI();
         blurLayer.setBlurOverlayColor(Color.LIGHT_GRAY);
         blurLayer.setOverlayTextColor(Color.WHITE);
@@ -90,6 +89,7 @@ public class MainWindow extends JFrame implements UIReloadable {
         initComponents();
         addWindowListener(new WindowCloseHandler());
         cleanupComplete = false;
+        SwingUtilities.invokeLater(this::configureLogConsole); // this touches UI components, so do it on the EDT
     }
 
     public static MainWindow getInstance() {
