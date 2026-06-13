@@ -635,7 +635,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
                                         KeyStrokeManager.parseKeyStroke("Ctrl+P"), preferencesAction)
                       .setAllowBlank(true));
         props.add(new KeyStrokeProperty(KEY_SEARCH, "Search:",
-                                        KeyStrokeManager.parseKeyStroke("Ctrl+F"), searchAction)
+                                        KeyStrokeManager.parseKeyStroke("Ctrl+Shift+F"), searchAction)
                       .setAllowBlank(true));
         props.add(new KeyStrokeProperty(KEY_EXIT, "Exit:",
                                         KeyStrokeManager.parseKeyStroke("Ctrl+Q"), exitAction)

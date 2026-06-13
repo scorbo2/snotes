@@ -5,8 +5,13 @@ import ca.corbett.snotes.AppConfig;
 import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.ui.actions.UIReloadAction;
 
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.InputMap;
+import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JTextPane;
+import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
@@ -16,6 +21,7 @@ import javax.swing.text.StyleContext;
 import java.awt.BorderLayout;
 import java.awt.Font;
 import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
@@ -50,6 +56,7 @@ public class MultiNoteViewer extends JPanel implements UIReloadable {
     private final List<Integer> positionOffsets;
     private final JTextPane textPane;
     private final List<Note> notes;
+    private final TextFindPanel textFindPanel;
 
     /**
      * Creates a new MultiNoteViewer for the given List of Notes.
@@ -62,11 +69,26 @@ public class MultiNoteViewer extends JPanel implements UIReloadable {
         this.textPane = new JTextPane();
         this.textPane.setEditable(false);
         textPane.addMouseListener(new TextFieldMouseListener());
+        textFindPanel = new TextFindPanel(textPane, this::hideTextFindPanel);
+        textFindPanel.setVisible(false);
         setLayout(new BorderLayout());
         add(ScrollUtil.buildScrollPane(textPane), BorderLayout.CENTER);
+        add(textFindPanel, BorderLayout.SOUTH);
         setStyles();
         setNotes(notes);
         UIReloadAction.getInstance().registerReloadable(this);
+
+        // We unfortunately can't use KeyStrokeManager for this, because it
+        // wants an owning Window, whereas we are in a JInternalFrame :(
+        Action keyAction = new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showTextFindPanel();
+            }
+        };
+        InputMap inputMap = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        inputMap.put(KeyStroke.getKeyStroke("control F"), "textFindAction");
+        getActionMap().put("textFindAction", keyAction);
     }
 
     /**
@@ -159,6 +181,19 @@ public class MultiNoteViewer extends JPanel implements UIReloadable {
     @Override
     public void reloadUI() {
         setStyles();
+    }
+
+    public void showTextFindPanel() {
+        textFindPanel.setVisible(true);
+        revalidate();
+        repaint();
+        textFindPanel.focusTextField();
+    }
+
+    public void hideTextFindPanel() {
+        textFindPanel.setVisible(false);
+        revalidate();
+        repaint();
     }
 
     private void fireNoteSelectionEvent(Note note) {

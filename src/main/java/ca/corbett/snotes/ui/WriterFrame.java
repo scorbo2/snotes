@@ -15,7 +15,10 @@ import ca.corbett.snotes.model.TagList;
 import ca.corbett.snotes.model.YMDDate;
 import ca.corbett.snotes.ui.actions.UIReloadAction;
 
+import javax.swing.AbstractAction;
+import javax.swing.Action;
 import javax.swing.BorderFactory;
+import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JInternalFrame;
@@ -23,6 +26,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JTextPane;
+import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.event.DocumentEvent;
@@ -34,6 +38,7 @@ import javax.swing.event.PopupMenuListener;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
@@ -65,6 +70,8 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
     private boolean isDirty;
     private boolean hasScrolledToBottom;
     private final Timer autoSaveTimer;
+    private TextFindPanel textFindPanel;
+    private JPanel textWrapperPanel;
 
     /**
      * Creates a new WriterFrame with a new, blank scratch Note, and no context.
@@ -387,7 +394,7 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
             }
         });
 
-        tabPane.addTab("Edit", ScrollUtil.buildScrollPane(textPane));
+        tabPane.addTab("Edit", buildTextPaneWithFindPanel());
         if (context.isEmpty()) {
             tabPane.setTabHeaderVisible(false);
         }
@@ -406,6 +413,41 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
         }
 
         return tabPane;
+    }
+
+    private JPanel buildTextPaneWithFindPanel() {
+        textWrapperPanel = new JPanel(new BorderLayout());
+        textWrapperPanel.add(ScrollUtil.buildScrollPane(textPane), BorderLayout.CENTER);
+        textFindPanel = new TextFindPanel(textPane, this::hideTextFindPanel);
+        textFindPanel.setVisible(false);
+        textWrapperPanel.add(textFindPanel, BorderLayout.SOUTH);
+
+        // We unfortunately can't use KeyStrokeManager for this, because it
+        // wants an owning Window, whereas we are in a JInternalFrame :(
+        Action keyAction = new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showTextFindPanel();
+            }
+        };
+        InputMap inputMap = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        inputMap.put(KeyStroke.getKeyStroke("control F"), "textFindAction");
+        getActionMap().put("textFindAction", keyAction);
+
+        return textWrapperPanel;
+    }
+
+    private void showTextFindPanel() {
+        textFindPanel.setVisible(true);
+        textWrapperPanel.revalidate();
+        textWrapperPanel.repaint();
+        textFindPanel.focusTextField();
+    }
+
+    private void hideTextFindPanel() {
+        textFindPanel.setVisible(false);
+        textWrapperPanel.revalidate();
+        textWrapperPanel.repaint();
     }
 
     private JPanel buildButtonPanel() {
