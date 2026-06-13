@@ -617,7 +617,7 @@ public class AppConfig extends AppProperties<SnotesExtension> {
         List<AbstractProperty> props = new ArrayList<>();
 
         props.add(new KeyStrokeProperty(KEY_ABOUT, "About dialog:",
-                                        KeyStrokeManager.parseKeyStroke("Ctrl+A"), aboutAction)
+                                        KeyStrokeManager.parseKeyStroke("F1"), aboutAction)
                       .setAllowBlank(true));
         props.add(new KeyStrokeProperty(KEY_SAVE, "Save:",
                                         KeyStrokeManager.parseKeyStroke("Ctrl+S"), saveAction)
