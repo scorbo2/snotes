@@ -23,7 +23,7 @@ import java.util.logging.Logger;
  * Represents a text find panel that can be associated with a JTextPane for the purpose
  * of finding text within that text pane. A text box is provided to enter search text,
  * and "find next" and "find previous" buttons are provided to navigate through the search results.
- * A little status label shows the number of found matches and the current match index.
+ * A status label shows the number of found matches.
  * <p>
  * Pressing ESC while focus is in the text search field will trigger the configured
  * closeSearch action. Callers would typically use this to hide the TextFindPanel.
@@ -174,9 +174,7 @@ public class TextFindPanel extends JPanel {
 
         if (foundIndex != -1) {
             try {
-                textPane.setSelectionStart(foundIndex);
-                textPane.setSelectionEnd(foundIndex + searchTerm.length());
-                textPane.setCaretPosition(foundIndex);
+                textPane.select(foundIndex, foundIndex + searchTerm.length());
                 Rectangle2D visibleRect = textPane.modelToView2D(foundIndex);
                 if (visibleRect != null && visibleRect.getBounds() != null) {
                     textPane.scrollRectToVisible(visibleRect.getBounds());
@@ -221,9 +219,7 @@ public class TextFindPanel extends JPanel {
 
         if (foundIndex != -1) {
             try {
-                textPane.setSelectionStart(foundIndex);
-                textPane.setSelectionEnd(foundIndex + searchTerm.length());
-                textPane.setCaretPosition(foundIndex);
+                textPane.select(foundIndex, foundIndex + searchTerm.length());
                 Rectangle2D visibleRect = textPane.modelToView2D(foundIndex);
                 if (visibleRect != null && visibleRect.getBounds() != null) {
                     textPane.scrollRectToVisible(visibleRect.getBounds());
