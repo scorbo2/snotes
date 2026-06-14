@@ -454,7 +454,7 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         panel.setBorder(BorderFactory.createRaisedBevelBorder());
         JButton btn = new JButton("Save");
-        btn.addActionListener(e -> saveInternal(false));
+        btn.addActionListener(e -> save());
         btn.setPreferredSize(new Dimension(140, 24));
         panel.add(btn);
         btn = new JButton("Save and close");
