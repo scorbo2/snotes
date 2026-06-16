@@ -448,6 +448,7 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
         textFindPanel.setVisible(false);
         textWrapperPanel.revalidate();
         textWrapperPanel.repaint();
+        textPane.requestFocusInWindow();
     }
 
     private JPanel buildButtonPanel() {
