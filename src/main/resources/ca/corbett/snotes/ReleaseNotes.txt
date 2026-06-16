@@ -2,6 +2,7 @@ Snotes Release Notes
 Author: Steve Corbett
 
 Version 2.2 [TODO release date]
+  #103 - WriterFrame: fix focus bug when cancelling text find
   #92 - add global hotkeys for font size adjustment
   #91 - better division of "save and close" and "save and stay open"
   #87 - upgrade to Java 25 / swing-extras 3.0
