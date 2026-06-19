@@ -2,6 +2,7 @@ Snotes Release Notes
 Author: Steve Corbett
 
 Version 2.2 [TODO release date]
+  #107 - Remove old workaround for upstream application restart bug
   #103 - WriterFrame: fix focus bug when cancelling text find
   #92 - add global hotkeys for font size adjustment
   #91 - better division of "save and close" and "save and stay open"
