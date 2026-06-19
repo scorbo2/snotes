@@ -2,6 +2,7 @@ Snotes Release Notes
 Author: Steve Corbett
 
 Version 2.2 [TODO release date]
+  #107 - Remove old workaround for upstream application restart bug
   #105 - performance: re-use ObjectMapper instance in SnotesIO
   #103 - WriterFrame: fix focus bug when cancelling text find
   #92 - add global hotkeys for font size adjustment
