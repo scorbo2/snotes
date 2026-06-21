@@ -2,6 +2,7 @@ package ca.corbett.snotes.extensions;
 
 import ca.corbett.extensions.AppExtension;
 import ca.corbett.extras.EnhancedAction;
+import ca.corbett.extras.logging.LogConsoleStyle;
 import ca.corbett.snotes.ui.actions.ActionGroup;
 
 import java.util.List;
@@ -40,6 +41,16 @@ public abstract class SnotesExtension extends AppExtension {
      * </p>
      */
     public List<EnhancedAction> getExtraActions(String actionGroupName) {
+        return List.of();
+    }
+
+    /**
+     * Extensions can return a list of LogConsoleStyles to be applied to the Snotes
+     * LogConsole theme.
+     *
+     * @return A List of LogConsoleStyle objects, or null/empty if nothing to contribute.
+     */
+    public List<LogConsoleStyle> getLogConsoleStyles() {
         return List.of();
     }
 }

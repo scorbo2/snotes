@@ -9,7 +9,7 @@ public final class Version {
     private static final AboutInfo aboutInfo;
 
     public static final String NAME = "Snotes";
-    public static final String VERSION = "2.1";
+    public static final String VERSION = "2.2";
     public static final String FULL_NAME = NAME + " " + VERSION;
     public static final String COPYRIGHT = "Copyright © 2023-2026 Steve Corbett";
     public static final String PROJECT_URL = "https://github.com/scorbo2/snotes";

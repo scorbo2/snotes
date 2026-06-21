@@ -6,6 +6,8 @@ import ca.corbett.extras.progress.SimpleProgressAdapter;
 import ca.corbett.snotes.AppConfig;
 import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.model.Query;
+import ca.corbett.snotes.model.Tag;
+import ca.corbett.snotes.model.TagUsage;
 import ca.corbett.snotes.model.Template;
 import ca.corbett.snotes.ui.MainWindow;
 
@@ -16,7 +18,9 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -468,6 +472,7 @@ public class DataManager {
 
         // Now save this Template to its new location. This will update its source file and mark it clean.
         SnotesIO.saveTemplate(template, targetFile);
+        log.info("Saved template: " + targetFile.getName());
 
         // If this Template wasn't already in our cache, add it now:
         if (!templates.contains(template)) {
@@ -514,6 +519,7 @@ public class DataManager {
 
         // Now save this Query to its new location. This will update the Query's source file and mark it clean.
         SnotesIO.saveQuery(query, targetFile);
+        log.info("Saved query: " + targetFile.getName());
 
         // If this Query wasn't already in our cache, add it now:
         if (!queries.contains(query)) {
@@ -538,6 +544,26 @@ public class DataManager {
             }
         }
         return new ArrayList<>(years);
+    }
+
+    /**
+     * Examines all notes in cache (regular notes only - no scratch notes), and returns a list of all unique
+     * non-date tags used across all notes, along with the count of notes that use each tag.
+     * The returned list is sorted alphabetically by tag name. The returned list may be empty
+     * if no notes have any tags.
+     */
+    public List<TagUsage> getUniqueTags() {
+        Map<Tag, Integer> tagCounts = new TreeMap<>();
+        for (Note note : notes) {
+            for (Tag tag : note.getNonDateTags()) {
+                tagCounts.merge(tag, 1, Integer::sum);
+            }
+        }
+        List<TagUsage> result = new ArrayList<>();
+        for (Map.Entry<Tag, Integer> entry : tagCounts.entrySet()) {
+            result.add(new TagUsage(entry.getKey(), entry.getValue()));
+        }
+        return result;
     }
 
     /**

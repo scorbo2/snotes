@@ -658,10 +658,11 @@ class SnotesIOTest {
         assertEquals("untagged_note.txt", computed.getName());
 
         // AND it should be in a dated subdirectory structure in the data directory:
-        String expectedPath = tempDir.getAbsolutePath() + File.separator
-            + note.getDate().getYearStr() + File.separator
+        File expectedDir = new File(tempDir,
+            note.getDate().getYearStr() + File.separator
             + note.getDate().getMonthStr() + File.separator
-            + note.getDate().getDayStr() + File.separator + "untagged_note.txt";
+            + note.getDate().getDayStr());
+        String expectedPath = new File(expectedDir, "untagged_note.txt").getAbsolutePath();
         assertEquals(expectedPath, computed.getAbsolutePath());
     }
 
@@ -684,10 +685,11 @@ class SnotesIOTest {
         assertEquals("project_work.txt", computed.getName());
 
         // AND it should be in a dated subdirectory structure in the data directory:
-        String expectedPath = tempDir.getAbsolutePath() + File.separator
-            + note.getDate().getYearStr() + File.separator
+        File expectedDir = new File(tempDir,
+            note.getDate().getYearStr() + File.separator
             + note.getDate().getMonthStr() + File.separator
-            + note.getDate().getDayStr() + File.separator + "project_work.txt";
+            + note.getDate().getDayStr());
+        String expectedPath = new File(expectedDir, "project_work.txt").getAbsolutePath();
         assertEquals(expectedPath, computed.getAbsolutePath());
     }
 

@@ -32,6 +32,7 @@ import java.util.logging.Logger;
 class SnotesIO {
 
     private static final Logger log = Logger.getLogger(SnotesIO.class.getName());
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     /**
      * Attempts to load a Query and its Filters from the given file,
@@ -49,8 +50,7 @@ class SnotesIO {
             throw new IOException("Source file is not a readable file: " + sourceFile.getAbsolutePath());
         }
 
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode rootNode = mapper.readTree(sourceFile);
+        JsonNode rootNode = MAPPER.readTree(sourceFile);
         if (rootNode == null || rootNode.isNull() || rootNode.isMissingNode() || !rootNode.isObject()) {
             // This can happen with empty/blank files, JSON arrays, bare scalars, or other non-object content:
             throw new IOException("Failed to parse Query from file: " + sourceFile.getAbsolutePath());
@@ -71,7 +71,7 @@ class SnotesIO {
         JsonNode filtersNode = rootNode.get("filters");
         if (filtersNode != null && filtersNode.isArray()) {
             for (JsonNode filterNode : filtersNode) {
-                Filter filter = mapper.treeToValue(filterNode, Filter.class);
+                Filter filter = MAPPER.treeToValue(filterNode, Filter.class);
                 query.addFilter(filter);
             }
         }
@@ -111,14 +111,13 @@ class SnotesIO {
             throw new IOException("Target file is not a writable file: " + targetFile.getAbsolutePath());
         }
 
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode rootNode = mapper.createObjectNode();
+        ObjectNode rootNode = MAPPER.createObjectNode();
         rootNode.put("name", query.getName());
         rootNode.put("order", query.getOrder());
 
-        ArrayNode filtersArray = mapper.createArrayNode();
+        ArrayNode filtersArray = MAPPER.createArrayNode();
         for (Filter filter : query.getFilters()) {
-            filtersArray.add(mapper.valueToTree(filter));
+            filtersArray.add(MAPPER.valueToTree(filter));
         }
         rootNode.set("filters", filtersArray);
 
@@ -130,7 +129,7 @@ class SnotesIO {
             }
         }
 
-        mapper.writerWithDefaultPrettyPrinter().writeValue(targetFile, rootNode);
+        MAPPER.writerWithDefaultPrettyPrinter().writeValue(targetFile, rootNode);
 
         // If we make it here, the Query is clean, and has a new source file:
         query.setSourceFile(targetFile);
@@ -162,8 +161,7 @@ class SnotesIO {
         }
 
         // We use Jackson to build up the JSON and write it out:
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode rootNode = mapper.createObjectNode();
+        ObjectNode rootNode = MAPPER.createObjectNode();
         rootNode.put("name", template.getName());
         rootNode.put("dateOption", template.getDateOption().name());
         rootNode.put("context", template.getContext().name());
@@ -181,7 +179,7 @@ class SnotesIO {
             }
         }
 
-        mapper.writerWithDefaultPrettyPrinter().writeValue(targetFile, rootNode);
+        MAPPER.writerWithDefaultPrettyPrinter().writeValue(targetFile, rootNode);
 
         // If we make it here, the Template is clean, and it has a new source file:
         template.setSourceFile(targetFile);
@@ -203,8 +201,7 @@ class SnotesIO {
             throw new IOException("Source file does not exist or is not readable: " + sourceFile.getAbsolutePath());
         }
 
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode parsedNode = mapper.readTree(sourceFile);
+        JsonNode parsedNode = MAPPER.readTree(sourceFile);
         if (parsedNode == null || parsedNode.isNull() || parsedNode.isMissingNode() || !parsedNode.isObject()) {
             // This can happen with empty/blank files, JSON arrays, bare scalars, or other non-object content:
             throw new IOException("Source file does not contain a valid JSON object: " + sourceFile.getAbsolutePath());
