@@ -26,7 +26,7 @@ mvn test -Dtest=TagTest
 ## Architecture
 
 - **Entry point:** `ca.corbett.snotes.Main`
-- **Desktop UI:** Java Swing + [swing-extras](https://github.com/scorbo2/swing-extras) (v3.0.0-SNAPSHOT) + FlatLaf
+- **Desktop UI:** Java Swing + [swing-extras](https://github.com/scorbo2/swing-extras) (v3.0.0) + FlatLaf
 - **Packaging:** Maven copies runtime deps to `target/lib/` via `maven-dependency-plugin`. The jar manifest sets `lib/` as classpath prefix and `ca.corbett.snotes.Main` as main class.
 - **Settings directory:** `~/.Snotes` by default (overridable via `SETTINGS_DIR` system property or `Version.SETTINGS_DIR`). Contains `Snotes.props`, `data/`, `extensions/`, `logging.properties`.
 - **Extensions:** Loaded from jar files in `${SETTINGS_DIR}/extensions` at runtime. Define via `SnotesExtension` / `SnotesExtensionManager`.

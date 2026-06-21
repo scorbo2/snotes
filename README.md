@@ -14,11 +14,9 @@ allowing for effortless searching.
 
 If you are running on Linux, and have Java 25 or higher installed, you can download the installer tarball:
 
-- [Snotes Installer](https://www.corbett.ca/apps/Snotes-2.1.tar.gz)
-- Size: 6MB
-- Sha256: `bf16960fc8d3e45e46e802b04e994669124a2976e75819f0ff680e19d87685d5`
-
-TODO update download info for 2.2 release
+- [Snotes Installer](https://www.corbett.ca/apps/Snotes-2.2.tar.gz)
+- Size: 5MB
+- Sha256: `70df376763d8c52595d912a48a98b7fb341c1b0a0569acb33723534584b1ff4e`
 
 This is the best option, as you get an installer script that sets everything up for you:
 
