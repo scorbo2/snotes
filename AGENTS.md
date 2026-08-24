@@ -4,12 +4,12 @@
 
 ```bash
 mvn clean package
-java -jar target/snotes-2.2.jar
+java -jar target/snotes-2.3-SNAPSHOT.jar
 ```
 
 Run with custom settings directory:
 ```bash
-java -DSETTINGS_DIR=/path/to/settings -jar target/snotes-2.2.jar
+java -DSETTINGS_DIR=/path/to/settings -jar target/snotes-2.3-SNAPSHOT.jar
 ```
 
 ## Tests

@@ -14,6 +14,9 @@ allowing for effortless searching.
 
 If you are running on Linux, and have Java 25 or higher installed, you can download the installer tarball:
 
+**TODO** Update this section for the upcoming 2.3 release when ready. For now, the 2.2 release is the latest stable
+version.
+
 - [Snotes Installer](https://www.corbett.ca/apps/Snotes-2.2.tar.gz)
 - Size: 5MB
 - Sha256: `70df376763d8c52595d912a48a98b7fb341c1b0a0569acb33723534584b1ff4e`
@@ -36,7 +39,7 @@ mvn clean package
 
 # Run the executable jar that Maven created:
 cd target
-java -jar snotes-2.2.jar
+java -jar snotes-2.3.jar
 ```
 
 ## User guide
