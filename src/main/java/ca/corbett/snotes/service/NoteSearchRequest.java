@@ -305,7 +305,12 @@ public final class NoteSearchRequest {
             // We use it here (rather than the lenient YMDDate(String) constructor) so that
             // malformed dates from programmatic callers - such as MCP tool parameters -
             // surface as errors instead of silently becoming today's date.
-            return YMDDate.fromJson(date);
+            try {
+                return YMDDate.fromJson(date);
+            }
+            catch (IllegalArgumentException iae) {
+                throw new IllegalArgumentException(fieldName + " must be a valid yyyy-MM-dd date: '" + date + "'", iae);
+            }
         }
     }
 }
