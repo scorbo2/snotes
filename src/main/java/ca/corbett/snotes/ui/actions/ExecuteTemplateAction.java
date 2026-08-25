@@ -69,8 +69,7 @@ public class ExecuteTemplateAction extends EnhancedAction {
 
         Query contextQuery = new Query();
         contextQuery.addFilter(new TagFilter(template.getTagList(), TagFilter.FilterType.ANY));
-        return contextQuery.execute(MainWindow.getInstance().getDataManager().getNotes(),
-                                    template.getContext().getLimit());
+        return MainWindow.getInstance().getNoteService().search(contextQuery, template.getContext().getLimit());
     }
 
     private MessageUtil getMessageUtil() {

@@ -2,7 +2,6 @@ package ca.corbett.snotes.ui.actions;
 
 import ca.corbett.extras.EnhancedAction;
 import ca.corbett.extras.MessageUtil;
-import ca.corbett.snotes.io.DataManager;
 import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.model.Query;
 import ca.corbett.snotes.ui.MainWindow;
@@ -36,8 +35,7 @@ public class ExecuteQueryAction extends EnhancedAction {
             return;
         }
 
-        DataManager dataManager = MainWindow.getInstance().getDataManager();
-        List<Note> results = query.execute(dataManager.getNotes());
+        List<Note> results = MainWindow.getInstance().getNoteService().search(query);
         ReaderFrame readerFrame = new ReaderFrame(results, query); // Let reader frame handle the empty results case
         MainWindow.getInstance().addInternalFrame(readerFrame);
     }

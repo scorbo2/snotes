@@ -17,6 +17,8 @@ import ca.corbett.snotes.Version;
 import ca.corbett.snotes.extensions.SnotesExtensionManager;
 import ca.corbett.snotes.io.DataManager;
 import ca.corbett.snotes.model.Note;
+import ca.corbett.snotes.service.DefaultNoteService;
+import ca.corbett.snotes.service.NoteService;
 import ca.corbett.snotes.ui.actions.UIReloadAction;
 import ca.corbett.updates.UpdateManager;
 
@@ -61,6 +63,7 @@ public class MainWindow extends JFrame implements UIReloadable {
     private final BlurLayerUI blurLayer;
     private final KeyStrokeManager keyStrokeManager;
     private final DataManager dataManager;
+    private final NoteService noteService;
     private volatile UpdateManager updateManager;
     private boolean cleanupComplete;
     private boolean initialLoad;
@@ -79,6 +82,7 @@ public class MainWindow extends JFrame implements UIReloadable {
         messageUtil = new MessageUtil(this, logger);
         dataManager = new DataManager();
         dataManager.addNoteDeletionListener(this::noteDeleted);
+        noteService = new DefaultNoteService(dataManager);
         keyStrokeManager = new KeyStrokeManager(this);
         actionPanelManager = new ActionPanelManager();
         blurLayer = new BlurLayerUI();
@@ -131,6 +135,15 @@ public class MainWindow extends JFrame implements UIReloadable {
      */
     public DataManager getDataManager() {
         return dataManager;
+    }
+
+    /**
+     * Provides access to our NoteService, the UI-agnostic entry point for
+     * creating, saving, and searching Notes. New UI code should prefer this
+     * over the DataManager whenever possible.
+     */
+    public NoteService getNoteService() {
+        return noteService;
     }
 
     public void setUpdateManager(UpdateManager updateManager) {
