@@ -2,7 +2,7 @@ Snotes Release Notes
 Author: Steve Corbett
 
 Version 2.3 [TODO release date] - Maintenance release
-  TODO Release notes for 2.3 release go here. This is a placeholder for now.
+  #88 - MCP support, part 1: add a proper service layer
 
 Version 2.2 [2026-06-21] - Maintenance release
   #107 - Remove old workaround for upstream application restart bug
