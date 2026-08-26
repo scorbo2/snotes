@@ -102,4 +102,20 @@ public class DefaultNoteService implements NoteService {
     private static CollisionStrategy requireStrategy(CollisionStrategy strategy) {
         return Objects.requireNonNull(strategy, "strategy cannot be null");
     }
+
+    /**
+     * Discards the given Scratch note, removing it from cache and deleting its file from the scratch directory.
+     * Has no effect on non-scratch notes.
+     *
+     * @param note The scratch Note to discard. Must not be null. Passing a "real" Note here is a no-op.
+     * @throws IOException If the scratch note file cannot be deleted.
+     */
+    @Override
+    public void discardScratchNote(Note note) throws IOException {
+        if (!isScratchNote(note)) {
+            return; // no-op for non-scratch notes
+        }
+
+        dataManager.delete(requireNote(note));
+    }
 }

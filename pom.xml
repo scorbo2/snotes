@@ -48,6 +48,12 @@
         </dependency>
 
         <dependency>
+            <groupId>ca.corbett</groupId>
+            <artifactId>mcp-light</artifactId>
+            <version>1.1</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
             <version>2.21.1</version>

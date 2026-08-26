@@ -28,5 +28,17 @@ public enum CollisionStrategy {
     /**
      * Abort the save and report an IOException to the caller.
      */
-    ABORT
+    ABORT;
+
+    public static CollisionStrategy fromString(String input) {
+        if (input == null) {
+            return null;
+        }
+        return switch (input.toLowerCase()) {
+            case "overwrite" -> OVERWRITE;
+            case "append" -> APPEND;
+            case "abort" -> ABORT;
+            default -> null;
+        };
+    }
 }

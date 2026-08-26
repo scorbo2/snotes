@@ -5,6 +5,7 @@ import ca.corbett.extras.EnhancedAction;
 import ca.corbett.extras.logging.LogConsoleStyle;
 import ca.corbett.extras.properties.KeyStrokeProperty;
 import ca.corbett.snotes.Version;
+import ca.corbett.snotes.extensions.builtin.McpExtension;
 import ca.corbett.snotes.extensions.builtin.TestExtension;
 import ca.corbett.snotes.ui.actions.ActionGroup;
 
@@ -46,9 +47,17 @@ public class SnotesExtensionManager extends ExtensionManager<SnotesExtension> {
      * All found classes will be instantiated and made available as extensions, enabled by default.
      */
     public void loadAll() {
-        // Load our built-in extensions first:
-        if (isTestExtensionRequired()) {
-            addExtension(new TestExtension(), true);
+        try {
+            // Load our built-in extensions first:
+            addExtension(new McpExtension(), true);
+            if (isTestExtensionRequired()) {
+                addExtension(new TestExtension(), true);
+            }
+        }
+        catch (Exception e) {
+            // A single bad extension shouldn't bring the application to its knees, so we log the error and continue.
+            // But, really, if a built-in extension is failing, something has really gone off the rails...
+            logger.log(Level.SEVERE, "Failed to load built-in extensions: " + e.getMessage(), e);
         }
 
         // Now look for external extensions in jar files in our EXTENSIONS_DIR:
