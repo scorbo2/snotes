@@ -34,7 +34,11 @@ public enum CollisionStrategy {
         if (input == null) {
             return null;
         }
-        return switch (input.toLowerCase()) {
+        String normalized = input.trim();
+        if (normalized.isEmpty()) {
+            return null;
+        }
+        return switch (normalized.toLowerCase(java.util.Locale.ROOT)) {
             case "overwrite" -> OVERWRITE;
             case "append" -> APPEND;
             case "abort" -> ABORT;
