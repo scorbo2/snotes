@@ -56,7 +56,8 @@ public class McpCreateNoteTool implements McpTool {
 
     @Override
     public String getDescription() {
-        return "Creates a new note with the specified content, tags, and optional date. Untagged notes are allowed.";
+        return "Creates a new note with the specified content, tags (required), and optional date. "
+             + "If a note with the same tags and date already exists, collisionStrategy controls whether to OVERWRITE, APPEND, or ABORT.";
     }
 
     /**
