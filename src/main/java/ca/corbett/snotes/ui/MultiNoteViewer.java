@@ -289,19 +289,18 @@ public class MultiNoteViewer extends JPanel implements UIReloadable {
         popupMenu.addPopupMenuListener(new PopupMenuListener() {
             @Override
             public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
-                boolean editable = textPane.isEditable() && textPane.isEnabled();
                 boolean hasSelection = textPane.getSelectionStart() != textPane.getSelectionEnd();
                 copyItem.setEnabled(hasSelection);
                 selectAllItem.setEnabled(textPane.getDocument().getLength() > 0);
             }
 
             @Override
-            public void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent e) {
+            public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
                 // no-op
             }
 
             @Override
-            public void popupMenuCanceled(javax.swing.event.PopupMenuEvent e) {
+            public void popupMenuCanceled(PopupMenuEvent e) {
                 // no-op
             }
         });
