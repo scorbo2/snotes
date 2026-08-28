@@ -179,7 +179,13 @@ public class McpCreateNoteTool implements McpTool {
                 + (ymdDate==null?"<none>":ymdDate.toString());
         }
         catch (Exception e) {
-            noteService.discardScratchNote(note); // clean up the scratch note if save fails
+            // Best-effort cleanup: discardScratchNote can itself fail, and we don't want to mask the original error.
+            try {
+                noteService.discardScratchNote(note);
+            }
+            catch (Exception discardEx) {
+                log.log(Level.WARNING, "MCP: failed to discard scratch note after create failure: " + discardEx.getMessage(), discardEx);
+            }
 
             // Check for ABORTs due to collisions, and give the agent some instructions on how to override that behavior:
             if (e.getMessage() != null && e.getMessage().contains("collision detected") && strategy == CollisionStrategy.ABORT) {
@@ -196,7 +202,7 @@ public class McpCreateNoteTool implements McpTool {
                     + tagList.getPersistenceString()+"], date="
                     + (ymdDate==null?"<none>":ymdDate.toString())
                     + ". Error: " + e.getMessage(), e);
-            throw new RuntimeException("Failed to create note: " + ((e.getMessage() == null) ? "Unknown error" : e.getMessage()));
+            throw new RuntimeException("Failed to create note: " + ((e.getMessage() == null) ? "Unknown error" : e.getMessage()), e);
         }
     }
 }
