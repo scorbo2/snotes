@@ -125,4 +125,13 @@ public interface NoteService {
      * @throws IllegalArgumentException if limit is negative.
      */
     List<Note> search(Query query, int limit);
+
+    /**
+     * Discards the given Scratch note, removing it from cache and deleting its file from the scratch directory.
+     * Has no effect on non-scratch notes.
+     *
+     * @param note The scratch Note to discard. Must not be null. Passing a "real" Note here is a no-op.
+     * @throws IOException If the scratch note file cannot be deleted.
+     */
+    void discardScratchNote(Note note) throws IOException;
 }
