@@ -11,9 +11,9 @@ import ca.corbett.snotes.service.NoteService;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.function.Supplier;
 
 /**
  * Exposes basic note creation as an MCP tool. This tool does NOT allow creation of scratch notes,
@@ -121,24 +121,15 @@ public class McpCreateNoteTool implements McpTool {
             throw new IllegalArgumentException("Invalid 'collisionStrategy' parameter. Must be one of OVERWRITE, APPEND, or ABORT.");
         }
 
-        // The supplier is evaluated lazily, here and only here (see field Javadoc for why):
-        NoteService noteService = noteServiceProvider.get();
-
         String content = (String)input.get("content");
         String tags = (String)input.get("tags");
         String date = (dateObj instanceof String s) ? s : "";
         String rawStrategy = (strategyObj instanceof String s) ? s : "APPEND";
         CollisionStrategy strategy = CollisionStrategy.fromString(rawStrategy);
         TagList tagList = TagList.fromRawString(tags);
+
         // The supplier is evaluated lazily, here and only here (see field Javadoc for why):
         NoteService noteService = noteServiceProvider.get();
-
-        String content = (String) input.getOrDefault("content", "");
-        String tags = (String) input.getOrDefault("tags", "");
-        String date = (String) input.getOrDefault("date", "");
-        String rawStrategy = (String) input.getOrDefault("collisionStrategy", "APPEND");
-        CollisionStrategy strategy = CollisionStrategy.fromString(rawStrategy);
-        TagList tagList = TagList.fromRawString(tags);
 
         log.info("MCP: createNote(tags=\""+tagList.getPersistenceString()+"\", "
                  + "date=\""+date+"\", "

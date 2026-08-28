@@ -41,8 +41,6 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -548,33 +546,6 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
 
             // If we get here, the frame can just close:
             setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        }
-    }
-
-    /**
-     * Handles showing our right-click popup menu in the editor pane.
-     */
-    private static class RightClickListener extends MouseAdapter {
-        private final JPopupMenu popupMenu;
-
-        public RightClickListener(JPopupMenu popupMenu) {
-            this.popupMenu = popupMenu;
-        }
-
-        private void maybeShowPopup(MouseEvent e) {
-            if (e.isPopupTrigger()) {
-                popupMenu.show(e.getComponent(), e.getX(), e.getY());
-            }
-        }
-
-        @Override
-        public void mousePressed(MouseEvent e) {
-            maybeShowPopup(e);
-        }
-
-        @Override
-        public void mouseReleased(MouseEvent e) {
-            maybeShowPopup(e);
         }
     }
 }

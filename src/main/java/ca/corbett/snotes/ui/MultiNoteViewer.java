@@ -9,10 +9,14 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.InputMap;
 import javax.swing.JComponent;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JTextPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.Style;
@@ -68,6 +72,7 @@ public class MultiNoteViewer extends JPanel implements UIReloadable {
         this.positionOffsets = new ArrayList<>();
         this.textPane = new JTextPane();
         this.textPane.setEditable(false);
+        this.textPane.addMouseListener(new RightClickListener(buildPopupMenu()));
         textPane.addMouseListener(new TextFieldMouseListener());
         textFindPanel = new TextFindPanel(textPane, this::hideTextFindPanel);
         textFindPanel.setVisible(false);
@@ -269,5 +274,38 @@ public class MultiNoteViewer extends JPanel implements UIReloadable {
                 }
             }
         }
+    }
+
+    private JPopupMenu buildPopupMenu() {
+        JPopupMenu popupMenu = new JPopupMenu();
+        JMenuItem copyItem = new JMenuItem("Copy");
+        copyItem.addActionListener(e -> textPane.copy());
+        JMenuItem selectAllItem = new JMenuItem("Select All");
+        selectAllItem.addActionListener(e -> textPane.selectAll());
+
+        popupMenu.add(copyItem);
+        popupMenu.add(selectAllItem);
+
+        popupMenu.addPopupMenuListener(new PopupMenuListener() {
+            @Override
+            public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+                boolean editable = textPane.isEditable() && textPane.isEnabled();
+                boolean hasSelection = textPane.getSelectionStart() != textPane.getSelectionEnd();
+                copyItem.setEnabled(hasSelection);
+                selectAllItem.setEnabled(textPane.getDocument().getLength() > 0);
+            }
+
+            @Override
+            public void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent e) {
+                // no-op
+            }
+
+            @Override
+            public void popupMenuCanceled(javax.swing.event.PopupMenuEvent e) {
+                // no-op
+            }
+        });
+
+        return popupMenu;
     }
 }
