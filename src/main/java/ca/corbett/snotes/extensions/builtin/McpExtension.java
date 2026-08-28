@@ -78,7 +78,7 @@ public class McpExtension extends SnotesExtension {
                 log.info("MCP server started on port " + port);
             }
             catch (Exception e) {
-                log.severe("Failed to start MCP server: " + e.getMessage());
+                log.log(java.util.logging.Level.SEVERE, "Failed to start MCP server", e);
                 mcpServer = null;
             }
         }
