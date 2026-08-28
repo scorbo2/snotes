@@ -5,6 +5,7 @@ Version 2.3 [TODO release date] - Maintenance release
   #116 - MCP support, part 2: add handlers for creation/searching
   #113 - Add right-click popup menu to ReaderFrame and search results
   #111 - Add "case-sensitive" checkbox to text search panel
+  #111 - Fix highlighting of text search results
   #88 - MCP support, part 1: add a proper service layer
 
 Version 2.2 [2026-06-21] - Maintenance release
