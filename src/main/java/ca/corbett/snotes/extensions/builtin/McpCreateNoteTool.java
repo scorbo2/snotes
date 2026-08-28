@@ -103,10 +103,33 @@ public class McpCreateNoteTool implements McpTool {
 
     @Override
     public String execute(Map<String, Object> input) throws Exception {
+        if (input == null) {
+            throw new IllegalArgumentException("Missing input parameters.");
+        }
         if (!(input.get("content") instanceof String)) {
             throw new IllegalArgumentException("Missing or invalid 'content' parameter. Must be a non-blank string.");
         }
+        if (!(input.get("tags") instanceof String)) {
+            throw new IllegalArgumentException("Missing or invalid 'tags' parameter. Must be a comma-separated string.");
+        }
+        Object dateObj = input.get("date");
+        if (dateObj != null && !(dateObj instanceof String)) {
+            throw new IllegalArgumentException("Invalid 'date' parameter. Must be a yyyy-MM-dd formatted string.");
+        }
+        Object strategyObj = input.get("collisionStrategy");
+        if (strategyObj != null && !(strategyObj instanceof String)) {
+            throw new IllegalArgumentException("Invalid 'collisionStrategy' parameter. Must be one of OVERWRITE, APPEND, or ABORT.");
+        }
 
+        // The supplier is evaluated lazily, here and only here (see field Javadoc for why):
+        NoteService noteService = noteServiceProvider.get();
+
+        String content = (String)input.get("content");
+        String tags = (String)input.get("tags");
+        String date = (dateObj instanceof String s) ? s : "";
+        String rawStrategy = (strategyObj instanceof String s) ? s : "APPEND";
+        CollisionStrategy strategy = CollisionStrategy.fromString(rawStrategy);
+        TagList tagList = TagList.fromRawString(tags);
         // The supplier is evaluated lazily, here and only here (see field Javadoc for why):
         NoteService noteService = noteServiceProvider.get();
 
