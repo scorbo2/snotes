@@ -11,6 +11,9 @@ public class RightClickListener extends MouseAdapter {
     private final JPopupMenu popupMenu;
 
     public RightClickListener(JPopupMenu popupMenu) {
+        if (popupMenu == null) {
+            throw new IllegalArgumentException("popupMenu cannot be null");
+        }
         this.popupMenu = popupMenu;
     }
 
