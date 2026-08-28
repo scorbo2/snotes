@@ -1,6 +1,7 @@
 package ca.corbett.snotes.ui;
 
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -22,7 +23,8 @@ import java.util.logging.Logger;
 /**
  * Represents a text find panel that can be associated with a JTextPane for the purpose
  * of finding text within that text pane. A text box is provided to enter search text,
- * and "find next" and "find previous" buttons are provided to navigate through the search results.
+ * a checkbox to make the search case sensitive, and "Next" and "Prev" buttons are
+ * provided to navigate through the search results.
  * A status label shows the number of found matches.
  * <p>
  * Pressing ESC while focus is in the text search field will trigger the configured
@@ -47,6 +49,7 @@ public class TextFindPanel extends JPanel {
 
     private final JTextPane textPane;
     private JTextField searchField;
+    private JCheckBox caseSensitiveCheckbox;
     private JButton findNextButton;
     private JButton findPreviousButton;
     private JLabel statusLabel;
@@ -74,10 +77,12 @@ public class TextFindPanel extends JPanel {
     }
 
     /**
-     * Call this to blank out the TextFindPanel and reset it to its initial state.
+     * Call this to blank out the TextFindPanel and reset it to its initial state,
+     * which includes the case sensitive checkbox being unchecked.
      */
     public void reset() {
         searchField.setText("");
+        caseSensitiveCheckbox.setSelected(false);
         statusLabel.setText("0 matches");
         findNextButton.setEnabled(false);
         findPreviousButton.setEnabled(false);
@@ -92,10 +97,31 @@ public class TextFindPanel extends JPanel {
     }
 
     /**
+     * Returns true if searches should be case sensitive, i.e. if the
+     * "Case Sensitive" checkbox is selected.
+     */
+    public boolean isCaseSensitive() {
+        return caseSensitiveCheckbox.isSelected();
+    }
+
+    /**
+     * Sets whether searches should be case sensitive. If a search term is
+     * currently entered, the highlights and match count are updated to
+     * reflect the new sensitivity.
+     *
+     * @param caseSensitive true for case sensitive matching, false for case insensitive
+     */
+    public void setCaseSensitive(boolean caseSensitive) {
+        caseSensitiveCheckbox.setSelected(caseSensitive);
+    }
+
+    /**
      * Find all occurrences of the search term and highlight them.
+     * Whether matching is case sensitive is determined by the "Case Sensitive" checkbox.
      * @return the index of the first match, or -1 if not found
      */
     public int findAllAndHighlight(String searchTerm) {
+        boolean ignoreCase = !isCaseSensitive();
         // Clear existing highlights
         highlighter.removeAllHighlights();
 
@@ -109,7 +135,7 @@ public class TextFindPanel extends JPanel {
         int matchCount = 0;
 
         while (index <= documentText.length() - searchTerm.length()) {
-            int found = documentText.indexOf(searchTerm, index);
+            int found = indexOf(documentText, searchTerm, index, ignoreCase);
             if (found == -1) {
                 break;
             }
@@ -141,11 +167,13 @@ public class TextFindPanel extends JPanel {
     /**
      * Finds the next occurrence of the search term starting from the current caret position.
      * Selects the match and scrolls to it.
+     * Whether matching is case sensitive is determined by the "Case Sensitive" checkbox.
      *
      * @param searchTerm The text to search for.
      * @return true if a match was found and selected, false otherwise.
      */
     public boolean findNext(String searchTerm) {
+        boolean ignoreCase = !isCaseSensitive();
         findAllAndHighlight(searchTerm);
         if (searchTerm == null || searchTerm.isEmpty()) {
             return false;
@@ -159,17 +187,17 @@ public class TextFindPanel extends JPanel {
         int foundIndex = -1;
 
         // Search from current position to end
-        foundIndex = documentText.indexOf(searchTerm, startIndex);
+        foundIndex = indexOf(documentText, searchTerm, startIndex, ignoreCase);
 
         // If the found index is our current caret position, it means we're already
         // at the match, so look for the next one instead:
         if (foundIndex == caretPos) {
-            foundIndex = documentText.indexOf(searchTerm, startIndex + 1);
+            foundIndex = indexOf(documentText, searchTerm, startIndex + 1, ignoreCase);
         }
 
         // If not found, wrap around to the beginning
         if (foundIndex == -1) {
-            foundIndex = documentText.indexOf(searchTerm, 0);
+            foundIndex = indexOf(documentText, searchTerm, 0, ignoreCase);
         }
 
         if (foundIndex != -1) {
@@ -192,8 +220,10 @@ public class TextFindPanel extends JPanel {
 
     /**
      * Finds the previous occurrence.
+     * Whether matching is case sensitive is determined by the "Case Sensitive" checkbox.
      */
     public boolean findPrevious(String searchTerm) {
+        boolean ignoreCase = !isCaseSensitive();
         findAllAndHighlight(searchTerm);
         if (searchTerm == null || searchTerm.isEmpty()) {
             return false;
@@ -210,11 +240,11 @@ public class TextFindPanel extends JPanel {
         int foundIndex = -1;
 
         // Search backwards from current position
-        foundIndex = documentText.lastIndexOf(searchTerm, startIndex - 1);
+        foundIndex = lastIndexOf(documentText, searchTerm, startIndex - 1, ignoreCase);
 
         // If not found, wrap around to the end
         if (foundIndex == -1) {
-            foundIndex = documentText.lastIndexOf(searchTerm, docLength - 1);
+            foundIndex = lastIndexOf(documentText, searchTerm, docLength - 1, ignoreCase);
         }
 
         if (foundIndex != -1) {
@@ -239,8 +269,19 @@ public class TextFindPanel extends JPanel {
         setLayout(new GridBagLayout());
 
         searchField = new JTextField(20);
-        findNextButton = new JButton("Find Next");
-        findNextButton.setPreferredSize(new Dimension(100, 24));
+        caseSensitiveCheckbox = new JCheckBox("Case Sensitive", false);
+        caseSensitiveCheckbox.setToolTipText("When selected, only matches with the exact same case will be found.");
+        // An ItemListener (rather than ActionListener) is required here, because
+        // programmatic calls to setSelected() only fire ItemEvents:
+        caseSensitiveCheckbox.addItemListener(e -> {
+            if (!searchField.getText().isBlank()) {
+                // Re-highlight so the existing highlights and match count
+                // reflect the new case sensitivity:
+                findAllAndHighlight(searchField.getText());
+            }
+        });
+        findNextButton = new JButton("Next");
+        findNextButton.setPreferredSize(new Dimension(70, 24));
         findNextButton.addActionListener(e -> {
             String searchTerm = searchField.getText();
             if (!findNext(searchTerm)) {
@@ -249,8 +290,8 @@ public class TextFindPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "No matches found.", "Find text", JOptionPane.INFORMATION_MESSAGE);
             }
         });
-        findPreviousButton = new JButton("Find Prev.");
-        findPreviousButton.setPreferredSize(new Dimension(100, 24));
+        findPreviousButton = new JButton("Prev");
+        findPreviousButton.setPreferredSize(new Dimension(70, 24));
         findPreviousButton.addActionListener(e -> {
             String searchTerm = searchField.getText();
             if (!findPrevious(searchTerm)) {
@@ -272,18 +313,22 @@ public class TextFindPanel extends JPanel {
         gbc.gridy = 0;
         add(searchField, gbc);
 
-        // Find next button - fixed width
+        // Case sensitive checkbox - fixed width
         gbc.fill = GridBagConstraints.NONE;
         gbc.weightx = 0.0;
         gbc.gridx = 1;
+        add(caseSensitiveCheckbox, gbc);
+
+        // Next button - fixed width
+        gbc.gridx = 2;
         add(findNextButton, gbc);
 
-        // Find previous button - fixed width
-        gbc.gridx = 2;
+        // Previous button - fixed width
+        gbc.gridx = 3;
         add(findPreviousButton, gbc);
 
         // Status label - fixed width
-        gbc.gridx = 3;
+        gbc.gridx = 4;
         add(statusLabel, gbc);
 
         // Add listeners to our text field:
@@ -333,5 +378,48 @@ public class TextFindPanel extends JPanel {
                 textUpdated();
             }
         });
+    }
+
+    /**
+     * Case (in)sensitive indexOf. Callers must guarantee that needle is non-empty,
+     * as empty search terms are filtered out by the public search methods.
+     */
+    private static int indexOf(String haystack, String needle, int fromIndex, boolean ignoreCase) {
+        if (!ignoreCase) {
+            return haystack.indexOf(needle, fromIndex);
+        }
+        // regionMatches(true, ...) instead of lower-casing both strings, because
+        // lower-casing can change the length of some Unicode strings (e.g. 'İ' U+0130),
+        // which would break index alignment with the original document:
+        int start = Math.max(fromIndex, 0);
+        int maxStart = haystack.length() - needle.length();
+        for (int i = start; i <= maxStart; i++) {
+            if (haystack.regionMatches(true, i, needle, 0, needle.length())) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Case (in)sensitive lastIndexOf. See {@link #indexOf} for why regionMatches is used.
+     * Callers must guarantee that needle is non-empty,
+     * as empty search terms are filtered out by the public search methods.
+     */
+    private static int lastIndexOf(String haystack, String needle, int fromIndex, boolean ignoreCase) {
+        if (!ignoreCase) {
+            return haystack.lastIndexOf(needle, fromIndex);
+        }
+        // Matches String.lastIndexOf(): a negative fromIndex means no search
+        if (fromIndex < 0) {
+            return -1;
+        }
+        int start = Math.min(fromIndex, haystack.length() - needle.length());
+        for (int i = start; i >= 0; i--) {
+            if (haystack.regionMatches(true, i, needle, 0, needle.length())) {
+                return i;
+            }
+        }
+        return -1;
     }
 }
