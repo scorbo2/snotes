@@ -195,10 +195,39 @@ public class MultiNoteViewer extends JPanel implements UIReloadable {
         textFindPanel.focusTextField();
     }
 
+    /**
+     * Shows the text find panel pre-populated with the given search term,
+     * and highlights all occurrences of the term in the displayed content.
+     * <p>
+     * This is the programmatic equivalent of the user pressing Ctrl+F and
+     * typing the term. Deliberately, unlike pressing ENTER, it does not
+     * select or scroll to the first match, so the view stays where it is
+     * (e.g. at the top of the content when a ReaderFrame first opens).
+     * </p>
+     *
+     * @param searchTerm the term to pre-populate the search field with and highlight
+     * @param caseSensitive whether matching should be case-sensitive
+     * @return true if at least one occurrence was highlighted
+     */
+    public boolean showTextFindPanel(String searchTerm, boolean caseSensitive) {
+        showTextFindPanel();
+        return textFindPanel.populateAndHighlight(searchTerm, caseSensitive);
+    }
+
     public void hideTextFindPanel() {
         textFindPanel.setVisible(false);
         revalidate();
         repaint();
+    }
+
+    /** Package-private accessor, exposed for testing. */
+    JTextPane getTextPane() {
+        return textPane;
+    }
+
+    /** Package-private accessor, exposed for testing. */
+    TextFindPanel getTextFindPanel() {
+        return textFindPanel;
     }
 
     private void fireNoteSelectionEvent(Note note) {
