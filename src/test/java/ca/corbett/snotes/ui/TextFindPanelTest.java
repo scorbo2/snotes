@@ -77,6 +77,89 @@ class TextFindPanelTest {
     }
 
     @Test
+    void populateAndHighlight_withMatches_shouldPopulateFieldAndHighlightAllMatches() {
+        // GIVEN a document with three occurrences of "fox":
+        textPane.setText("one fox two foxes three fox");
+
+        // WHEN we programmatically populate the panel and highlight for "fox":
+        boolean found = panel.populateAndHighlight("fox", false);
+
+        // THEN matches are found, the search field is populated with the term,
+        // case sensitivity is off, and all matches are highlighted:
+        assertTrue(found);
+        assertEquals("fox", searchField().getText());
+        assertFalse(panel.isCaseSensitive());
+        assertEquals(3, highlightCount());
+    }
+
+    @Test
+    void populateAndHighlight_caseSensitiveOn_shouldOnlyHighlightExactCaseMatches() {
+        // GIVEN a document with "apple" in three different cases:
+        textPane.setText("Apple apple APPLE");
+
+        // WHEN we programmatically populate the panel and highlight, case-sensitively:
+        boolean found = panel.populateAndHighlight("apple", true);
+
+        // THEN only the exact-case match is highlighted, the search field is
+        // populated, and the case-sensitivity checkbox reflects the request:
+        assertTrue(found);
+        assertEquals("apple", searchField().getText());
+        assertTrue(panel.isCaseSensitive());
+        assertEquals(1, highlightCount());
+    }
+
+    @Test
+    void populateAndHighlight_withNoMatches_shouldReturnFalseAndHighlightNothing() {
+        // GIVEN a document with no occurrences of the search term:
+        textPane.setText("banana");
+
+        // WHEN we programmatically populate the panel and highlight for a term that is absent:
+        boolean found = panel.populateAndHighlight("apple", false);
+
+        // THEN no matches are found and no highlights are painted, but the term
+        // still appears in the search field so the user can adjust it:
+        assertFalse(found);
+        assertEquals(0, highlightCount());
+        assertEquals("apple", searchField().getText());
+    }
+
+    @Test
+    void populateAndHighlight_withBlankTerm_shouldBeANoOp() {
+        // GIVEN a panel with an active case-sensitive search for "apple":
+        textPane.setText("Apple apple");
+        panel.populateAndHighlight("apple", true);
+        assertEquals(1, highlightCount());
+
+        // WHEN we programmatically populate the panel with a blank term:
+        boolean found = panel.populateAndHighlight("   ", false);
+
+        // THEN it's a true no-op: no new search runs, and the existing
+        // search term, case sensitivity, and highlights are all untouched:
+        assertFalse(found);
+        assertEquals(1, highlightCount());
+        assertEquals("apple", searchField().getText());
+        assertTrue(panel.isCaseSensitive());
+    }
+
+    @Test
+    void populateAndHighlight_withNullTerm_shouldBeANoOp() {
+        // GIVEN a panel with an active case-insensitive search for "apple":
+        textPane.setText("Apple apple");
+        panel.populateAndHighlight("apple", false);
+        assertEquals(2, highlightCount());
+
+        // WHEN we programmatically populate the panel with a null term:
+        boolean found = panel.populateAndHighlight(null, true);
+
+        // THEN it's a true no-op: no new search runs, and the existing
+        // search term, case sensitivity, and highlights are all untouched:
+        assertFalse(found);
+        assertEquals(2, highlightCount());
+        assertEquals("apple", searchField().getText());
+        assertFalse(panel.isCaseSensitive());
+    }
+
+    @Test
     void findNext_caseSensitivityOn_shouldSkipMatchesWithDifferentCase() {
         // GIVEN a document with "apple" in three different cases and the caret at the start
         // (set explicitly, because setText() can leave the caret at the end depending on the thread it runs on):

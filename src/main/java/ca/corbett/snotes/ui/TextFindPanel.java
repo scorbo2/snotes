@@ -125,6 +125,35 @@ public class TextFindPanel extends JPanel {
     }
 
     /**
+     * Pre-populates the search field with the given term, applies the given
+     * case-sensitivity, and immediately highlights all occurrences of the term
+     * in the associated text pane.
+     * <p>
+     * Unlike pressing ENTER in the search field, this does not select or
+     * scroll to the first match: the caret and scroll position are left
+     * alone. The term remains visible and editable in the search field,
+     * and the user can press ESC to clear the highlights and close the panel.
+     * </p>
+     *
+     * @param searchTerm the term to search for. null or blank is a no-op.
+     * @param caseSensitive whether matching should be case-sensitive
+     * @return true if at least one occurrence was highlighted, false otherwise
+     */
+    public boolean populateAndHighlight(String searchTerm, boolean caseSensitive) {
+        // A null or blank term is a true no-op: don't touch the search field,
+        // the case-sensitivity checkbox, or any existing highlights:
+        if (searchTerm == null || searchTerm.isBlank()) {
+            return false;
+        }
+        // Case sensitivity must be set before the search text, because the
+        // checkbox's item listener re-runs the search whenever the field is
+        // non-blank: setting the text first would trigger a redundant search.
+        setCaseSensitive(caseSensitive);
+        searchField.setText(searchTerm);
+        return findAllAndHighlight(searchTerm) != -1;
+    }
+
+    /**
      * Find all occurrences of the search term and highlight them.
      * Whether matching is case sensitive is determined by the "Case Sensitive" checkbox.
      * @return the index of the first match, or -1 if not found
