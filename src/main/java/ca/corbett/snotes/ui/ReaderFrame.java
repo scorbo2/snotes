@@ -265,11 +265,11 @@ public class ReaderFrame extends JInternalFrame {
         if (autoHighlightPerformed || query == null) {
             return;
         }
-        autoHighlightPerformed = true;
         TextFilter textFilter = firstTextFilter();
         if (textFilter == null) {
             return;
         }
+        autoHighlightPerformed = true;
         noteViewer.showTextFindPanel(textFilter.getContains(), textFilter.isCaseSensitive());
     }
 
