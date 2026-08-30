@@ -275,7 +275,7 @@ public class ReaderFrame extends JInternalFrame {
 
     /**
      * Returns the first non-blank TextFilter in our Query, or null if there is none.
-     * A blank TextFilter is a documented no-op filter, so there would be nothing to highlight.
+     * A blank TextFilter is treated as a no-op for highlighting, so there would be nothing to highlight.
      */
     private TextFilter firstTextFilter() {
         return query.getFilters().stream()
