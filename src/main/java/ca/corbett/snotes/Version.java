@@ -9,7 +9,7 @@ public final class Version {
     private static final AboutInfo aboutInfo;
 
     public static final String NAME = "Snotes";
-    public static final String VERSION = "2.2";
+    public static final String VERSION = "2.3";
     public static final String FULL_NAME = NAME + " " + VERSION;
     public static final String COPYRIGHT = "Copyright © 2023-2026 Steve Corbett";
     public static final String PROJECT_URL = "https://github.com/scorbo2/snotes";
@@ -57,7 +57,7 @@ public final class Version {
     static {
         aboutInfo = new AboutInfo();
         aboutInfo.applicationName = NAME;
-        aboutInfo.applicationVersion = VERSION;
+        aboutInfo.applicationVersion = VERSION + "-SNAPSHOT"; // TODO remove SNAPSHOT before release
         aboutInfo.copyright = COPYRIGHT;
         aboutInfo.license = LICENSE;
         aboutInfo.projectUrl = PROJECT_URL;

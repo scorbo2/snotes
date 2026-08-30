@@ -6,7 +6,7 @@
 
     <groupId>ca.corbett</groupId>
     <artifactId>snotes</artifactId>
-    <version>2.2</version>
+    <version>2.3-SNAPSHOT</version>
 
     <name>snotes</name>
     <description>Snotes - Steve's Notes</description>
@@ -48,6 +48,12 @@
         </dependency>
 
         <dependency>
+            <groupId>ca.corbett</groupId>
+            <artifactId>mcp-light</artifactId>
+            <version>1.1</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
             <version>2.21.1</version>
@@ -71,7 +77,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>5.14.2</version>
+            <version>5.23.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -5,9 +5,8 @@ import ca.corbett.extras.ScrollUtil;
 import ca.corbett.snotes.io.DataManager;
 import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.model.Query;
-import ca.corbett.snotes.model.TagList;
 import ca.corbett.snotes.model.TagUsage;
-import ca.corbett.snotes.model.filter.TagFilter;
+import ca.corbett.snotes.service.NoteSearchRequest;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -22,6 +21,7 @@ import java.awt.FlowLayout;
 import java.awt.Window;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -88,15 +88,15 @@ public class TagListDialog extends JDialog {
         if (selectedViewRows.length == 0) {
             return;
         }
-        TagList toSearch = new TagList();
+        List<String> tagNames = new ArrayList<>();
         for (int viewRow : selectedViewRows) {
             int modelRow = tagTable.convertRowIndexToModel(viewRow);
             TagUsage usage = tableModel.getTagUsage(modelRow);
-            toSearch.addTag(usage.tag().getTag());
+            tagNames.add(usage.tag().getTag());
         }
-        Query query = new Query();
-        query.addFilter(new TagFilter(toSearch.getTags(), TagFilter.FilterType.ALL));
-        List<Note> results = query.execute(dataManager.getNotes());
+        NoteSearchRequest request = NoteSearchRequest.builder().withTags(tagNames).build();
+        Query query = request.toQuery(); // used for the ReaderFrame's query panel
+        List<Note> results = MainWindow.getInstance().getNoteService().search(request);
         if (results.isEmpty()) {
             // Each tag in our list is guaranteed to be used with at least one note.
             // But, if the user selected more than one tag, there's no guarantee

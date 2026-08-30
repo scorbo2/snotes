@@ -8,9 +8,9 @@ import ca.corbett.forms.FormPanel;
 import ca.corbett.forms.fields.ShortTextField;
 import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.model.Query;
+import ca.corbett.snotes.model.Tag;
 import ca.corbett.snotes.model.TagList;
-import ca.corbett.snotes.model.filter.TagFilter;
-import ca.corbett.snotes.model.filter.TextFilter;
+import ca.corbett.snotes.service.NoteSearchRequest;
 import ca.corbett.snotes.ui.query.QueryFilterPanel;
 
 import javax.swing.BorderFactory;
@@ -106,6 +106,7 @@ public class SearchDialog extends JDialog {
 
     private void performSearch() {
         Query transientQuery;
+        List<Note> results;
         int queryLimit = limitComboBox.getSelectedItem() == null
             ? Integer.MAX_VALUE
             : ((Limit)limitComboBox.getSelectedItem()).getLimit();
@@ -125,15 +126,22 @@ public class SearchDialog extends JDialog {
                 getMessageUtil().error("Empty search", "Please enter some text or tags to search for.");
                 return;
             }
-            transientQuery = new Query();
+            NoteSearchRequest.Builder requestBuilder = NoteSearchRequest.builder()
+                .withLimit(queryLimit);
             if (!textSearch.isBlank()) {
-                transientQuery.addFilter(new TextFilter(textSearch));
+                requestBuilder.withText(textSearch);
             }
             if (!tagSearch.isBlank()) {
+                // fromRawString() splits the field on commas/spaces/hashes and normalizes each tag.
+                // We hand the normalized names back to the request as raw strings; it re-normalizes
+                // them (idempotently) and turns yyyy-MM-dd-looking strings into DateTags again,
+                // which is exactly how this search behaved before the migration.
                 TagList tagList = TagList.fromRawString(tagSearch);
-                TagFilter tagFilter = new TagFilter(tagList.getTags(), TagFilter.FilterType.ALL);
-                transientQuery.addFilter(tagFilter);
+                requestBuilder.withTags(tagList.getTags().stream().map(Tag::getTag).toList());
             }
+            NoteSearchRequest request = requestBuilder.build();
+            transientQuery = request.toQuery(); // used below for the ReaderFrame's query panel
+            results = MainWindow.getInstance().getNoteService().search(request);
         }
 
         else {
@@ -141,9 +149,8 @@ public class SearchDialog extends JDialog {
                 return;
             }
             transientQuery = advancedSearchForm.getQuery();
+            results = MainWindow.getInstance().getNoteService().search(transientQuery, queryLimit);
         }
-
-        List<Note> results = transientQuery.execute(MainWindow.getInstance().getDataManager().getNotes(), queryLimit);
         if (results.isEmpty()) {
             getMessageUtil().info("Nothing found", "No notes matched your search criteria.");
             return;

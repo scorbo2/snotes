@@ -9,10 +9,14 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.InputMap;
 import javax.swing.JComponent;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JTextPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.Style;
@@ -68,6 +72,7 @@ public class MultiNoteViewer extends JPanel implements UIReloadable {
         this.positionOffsets = new ArrayList<>();
         this.textPane = new JTextPane();
         this.textPane.setEditable(false);
+        this.textPane.addMouseListener(new RightClickListener(buildPopupMenu()));
         textPane.addMouseListener(new TextFieldMouseListener());
         textFindPanel = new TextFindPanel(textPane, this::hideTextFindPanel);
         textFindPanel.setVisible(false);
@@ -190,10 +195,39 @@ public class MultiNoteViewer extends JPanel implements UIReloadable {
         textFindPanel.focusTextField();
     }
 
+    /**
+     * Shows the text find panel pre-populated with the given search term,
+     * and highlights all occurrences of the term in the displayed content.
+     * <p>
+     * This is the programmatic equivalent of the user pressing Ctrl+F and
+     * typing the term. Deliberately, unlike pressing ENTER, it does not
+     * select or scroll to the first match, so the view stays where it is
+     * (e.g. at the top of the content when a ReaderFrame first opens).
+     * </p>
+     *
+     * @param searchTerm the term to pre-populate the search field with and highlight
+     * @param caseSensitive whether matching should be case-sensitive
+     * @return true if at least one occurrence was highlighted
+     */
+    public boolean showTextFindPanel(String searchTerm, boolean caseSensitive) {
+        showTextFindPanel();
+        return textFindPanel.populateAndHighlight(searchTerm, caseSensitive);
+    }
+
     public void hideTextFindPanel() {
         textFindPanel.setVisible(false);
         revalidate();
         repaint();
+    }
+
+    /** Package-private accessor, exposed for testing. */
+    JTextPane getTextPane() {
+        return textPane;
+    }
+
+    /** Package-private accessor, exposed for testing. */
+    TextFindPanel getTextFindPanel() {
+        return textFindPanel;
     }
 
     private void fireNoteSelectionEvent(Note note) {
@@ -269,5 +303,37 @@ public class MultiNoteViewer extends JPanel implements UIReloadable {
                 }
             }
         }
+    }
+
+    private JPopupMenu buildPopupMenu() {
+        JPopupMenu popupMenu = new JPopupMenu();
+        JMenuItem copyItem = new JMenuItem("Copy");
+        copyItem.addActionListener(e -> textPane.copy());
+        JMenuItem selectAllItem = new JMenuItem("Select All");
+        selectAllItem.addActionListener(e -> textPane.selectAll());
+
+        popupMenu.add(copyItem);
+        popupMenu.add(selectAllItem);
+
+        popupMenu.addPopupMenuListener(new PopupMenuListener() {
+            @Override
+            public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+                boolean hasSelection = textPane.getSelectionStart() != textPane.getSelectionEnd();
+                copyItem.setEnabled(hasSelection);
+                selectAllItem.setEnabled(textPane.getDocument().getLength() > 0);
+            }
+
+            @Override
+            public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
+                // no-op
+            }
+
+            @Override
+            public void popupMenuCanceled(PopupMenuEvent e) {
+                // no-op
+            }
+        });
+
+        return popupMenu;
     }
 }

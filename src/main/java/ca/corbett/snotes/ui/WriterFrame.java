@@ -13,6 +13,8 @@ import ca.corbett.snotes.model.Note;
 import ca.corbett.snotes.model.Tag;
 import ca.corbett.snotes.model.TagList;
 import ca.corbett.snotes.model.YMDDate;
+import ca.corbett.snotes.service.CollisionStrategy;
+import ca.corbett.snotes.service.NoteService;
 import ca.corbett.snotes.ui.actions.UIReloadAction;
 
 import javax.swing.AbstractAction;
@@ -39,8 +41,6 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,7 +58,8 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
     private static final Logger log = Logger.getLogger(WriterFrame.class.getName());
     private MessageUtil messageUtil;
 
-    private final DataManager dataManager;
+    private final DataManager dataManager; // retained only for note deletion, which is not yet in NoteService
+    private final NoteService noteService;
     private final Note note;
     private final List<Note> context;
     private ToggleableTabbedPane tabPane;
@@ -77,7 +78,7 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
      * Creates a new WriterFrame with a new, blank scratch Note, and no context.
      */
     public WriterFrame() {
-        this(MainWindow.getInstance().getDataManager().newNote());
+        this(MainWindow.getInstance().getNoteService().createScratchNote());
     }
 
     /**
@@ -100,13 +101,14 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
         super(Note.getRelativePath(note, AppConfig.getInstance().getDataDirectory()),
               true, true, true, true);
         this.dataManager = MainWindow.getInstance().getDataManager();
+        this.noteService = MainWindow.getInstance().getNoteService();
         this.context = new ArrayList<>();
         if (context != null) {
             this.context.addAll(context);
         }
         if (note == null) {
             log.warning("WriterFrame created with null note. Creating new scratch note.");
-            note = dataManager.newNote();
+            note = noteService.createScratchNote();
             setTitle(Note.getRelativePath(note, AppConfig.getInstance().getDataDirectory()));
         }
         this.note = note;
@@ -117,7 +119,7 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
         this.addInternalFrameListener(new FrameCloseListener());
         this.hasScrolledToBottom = false;
         initComponents();
-        if (dataManager.isScratchNote(note)) {
+        if (noteService.isScratchNote(note)) {
             // For scratch notes, we want to auto-save every minute, so we set up a timer to do that.
             autoSaveTimer = new Timer(60 * 1000, e -> SwingUtilities.invokeLater(this::save));
             autoSaveTimer.setRepeats(true);
@@ -185,7 +187,7 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
         if (!isDirty) {
             return;
         }
-        if (dataManager.isScratchNote(note)) {
+        if (noteService.isScratchNote(note)) {
             try {
                 note.clearAllTags(); // we will nuke and pave to overwrite old settings
                 note.setDate(getDate());
@@ -194,7 +196,7 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
                     note.tag(tag);
                 }
                 note.setText(textPane.getText());
-                dataManager.saveScratch(note);
+                noteService.saveScratchNote(note);
                 isDirty = false;
             }
             catch (IOException ioe) {
@@ -234,7 +236,7 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
         // we want to skip the isDirty check and allow the save to proceed, otherwise an
         // early return here might prevent the save from happening. Non-scratch notes have no
         // auto-save timer, so it's safe to return here if they are not dirty.
-        if (!isDirty && !dataManager.isScratchNote(note)) {
+        if (!isDirty && !noteService.isScratchNote(note)) {
             return true;
         }
 
@@ -246,8 +248,8 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
         }
         note.setText(textPane.getText());
 
-        DataManager.CollisionStrategy strategy = DataManager.CollisionStrategy.ABORT; // safe default
-        if (dataManager.hasCollision(note)) {
+        CollisionStrategy strategy = CollisionStrategy.ABORT; // safe default
+        if (noteService.hasCollision(note)) {
             String selection = getMessageUtil().askSelect("Collision detected",
                                                           "There is an existing note with this date and/or tag list." +
                                                               "\nWhat do you want to do?",
@@ -257,12 +259,12 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
                 return false; // User canceled the save, so we do nothing.
             }
             strategy = "Overwrite it".equals(selection)
-                ? DataManager.CollisionStrategy.OVERWRITE
-                : DataManager.CollisionStrategy.APPEND;
+                ? CollisionStrategy.OVERWRITE
+                : CollisionStrategy.APPEND;
         }
 
         try {
-            dataManager.save(note, strategy);
+            noteService.saveNote(note, strategy);
             setTitle(Note.getRelativePath(note, AppConfig.getInstance().getDataDirectory())); // path may have changed
             isDirty = false;
             if (disposeIfSuccessful) {
@@ -308,7 +310,7 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
         if (note.hasDate()) {
             dateField.setText(note.getDate().toString());
         }
-        if (dataManager.isScratchNote(note) && !note.hasDate()) {
+        if (noteService.isScratchNote(note) && !note.hasDate()) {
             // Default to today for scratch notes that aren't already dated:
             dateField.setText(new YMDDate().toString());
         }
@@ -487,7 +489,7 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
         public void internalFrameClosing(InternalFrameEvent e) {
             // If this is a scratch note, we need to know if the user wants to
             // keep it around for future editing, or just get rid of it:
-            if (dataManager.isScratchNote(note)) {
+            if (noteService.isScratchNote(note)) {
                 int result = getMessageUtil().askYesNo("Discard scratch note?",
                                                        "This is a scratch note. Do you want to discard it?");
                 if (result == MessageUtil.YES) {
@@ -503,7 +505,7 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
                             note.tag(tag);
                         }
                         note.setText(textPane.getText());
-                        dataManager.saveScratch(note);
+                        noteService.saveScratchNote(note);
                     }
                     catch (IOException ioe) {
                         log.log(Level.SEVERE, "Failed to save scratch note: " + note.getSourceFile(), ioe);
@@ -544,33 +546,6 @@ public class WriterFrame extends JInternalFrame implements UIReloadable {
 
             // If we get here, the frame can just close:
             setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        }
-    }
-
-    /**
-     * Handles showing our right-click popup menu in the editor pane.
-     */
-    private static class RightClickListener extends MouseAdapter {
-        private final JPopupMenu popupMenu;
-
-        public RightClickListener(JPopupMenu popupMenu) {
-            this.popupMenu = popupMenu;
-        }
-
-        private void maybeShowPopup(MouseEvent e) {
-            if (e.isPopupTrigger()) {
-                popupMenu.show(e.getComponent(), e.getX(), e.getY());
-            }
-        }
-
-        @Override
-        public void mousePressed(MouseEvent e) {
-            maybeShowPopup(e);
-        }
-
-        @Override
-        public void mouseReleased(MouseEvent e) {
-            maybeShowPopup(e);
         }
     }
 }
